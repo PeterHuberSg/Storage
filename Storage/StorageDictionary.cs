@@ -1,0 +1,639 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using ACoreLib;
+
+namespace Storage {
+
+  ////By not allowing property changes, insertions or deletions, reentrance and concurrency problems get
+  ////avoided. The NotifyCollectionChanged event handlers will still find the data which caused the event (adding
+  ////new record), even if other threads have changed StorageDictionary in the meantime(adding other records). Note that
+  ////Microsoft's collection are not multithreading safe and do not support reentrancy.
+
+
+
+  /// <summary>
+  /// A fast collection of items which implement IStorage. Each item has a unique int key. Only items can be added which have 
+  /// a key grater than any other existing key.
+  /// The collection can be kept in RAM only or made permanent in a local file or in a database or ... It's only possible to add 
+  /// items, not insert, resulting in very fast implementations. Deletion is made by marking the item deleted.
+  /// </summary>
+  public class StorageDictionary<TItem>: IEnumerable<TItem>, IDictionary<int, TItem>, IDisposable where TItem : class, IStorage<TItem> {
+
+    #region Properties
+    //      ----------
+
+    public TItem this[int key] { 
+      get {
+        int arrayIndex = binarySearch(key);
+        if (arrayIndex<0) throw Tracer.Exception(new ArgumentOutOfRangeException());
+
+        return items[arrayIndex]?? throw Tracer.Exception(new ArgumentException($"There is no value for key '{key}'."));
+      } 
+      set => throw Tracer.Exception(new NotSupportedException()); 
+    }
+
+
+    public ICollection<int> Keys {
+      get {
+        int[] keys = new int[count];
+        if (count==0) return keys;
+
+        var keyIndex = 0;
+        for (int itemsIndex = firstItemIndex; itemsIndex<=lastItemIndex; itemsIndex++) {
+          var item = items[itemsIndex];
+          if (item!=null) {
+            keys[keyIndex++] = item.Key;
+          }
+        }
+        return keys;
+      }
+    }
+
+
+    public System.Collections.Generic.ICollection<TItem> Values {
+      get {
+        TItem[] values = new TItem[count];
+        if (count==0) return values;
+
+        var keyIndex = 0;
+        for (int itemsIndex = firstItemIndex; itemsIndex<=lastItemIndex; itemsIndex++) {
+          var item = items[itemsIndex];
+          if (item!=null) {
+            values[keyIndex++] = item;
+          }
+        }
+        return values;
+      }
+    }
+
+
+    public int Count => count;
+
+    public bool IsReadOnly {
+      get { return false; }
+    }
+
+
+    /// <summary>
+    /// Gets the capacity of StorageDictionary. The capacity is the size of
+    /// the internal array used to hold items, which can change over time.
+    /// </summary>
+    public int Capacity {
+      get {
+        return items.Length;
+      }
+    }
+
+
+    ///// <summary>
+    ///// Item with lowest Key in StorageDictionary
+    ///// </summary>
+    //public TItem? FirstItem { get; private set; }
+
+
+    ///// <summary>
+    ///// Item with highest value in StorageDictionary
+    ///// </summary>
+    //public TItem? LastItem { get; private set; }
+
+
+    /// <summary>
+    /// Are all Keys just incremented by 1 from the previous Key ? 
+    /// </summary>
+    public bool AreKeysContinous { get; private set; }
+    #endregion
+
+
+    #region Events
+    //      ------
+
+    /// <summary>
+    /// An item was added to dictionary
+    /// </summary>
+    public event Action<TItem>? Added;
+
+    /// <summary>
+    /// A value of an item has changed in the dictionary
+    /// </summary>
+    public event Action<TItem>? Changed;
+
+    /// <summary>
+    /// An item was deleted from the dictionary
+    /// </summary>
+    public event Action<TItem>? Removed;
+
+    #endregion
+
+
+    #region Constructor
+    //     ------------
+
+    const uint defaultCapacity = 4;
+
+    readonly object itemsLock = new object();
+    TItem?[] items;
+    static readonly TItem?[]  emptyItems = new TItem[0];
+    int[] keys; //keys don't get deleted when an items gets removed, because the key of the removed item is still needed for binary search
+    static readonly int[]  emptyKeys = new int[0];
+    int firstItemIndex;
+    int lastItemIndex;
+    int count;
+    int version;
+
+
+    /// <summary>
+    /// Constructs a StorageDictionary. It is initially empty and has a capacity
+    /// of zero. Upon adding the first element the capacity is 
+    /// increased to 4, and then increased in multiples of two as required.
+    /// </summary>
+    public StorageDictionary() : this(0) {
+    }
+
+
+    /// <summary>
+    /// Constructs a StorageDictionary with a given initial capacity. It is
+    /// initially empty, but will have room for the given number of elements
+    /// before any reallocations are required.
+    /// </summary>
+    public StorageDictionary(int capacity) {
+      if (capacity < 0) throw (Tracer.Exception(new ArgumentOutOfRangeException("Capacity must be equal or grater , but was '" + capacity + "'.")));
+
+      if (capacity==0) {
+        items = emptyItems;
+        keys = emptyKeys;
+      } else { 
+        items = new TItem[capacity];
+        keys = new int[capacity];
+      }
+
+      initialiseItemsParamertes();
+    }
+
+
+    private void initialiseItemsParamertes() {
+      firstItemIndex = -1;
+      lastItemIndex = -1;
+      AreKeysContinous = true; // is true for empty collection
+      count = 0;
+    }
+    #endregion
+
+
+    #region IDictionary Interface
+    //     ----------------------
+
+    /// <summary>
+    /// Adds the given item to the end of StorageDictionary. Better use Add(TItem item), this overload is provided for compatibility with
+    /// IDictionary. If key!=value.key, an exception is thrown
+    /// </summary>
+    public void Add(int key, TItem value) {
+      if (key!=value.Key) {
+        throw Tracer.Exception(new ArgumentException($"Key {key} must be the same as value.Key {value.Key}."));
+      }
+      Add(value);
+    }
+
+
+    /// <summary>
+    /// Adds the given item to the end of StorageDictionary. Better use Add(TItem item), this overload is provided for compatibility with
+    /// IDictionary. If item.Key!=item.value.key, an exception is thrown
+    /// </summary>
+    public void Add(KeyValuePair<int, TItem> item) {
+      if (item.Key!=item.Value.Key) {
+        throw Tracer.Exception(new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}."));
+      }
+      Add(item.Value);
+    }
+
+
+    /// <summary>
+    /// Would clear the contents of StorageDictionary, but not supported to prevent reentrance and concurrency problems. Create 
+    /// new StorageDictionary instead.
+    /// </summary>
+    public void Clear() {
+      throw Tracer.Exception(new NotSupportedException());
+    }
+
+
+    /// <summary>
+    /// Checks if item exists in StorageDirectionary and ensures that it is not marked as deleted. This method is provided for 
+    /// compatibility with IDictionary. If item.Key!=item.value.key, an exception is thrown. Better use ContainsKey(int key) instead. 
+    /// </summary>
+    public bool Contains(KeyValuePair<int, TItem> item) {
+      if (item.Key!=item.Value.Key) {
+        throw Tracer.Exception(new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}."));
+      }
+      return binarySearch(item.Key)>=0;
+    }
+
+
+    /// <summary>
+    /// Checks if item exists in StorageDirectionary and ensures that it is not marked as deleted. 
+    /// </summary>
+    public bool ContainsKey(int key) {
+      return binarySearch(key)>=0;
+    }
+
+
+    /// <summary>
+    /// Copies the elements of the ICollection to an Array, starting at a particular Array index. This method is provided for 
+    /// compatibility with IDictionary.
+    /// </summary>
+    public void CopyTo(KeyValuePair<int, TItem>[] array, int index) {
+      if (index < 0 || index > array.Length) {
+        throw (Tracer.Exception(new ArgumentException($"Index {index} must be within array boundaries 0..{array.Length}.")));
+      }
+      if (array.Length - index < count) {
+        throw (Tracer.Exception(new ArgumentException($"Array with Lenght {array.Length} is too small to add {count} items at Index {index}.")));
+      }
+
+      for (int itemIndex = firstItemIndex; itemIndex<=lastItemIndex; itemIndex++) {
+        var item = items[itemIndex];
+        if (item!=null) {
+          array[index++] = new KeyValuePair<int, TItem>(item.Key, item);
+        }
+      }
+    }
+
+
+    /// <summary>
+    /// Returns an enumarator over all undeleted TItems in StorageDictionary
+    /// </summary>
+    public IEnumerator<TItem> GetEnumerator() {
+      return new EnumeratorItems(this);
+    }
+
+
+    /// <summary>
+    /// Returns an object enumarator over all undeleted TItems in StorageDictionary. Better use the strongly 
+    /// typed IEnumerator<TItem> GetEnumerator(). 
+    /// </summary>
+    IEnumerator IEnumerable.GetEnumerator() {
+      return new EnumeratorItems(this);
+    }
+
+
+    /// <summary>
+    /// Returns an KeyValuePair enumarator over all undeleted TItems in StorageDictionary. This is only provided for
+    /// to implement the IDictionary<int, TItem> interface. If possible use IEnumerator<TItem> GetEnumerator() instead. 
+    /// </summary>
+    IEnumerator<KeyValuePair<int, TItem>> IEnumerable<KeyValuePair<int, TItem>>.GetEnumerator() {
+      return new EnumeratorItems(this);
+    }
+
+
+    /// <summary>
+    /// Removes the item with key, i.e. marks is as deleted. If the item exists, even if already deleted, true gets returned.
+    /// </summary>
+    public bool Remove(int key) {
+      int index;
+      TItem? item;
+      lock (itemsLock) {
+
+        index = binarySearch(key);
+        if (index<0) return false;
+
+        item = items[index];
+        if (item==null) return true; //item was already deleted
+
+        items[index] = null;
+        item.HasChanged -= storageDictionary_HasChanged;
+        version++;
+        count--;
+#if DEBUG
+        if (count<0) throw Tracer.Exception(); //count should never become negative
+#endif
+
+        if (count<=0) {
+          firstItemIndex = -1;
+          lastItemIndex = -1;
+          AreKeysContinous = true;
+        } else if (count==1) {
+          if (index==firstItemIndex) {
+            firstItemIndex = lastItemIndex;
+#if DEBUG
+          } else if (index!=lastItemIndex) {
+            //we should never arrive here.
+            throw Tracer.Exception();
+#endif
+          } else {
+            lastItemIndex = firstItemIndex;
+          }
+          AreKeysContinous = true;
+        } else {
+          if (firstItemIndex==index) {
+            do {
+              firstItemIndex++;
+            } while (items[firstItemIndex]==null);//since there are at least 2 items left, firstItemKey will always be smaller than lastItemkey
+          } else if (lastItemIndex==index) {
+            do {
+              lastItemIndex--;
+            } while (items[lastItemIndex]==null);//since there are at least 2 items left, lastItemkey will always be bigger than firstItemKey
+          }
+          AreKeysContinous = keys[lastItemIndex] - keys[firstItemIndex] + 1 == count;
+        }
+      }
+      OnItemRemoved(item);
+      Removed?.Invoke(item);
+      return true;
+    }
+
+
+    /// <summary>
+    /// Called after item has been marked as deleted in StorageDictionary
+    /// </summary>
+    protected virtual void OnItemRemoved(TItem item) {
+    }
+
+
+    /// <summary>
+    /// Provided for compatibility with IDictionary. Use Remove(int key) instead;
+    /// </summary>
+    /// <param name="item"></param>
+    /// <returns></returns>
+    public bool Remove(KeyValuePair<int, TItem> item) {
+      if (item.Key!=item.Value.Key) {
+        throw Tracer.Exception(new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}."));
+      }
+      return Remove(item.Key);
+    }
+
+
+
+    public bool TryGetValue(int key, [MaybeNullWhen(false)] out TItem value) {
+      var index = binarySearch(key);
+      if (index<0) {
+        value = default!;
+        return false;
+      }
+      value = items?[index]!;
+      return true;
+    }
+    #endregion
+
+
+    #region Disposable Interface
+    //     ---------------------
+
+    /// <summary>
+    /// Executes disposal of StorageDictionary exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is StorageDictionary already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      OnDispose(disposing);
+    }
+
+
+    /// <summary>
+    /// Inheritors should overwrite OnDispose() and put the diposal code in there. 
+    /// </summary>
+    /// <param name="disposing">is false if it is called from a destructor.</param>
+    protected virtual void OnDispose(bool disposing) {
+      //nothing to do for StorageDictionary, but inheritors might need to dispose a StreamWriter, db connection or something
+    }
+    #endregion
+
+
+    #region Public Methods
+    //     ---------------
+
+    // From Microsoft imposes limits on maximum array lenght (defined as internal constant in Array class)
+    const uint maxArrayLength = 0X7FEFFFFF;
+
+
+    /// <summary>
+    /// Adds the given item to the end of StorageDictionary. If item.Key is smaller than any stored key, an Exception is thrown.
+    /// The Count is increased by one. If required, the capacity of StorageDictionary is doubled before adding the new element.
+    /// </summary>
+    public void Add(TItem item) {
+      if (IsDisposed) throw Tracer.Exception(new ObjectDisposedException("StorageDictionary"));
+
+      lock (itemsLock) {
+        var lastItemKey = lastItemIndex==-1 ? -1 : items[lastItemIndex]!.Key;//throws exception if indexed item is null
+        if (item.Key<=lastItemKey) {
+          throw Tracer.Exception(new ArgumentException($"Key of new item {item} must be greater than biggest already stored Record.Key {lastItemKey}."));
+        }
+        if (AreKeysContinous && lastItemKey>=0) {
+          AreKeysContinous = lastItemKey+1==item.Key;
+        }
+
+        lastItemIndex++;
+        if (count==0) {
+          firstItemIndex = lastItemIndex;
+        }
+
+        //ensure there is enough space
+        if (lastItemIndex>=items.Length) {
+          uint itemsLength = (uint)items.Length;
+          uint newCapacityUInt = itemsLength == 0 ? defaultCapacity : itemsLength * 2;
+          if (newCapacityUInt > maxArrayLength) newCapacityUInt = maxArrayLength;
+
+          int newCapacity = (int)newCapacityUInt;
+
+          var newItems = new TItem[newCapacity];
+          var newKeys = new int[newCapacity];
+          if (items!=emptyItems) {
+            Array.Copy(items, 0, newItems, 0, lastItemIndex);
+            Array.Copy(keys, 0, newKeys, 0, lastItemIndex);
+          }
+          items = newItems;
+          keys = newKeys;
+        }
+
+        item.HasChanged += storageDictionary_HasChanged;
+        lastItemKey = item.Key;
+        items[lastItemIndex] = item;
+        keys[lastItemIndex] = item.Key;
+        count++;
+        version++;
+      }
+      OnItemAdded(item);
+      Added?.Invoke(item);
+    }
+
+
+    /// <summary>
+    /// Called when new item was added to StorageDictionary. 
+    /// </summary>
+    protected virtual void OnItemAdded(TItem item) {
+    }
+
+
+    private void storageDictionary_HasChanged(TItem item) {
+      version++;
+      OnItemHasChanged(item);
+      Changed?.Invoke(item);
+    }
+
+
+    /// <summary>
+    /// Called when the content of an item has changed. There is no change (add, remove) in StorageDictionary itself. 
+    /// </summary>
+    protected virtual void OnItemHasChanged(TItem item) {
+    }
+
+
+    #endregion
+
+    #region Private Methodes
+    //      ----------------
+
+    int binarySearch(int key) {
+      if (count==0) return -1;// StorageDictionary is empty
+
+      var firstItemKey = items[firstItemIndex]!.Key;//throws exception if firstItemIndex invalid or indexed item is null
+      if (firstItemKey>key) return -1;// record is missing, too small
+
+      var lastItemKey = items[lastItemIndex]!.Key;
+      if (lastItemKey<key) return -1;// record is missing, too big
+
+      if (AreKeysContinous) {
+        return firstItemIndex + key - firstItemKey;
+      }
+
+      return binarySearch(key, firstItemIndex, lastItemIndex);
+    }
+
+
+    int binarySearch(int key, int min, int max) {
+      while (min<=max) {
+        int mid = (min + max) / 2;
+        int compareResult = keys[mid].CompareTo(key);
+        if (compareResult == 0) {
+          if (items[mid]==null) {
+            return -1;
+          }
+          return mid;
+        } else if (compareResult == 1) {
+          max = mid - 1;
+        } else {
+          min = mid + 1;
+        }
+      }
+      return -1;
+    }
+    #endregion
+
+
+    #region StorageDictionary Enumerator
+    //      ----------------------------
+
+    /// <summary>
+    /// Item Enumerator for StorageDictionary
+    /// </summary>
+    [Serializable]
+    public struct EnumeratorItems: IEnumerator<TItem>, IEnumerator<KeyValuePair<int, TItem>>, IEnumerator {
+      public TItem Current {
+        get { return current ?? throw Tracer.Exception(new InvalidOperationException()); }
+      }
+
+
+      Object System.Collections.IEnumerator.Current {
+        get { return current ?? throw Tracer.Exception(new InvalidOperationException()); }
+      }
+
+
+      KeyValuePair<int, TItem> IEnumerator<KeyValuePair<int, TItem>>.Current {
+        get {
+          if (current==null) throw Tracer.Exception(new InvalidOperationException());
+          return new KeyValuePair<int, TItem>(current.Key, current);
+        }
+      }
+
+
+      readonly StorageDictionary<TItem> records;
+      readonly int version;
+      int index;
+      readonly int maxIndex;
+      TItem? current;
+
+
+      /// <summary>
+      /// Constructor
+      /// </summary>
+      internal EnumeratorItems(StorageDictionary<TItem> records) {
+        this.records = records;
+        version = records.version;
+        if (records.Count==0) {
+          index = -1;
+          maxIndex = -1;
+        } else {
+          index = records.firstItemIndex - 1;
+          maxIndex = records.lastItemIndex;
+        }
+        current = null;
+      }
+
+
+      /// <summary>
+      /// Doesn't do anything
+      /// </summary>
+      public void Dispose() {
+      }
+
+
+      public bool MoveNext() {
+        if (version!=records.version) {
+          throw Tracer.Exception(new InvalidOperationException("StorageDictionary content has changed during enumeration."));
+        }
+        while (true) {
+          index++;
+          if (index>maxIndex) {
+            break;
+          }
+          var item = records.items[index];
+          if (item!=null) {
+            current = item;
+            return true;
+          }
+        }
+
+        //end reached
+        index = maxIndex+1;
+        current = null;
+        return false;
+      }
+
+
+      void System.Collections.IEnumerator.Reset() {
+        index = -1;
+        current = default;
+      }
+
+      //bool IEnumerator.MoveNext() {
+      //  throw new NotImplementedException();
+      //}
+
+      //void IDisposable.Dispose() {
+      //  throw new NotImplementedException();
+      //}
+    }
+    #endregion
+  }
+}
