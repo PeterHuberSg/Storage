@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using ACoreLib;
+
 
 namespace Storage {
 
@@ -30,11 +30,11 @@ namespace Storage {
     public TItem this[int key] { 
       get {
         int arrayIndex = binarySearch(key);
-        if (arrayIndex<0) throw Tracer.Exception(new ArgumentOutOfRangeException());
+        if (arrayIndex<0) throw new ArgumentOutOfRangeException();
 
-        return items[arrayIndex]?? throw Tracer.Exception(new ArgumentException($"There is no value for key '{key}'."));
+        return items[arrayIndex]?? throw new ArgumentException($"There is no value for key '{key}'.");
       } 
-      set => throw Tracer.Exception(new NotSupportedException()); 
+      set => throw new NotSupportedException(); 
     }
 
 
@@ -106,6 +106,32 @@ namespace Storage {
     /// Are all Keys just incremented by 1 from the previous Key ? 
     /// </summary>
     public bool AreKeysContinous { get; private set; }
+
+
+    /// <summary>
+    /// Can stord items be changed ? If yea, a change record gets written to the CVS file
+    /// </summary>
+    public bool AreItemsUpdatable { get; }
+
+
+    /// <summary>
+    /// The content of some items has changed and change records have been written to the CVS file. During
+    /// Dispose() a new file is written containing only the latest version of the changed items.
+    /// </summary>
+    public bool AreItemsUpdated { get; private set; }
+
+
+    /// <summary>
+    /// Can stord items be removed ? If yes, a delete record gets written to the CVS file
+    /// </summary>
+    public bool AreItemsDeletable { get; }
+
+
+    /// <summary>
+    /// Some items have been deleted and delete records have been written to the CVS file. During
+    /// Dispose() a new file is written containing only the undeleted items.
+    /// </summary>
+    public bool AreItemsDeleted { get; private set; }
     #endregion
 
 
@@ -147,21 +173,15 @@ namespace Storage {
 
 
     /// <summary>
-    /// Constructs a StorageDictionary. It is initially empty and has a capacity
-    /// of zero. Upon adding the first element the capacity is 
-    /// increased to 4, and then increased in multiples of two as required.
+    /// Constructs a StorageDictionary with a given initial capacity. It is initially empty, but will have room for the given 
+    /// number of items. When too many items get added, the capacity gets increased.
     /// </summary>
-    public StorageDictionary() : this(0) {
-    }
-
-
-    /// <summary>
-    /// Constructs a StorageDictionary with a given initial capacity. It is
-    /// initially empty, but will have room for the given number of elements
-    /// before any reallocations are required.
-    /// </summary>
-    public StorageDictionary(int capacity) {
-      if (capacity < 0) throw (Tracer.Exception(new ArgumentOutOfRangeException("Capacity must be equal or grater , but was '" + capacity + "'.")));
+    public StorageDictionary(
+      bool areItemsUpdatable = false,
+      bool areItemsDeletable = false,
+      int capacity = 0) 
+    {
+      if (capacity < 0) throw new ArgumentOutOfRangeException("Capacity must be equal or grater , but was '" + capacity + "'.");
 
       if (capacity==0) {
         items = emptyItems;
@@ -171,6 +191,10 @@ namespace Storage {
         keys = new int[capacity];
       }
 
+      AreItemsUpdatable = areItemsUpdatable;
+      AreItemsUpdated = false;
+      AreItemsDeletable = areItemsDeletable;
+      AreItemsDeleted = false;
       initialiseItemsParamertes();
     }
 
@@ -193,7 +217,7 @@ namespace Storage {
     /// </summary>
     public void Add(int key, TItem value) {
       if (key!=value.Key) {
-        throw Tracer.Exception(new ArgumentException($"Key {key} must be the same as value.Key {value.Key}."));
+        throw new ArgumentException($"Key {key} must be the same as value.Key {value.Key}.");
       }
       Add(value);
     }
@@ -205,7 +229,7 @@ namespace Storage {
     /// </summary>
     public void Add(KeyValuePair<int, TItem> item) {
       if (item.Key!=item.Value.Key) {
-        throw Tracer.Exception(new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}."));
+        throw new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}.");
       }
       Add(item.Value);
     }
@@ -216,7 +240,7 @@ namespace Storage {
     /// new StorageDictionary instead.
     /// </summary>
     public void Clear() {
-      throw Tracer.Exception(new NotSupportedException());
+      throw new NotSupportedException();
     }
 
 
@@ -226,7 +250,7 @@ namespace Storage {
     /// </summary>
     public bool Contains(KeyValuePair<int, TItem> item) {
       if (item.Key!=item.Value.Key) {
-        throw Tracer.Exception(new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}."));
+        throw new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}.");
       }
       return binarySearch(item.Key)>=0;
     }
@@ -246,10 +270,10 @@ namespace Storage {
     /// </summary>
     public void CopyTo(KeyValuePair<int, TItem>[] array, int index) {
       if (index < 0 || index > array.Length) {
-        throw (Tracer.Exception(new ArgumentException($"Index {index} must be within array boundaries 0..{array.Length}.")));
+        throw new ArgumentException($"Index {index} must be within array boundaries 0..{array.Length}.");
       }
       if (array.Length - index < count) {
-        throw (Tracer.Exception(new ArgumentException($"Array with Lenght {array.Length} is too small to add {count} items at Index {index}.")));
+        throw new ArgumentException($"Array with Lenght {array.Length} is too small to add {count} items at Index {index}.");
       }
 
       for (int itemIndex = firstItemIndex; itemIndex<=lastItemIndex; itemIndex++) {
@@ -291,6 +315,8 @@ namespace Storage {
     /// Removes the item with key, i.e. marks is as deleted. If the item exists, even if already deleted, true gets returned.
     /// </summary>
     public bool Remove(int key) {
+      if (!AreItemsDeletable) throw new NotSupportedException($"StorageDictionary does not allow kex '{key}' to be deleted.");
+
       int index;
       TItem? item;
       lock (itemsLock) {
@@ -302,11 +328,11 @@ namespace Storage {
         if (item==null) return true; //item was already deleted
 
         items[index] = null;
-        item.HasChanged -= storageDictionary_HasChanged;
+        item.HasChanged -= item_HasChanged;
         version++;
         count--;
 #if DEBUG
-        if (count<0) throw Tracer.Exception(); //count should never become negative
+        if (count<0) throw new Exception(); //count should never become negative
 #endif
 
         if (count<=0) {
@@ -319,7 +345,7 @@ namespace Storage {
 #if DEBUG
           } else if (index!=lastItemIndex) {
             //we should never arrive here.
-            throw Tracer.Exception();
+            throw new Exception();
 #endif
           } else {
             lastItemIndex = firstItemIndex;
@@ -338,6 +364,8 @@ namespace Storage {
           AreKeysContinous = keys[lastItemIndex] - keys[firstItemIndex] + 1 == count;
         }
       }
+      version++;
+      AreItemsDeleted = true;
       OnItemRemoved(item);
       Removed?.Invoke(item);
       return true;
@@ -358,7 +386,7 @@ namespace Storage {
     /// <returns></returns>
     public bool Remove(KeyValuePair<int, TItem> item) {
       if (item.Key!=item.Value.Key) {
-        throw Tracer.Exception(new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}."));
+        throw new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}.");
       }
       return Remove(item.Key);
     }
@@ -432,12 +460,12 @@ namespace Storage {
     /// The Count is increased by one. If required, the capacity of StorageDictionary is doubled before adding the new element.
     /// </summary>
     public void Add(TItem item) {
-      if (IsDisposed) throw Tracer.Exception(new ObjectDisposedException("StorageDictionary"));
+      if (IsDisposed) throw new ObjectDisposedException("StorageDictionary");
 
       lock (itemsLock) {
         var lastItemKey = lastItemIndex==-1 ? -1 : items[lastItemIndex]!.Key;//throws exception if indexed item is null
         if (item.Key<=lastItemKey) {
-          throw Tracer.Exception(new ArgumentException($"Key of new item {item} must be greater than biggest already stored Record.Key {lastItemKey}."));
+          throw new ArgumentException($"Key of new item {item} must be greater than biggest already stored item.Key {lastItemKey}.");
         }
         if (AreKeysContinous && lastItemKey>=0) {
           AreKeysContinous = lastItemKey+1==item.Key;
@@ -466,7 +494,7 @@ namespace Storage {
           keys = newKeys;
         }
 
-        item.HasChanged += storageDictionary_HasChanged;
+        item.HasChanged += item_HasChanged;
         lastItemKey = item.Key;
         items[lastItemIndex] = item;
         keys[lastItemIndex] = item.Key;
@@ -485,7 +513,10 @@ namespace Storage {
     }
 
 
-    private void storageDictionary_HasChanged(TItem item) {
+    private void item_HasChanged(TItem item) {
+      if (!AreItemsUpdatable) throw new NotSupportedException($"StorageDictionary does not allow item '{item}' to be updated.");
+
+      AreItemsUpdated = true;
       version++;
       OnItemHasChanged(item);
       Changed?.Invoke(item);
@@ -508,10 +539,10 @@ namespace Storage {
       if (count==0) return -1;// StorageDictionary is empty
 
       var firstItemKey = items[firstItemIndex]!.Key;//throws exception if firstItemIndex invalid or indexed item is null
-      if (firstItemKey>key) return -1;// record is missing, too small
+      if (firstItemKey>key) return -1;// item is missing, key is too small
 
       var lastItemKey = items[lastItemIndex]!.Key;
-      if (lastItemKey<key) return -1;// record is missing, too big
+      if (lastItemKey<key) return -1;// item is missing, key is too big
 
       if (AreKeysContinous) {
         return firstItemIndex + key - firstItemKey;
@@ -550,24 +581,24 @@ namespace Storage {
     [Serializable]
     public struct EnumeratorItems: IEnumerator<TItem>, IEnumerator<KeyValuePair<int, TItem>>, IEnumerator {
       public TItem Current {
-        get { return current ?? throw Tracer.Exception(new InvalidOperationException()); }
+        get { return current ?? throw new InvalidOperationException(); }
       }
 
 
       Object System.Collections.IEnumerator.Current {
-        get { return current ?? throw Tracer.Exception(new InvalidOperationException()); }
+        get { return current ?? throw new InvalidOperationException(); }
       }
 
 
       KeyValuePair<int, TItem> IEnumerator<KeyValuePair<int, TItem>>.Current {
         get {
-          if (current==null) throw Tracer.Exception(new InvalidOperationException());
+          if (current==null) throw new InvalidOperationException();
           return new KeyValuePair<int, TItem>(current.Key, current);
         }
       }
 
 
-      readonly StorageDictionary<TItem> records;
+      readonly StorageDictionary<TItem> storageDictionary;
       readonly int version;
       int index;
       readonly int maxIndex;
@@ -577,15 +608,15 @@ namespace Storage {
       /// <summary>
       /// Constructor
       /// </summary>
-      internal EnumeratorItems(StorageDictionary<TItem> records) {
-        this.records = records;
-        version = records.version;
-        if (records.Count==0) {
+      internal EnumeratorItems(StorageDictionary<TItem> storageDictionary) {
+        this.storageDictionary = storageDictionary;
+        version = storageDictionary.version;
+        if (storageDictionary.Count==0) {
           index = -1;
           maxIndex = -1;
         } else {
-          index = records.firstItemIndex - 1;
-          maxIndex = records.lastItemIndex;
+          index = storageDictionary.firstItemIndex - 1;
+          maxIndex = storageDictionary.lastItemIndex;
         }
         current = null;
       }
@@ -599,15 +630,15 @@ namespace Storage {
 
 
       public bool MoveNext() {
-        if (version!=records.version) {
-          throw Tracer.Exception(new InvalidOperationException("StorageDictionary content has changed during enumeration."));
+        if (version!=storageDictionary.version) {
+          throw new InvalidOperationException("StorageDictionary content has changed during enumeration.");
         }
         while (true) {
           index++;
           if (index>maxIndex) {
             break;
           }
-          var item = records.items[index];
+          var item = storageDictionary.items[index];
           if (item!=null) {
             current = item;
             return true;

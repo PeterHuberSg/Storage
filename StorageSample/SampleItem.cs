@@ -50,6 +50,15 @@ namespace Storage {
     #region Methods
     //      -------
 
+    public void Update(SampleItem itemChanged) {
+      HasChanged?.Invoke(this);
+      throw new NotImplementedException();
+    }
+
+
+    public bool CanDelete() { return true; }
+
+
     public override string ToString() {
       return
         $"Key: {Key};" +

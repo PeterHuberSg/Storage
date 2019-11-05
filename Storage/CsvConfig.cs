@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using ACoreLib;
 
 namespace Storage {
 
@@ -29,12 +28,6 @@ namespace Storage {
 
 
     /// <summary>
-    /// Delemiter character used in CSV file to seperate fields as char array, used in string.Split()
-    /// </summary>
-    public readonly char[] Delimiters;
-
-
-    /// <summary>
     /// Encoding used to read and write CSV Files
     /// </summary>
     public readonly Encoding Encoding = Encoding.UTF8;
@@ -44,18 +37,6 @@ namespace Storage {
     /// BufferSize of FileStream. Default is 4k Bytes, as is default in StreamReader class.
     /// </summary>
     public readonly int BufferSize;
-
-
-    ///// <summary>
-    ///// How often new content of RecordCollection gets writen to the CSV file, in milliseconds
-    ///// </summary>
-    //public readonly uint WritingIntervall = 1000;
-
-
-    ///// <summary>
-    ///// After how many calls of the timer without writing data the file gets flushed.
-    ///// </summary>
-    //public readonly uint MaxWaitIntervalls = 5;
 
 
     /// <summary>
@@ -85,15 +66,15 @@ namespace Storage {
       int bufferSize = 2 << 12,
       //uint writingIntervall = 1000,
       //uint maxWaitIntervalls = 5,
-      Action<Exception>? reportException = null) {
+      Action<Exception>? reportException = null) 
+    {
       DirectoryPath = directoryPath;
       Delimiter = delimiter;
-      Delimiters =  new char[] { Delimiter };
       if (encoding!=null) {
         Encoding = encoding;
       }
 
-      if (bufferSize<0) throw (Tracer.Exception(new ArgumentOutOfRangeException("bufferSize " + bufferSize + " cannot be smaller 0.")));
+      if (bufferSize<0) throw new ArgumentOutOfRangeException("bufferSize " + bufferSize + " cannot be smaller 0.");
       BufferSize = bufferSize;
       //WritingIntervall = writingIntervall;
       //MaxWaitIntervalls = maxWaitIntervalls;

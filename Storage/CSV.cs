@@ -421,7 +421,7 @@ namespace Storage {
     /// Tests if both strings are equal. If one is null and the other is an empty string, they are considered equal, because 
     /// when reading back a null string from a CVS file, it becomes an empty string.
     /// </summary>
-    public static bool AreEqual(string thisString, string thatString) {
+    public static bool AreEqual(string? thisString, string? thatString) {
       if (thisString==thatString) return true;
       if ((thisString==null || thisString=="") && (thatString==null || thatString=="")) return true;
       return false;
@@ -433,8 +433,8 @@ namespace Storage {
     #region other helpers
     //      -------------
 
-    public static bool SplitRecord(string line, char[] delimiters, int length, StringBuilder errorStringBuilder, string typeName, out string[] fields) {
-      fields = line.Split(delimiters);
+    public static bool SplitLine(string line, char delimiter, int length, StringBuilder errorStringBuilder, string typeName, out string[] fields) {
+      fields = line.Split(delimiter);
       if (fields.Length-1!=length) {
         errorStringBuilder.AppendLine(typeName + " should have " + length + " fields, but had " + (fields.Length-1) + ": '" + line + "'.");
         return false;
@@ -443,9 +443,9 @@ namespace Storage {
     }
 
 
-    //internal static string ToPathFileName(CsvConfig csvConfig, string name) {
-    //  return csvConfig.DirectoryPath + @"\"  + name + ".csv";
-    //}
+    internal static string ToPathFileName(CsvConfig csvConfig, string name) {
+      return csvConfig.DirectoryPath + @"\"  + name + ".csv";
+    }
 
 
     public static string ToCsvHeaderString(string[] headers, char delimiter) {

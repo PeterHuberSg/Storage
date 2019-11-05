@@ -30,7 +30,10 @@ namespace Storage {
     #region Methods
     //      -------
 
-    //public abstract static void ResetLastId();
+    public void Update(TItem itemChanged);
+
+
+    public bool CanDelete();
 
 
     public static int HandleId(object lockObject, ref int lastId, int id) {

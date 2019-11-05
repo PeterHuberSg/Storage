@@ -91,6 +91,22 @@ namespace Storage {
     }
 
 
+    public void Update(Sample itemChanged) {
+      Update(itemChanged.Text, itemChanged.Number, itemChanged.Amount, itemChanged.Date, itemChanged.Optional);
+    }
+
+
+    public bool CanDelete() { return true; }
+
+
+    public string ToCsvString(char delimiter) {
+      //return "" +
+      //  Key + delimiter +
+      //  Info + delimiter;
+      throw new NotImplementedException();
+    }
+
+
     public override string ToString() {
       return
         $"Key: {Key};" +

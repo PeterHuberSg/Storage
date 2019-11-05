@@ -5,8 +5,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\ACoreLib\ACoreLib\ACoreLib.csproj" />
-  </ItemGroup>
-
 </Project>

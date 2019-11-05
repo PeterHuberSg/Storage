@@ -68,7 +68,7 @@ namespace Storage {
     /// <summary>
     /// Converts a decimal to a string, without trailing 0s or decimal point
     /// </summary>
-    public static string ToCompactString(this decimal? value) {
+    public static string? ToCompactString(this decimal? value) {
       if (value.HasValue) return value.Value.ToCompactString();
 
       return null;
@@ -87,7 +87,7 @@ namespace Storage {
     /// <summary>
     /// Converts a decimal to a string, without trailing 0s or decimal point
     /// </summary>
-    public static string ToCompactString(this decimal? value, int decimals) {
+    public static string? ToCompactString(this decimal? value, int decimals) {
       if (value.HasValue) return value.Value.ToCompactString(decimals);
 
       return null;
