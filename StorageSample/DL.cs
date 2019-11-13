@@ -12,11 +12,11 @@ namespace Storage {
     //      ----------
 
 
-    public static DLSet? Set {
-      get { return set; }
-      set { set = value; }
+    public static DLData? Data {
+      get { return data; }
+      set { data = value; }
     }
-    private static DLSet? set;
+    private static DLData? data; //data is needed for Interlocked.Exchange(ref data, null) in DisposeData()
 
     #endregion
 
@@ -30,15 +30,15 @@ namespace Storage {
     #region Constructors
     //      ------------
 
-    public static void Init() {
-      if (Set!=null) throw new Exception();
+    public static void Init(CsvConfig? csvConfig) {
+      if (Data!=null) throw new Exception();
 
-      Set = new DLSet();
+      Data = new DLData(csvConfig);
     }
 
 
-    public static void DisposeSet() {
-      var setLocal = Interlocked.Exchange(ref set, null);
+    public static void DisposeData() {
+      var setLocal = Interlocked.Exchange(ref data, null);
       setLocal?.Dispose();
     }
     #endregion

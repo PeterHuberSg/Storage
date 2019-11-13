@@ -223,77 +223,78 @@ namespace Storage {
       if (Decimal.TryParse(field, out var value))
         return value;
 
-      errorStringBuilder.AppendLine(fieldName + " should be DateTime, but was '" + field + "' in line: '" + line + "'.");
-      return Decimal.MinValue;
-    }
-
-
-    const int maxDigitsInt = 9;
-    const int maxDigitsLong = 19;
-
-
-    /// <summary>
-    /// Parse field into Decimal, faster implementation for numbers with less than 19 digits
-    /// </summary>
-    public static Decimal ParseDecimalFast(string fieldName, string field, string line, StringBuilder errorStringBuilder) {
-      int number = 0;
-      long numberLong = 0;
-      int offset = 0;
-      int length = field.Length;
-      var isFoundNumber = false;
-      var isNegative = false;
-      var isScale = false;
-      var isLongNumber = false;
-      byte scale = 0;
-      int maxDigits = maxDigitsInt;
-      if (length>maxDigitsLong) {
-        if (Decimal.TryParse(field, out decimal value))
-          return value;
-      } else {
-        while (offset<length) {
-          var c = field[offset];
-          offset++;
-          if (c>='0' && c<='9') {
-            isFoundNumber = true;
-            if (isScale) {
-              scale++;
-            }
-            if (isLongNumber) {
-              numberLong = unchecked(numberLong * 10 + (c - '0'));
-              if (offset==length) {
-                int low = (int)(numberLong);
-                int high = (int)(numberLong>>32);
-                return new Decimal(low, high, 0, isNegative, scale);
-              }
-              if (offset>maxDigits) {
-                break;
-              }
-            } else {
-              number = unchecked(number * 10 + (c - '0'));
-              if (offset==length) {
-                return new Decimal(number, 0, 0, isNegative, scale);
-              }
-              if (offset>=maxDigits) {
-                numberLong = number;
-                isLongNumber = true;
-                maxDigits += 10;
-              }
-            }
-          } else if (c=='-' && !isFoundNumber && !isNegative) {
-            isNegative = true;
-            maxDigits++;
-          } else if (c=='.' && !isScale) {
-            isScale = true;
-            maxDigits++;
-          } else {
-            break;
-          }
-        };
-      }
-
       errorStringBuilder.AppendLine(fieldName + " should be Decimal, but was '" + field + "' in line: '" + line + "'.");
       return Decimal.MinValue;
     }
+
+
+    //is slower than decimal.parse()
+    //const int maxDigitsInt = 9;
+    //const int maxDigitsLong = 19;
+
+
+    ///// <summary>
+    ///// Parse field into Decimal, faster implementation for numbers with less than 19 digits
+    ///// </summary>
+    //public static Decimal ParseDecimalFast(string fieldName, string field, string line, StringBuilder errorStringBuilder) {
+    //  int number = 0;
+    //  long numberLong = 0;
+    //  int offset = 0;
+    //  int length = field.Length;
+    //  var isFoundNumber = false;
+    //  var isNegative = false;
+    //  var isScale = false;
+    //  var isLongNumber = false;
+    //  byte scale = 0;
+    //  int maxDigits = maxDigitsInt;
+    //  if (length>maxDigitsLong) {
+    //    if (Decimal.TryParse(field, out decimal value))
+    //      return value;
+    //  } else {
+    //    while (offset<length) {
+    //      var c = field[offset];
+    //      offset++;
+    //      if (c>='0' && c<='9') {
+    //        isFoundNumber = true;
+    //        if (isScale) {
+    //          scale++;
+    //        }
+    //        if (isLongNumber) {
+    //          numberLong = unchecked(numberLong * 10 + (c - '0'));
+    //          if (offset==length) {
+    //            int low = (int)(numberLong);
+    //            int high = (int)(numberLong>>32);
+    //            return new Decimal(low, high, 0, isNegative, scale);
+    //          }
+    //          if (offset>maxDigits) {
+    //            break;
+    //          }
+    //        } else {
+    //          number = unchecked(number * 10 + (c - '0'));
+    //          if (offset==length) {
+    //            return new Decimal(number, 0, 0, isNegative, scale);
+    //          }
+    //          if (offset>=maxDigits) {
+    //            numberLong = number;
+    //            isLongNumber = true;
+    //            maxDigits += 10;
+    //          }
+    //        }
+    //      } else if (c=='-' && !isFoundNumber && !isNegative) {
+    //        isNegative = true;
+    //        maxDigits++;
+    //      } else if (c=='.' && !isScale) {
+    //        isScale = true;
+    //        maxDigits++;
+    //      } else {
+    //        break;
+    //      }
+    //    };
+    //  }
+
+    //  errorStringBuilder.AppendLine(fieldName + " should be Decimal, but was '" + field + "' in line: '" + line + "'.");
+    //  return Decimal.MinValue;
+    //}
 
 
     /// <summary>

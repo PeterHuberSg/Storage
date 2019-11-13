@@ -6,12 +6,12 @@ using System.Text;
 namespace Storage {
  
   
-  public class DLSet: IDisposable {
+  public class DLData: IDisposable {
 
     #region Properties
     //      ----------
 
-    public List<SampleMaster> SampleMasters { get; private set; }
+    public StorageDictionary<SampleMaster> SampleMasters { get; private set; }
     #endregion
 
 
@@ -24,8 +24,14 @@ namespace Storage {
     #region Constructors
     //      ------------
 
-    public DLSet() {
-      SampleMasters = new List<SampleMaster>();
+    public DLData(CsvConfig? csvConfig) {
+      if (csvConfig==null) {
+        SampleMasters = new StorageDictionary<SampleMaster>(areItemsUpdatable: true, areItemsDeletable: true);
+      } else {
+        //SampleMasters = new StorageDictionaryCSV<SampleMaster>(
+        //  csvConfig,
+        //  SampleMaster.Headers,);
+      }
     }
     #endregion
 

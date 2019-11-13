@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -81,8 +82,8 @@ namespace StorageTest {
     private StorageDictionary<TestItemCsv> createDictionary() {
       dictionary = new StorageDictionaryCSV<TestItemCsv>(
         csvConfig!,
-        TestItemCsv.Headers, 
-        TestItemCsv.ReadCsvLine, 
+        TestItemCsv.Headers,
+        TestItemCsv.ReadCsvLine,
         true,
         true,
         true,
@@ -191,6 +192,172 @@ namespace StorageTest {
       dictionary.Dispose();
 
       dictionary = createDictionary();
+    }
+
+
+    #region Span speedtest
+    //      --------------
+
+    [TestMethod]
+    public void TestFileSpeed() {
+      var directoryInfo = new DirectoryInfo("TestFileSpeed");
+      try {
+        if (directoryInfo.Exists) {
+          directoryInfo.Delete(recursive: true);
+          directoryInfo.Refresh();
+        }
+
+        directoryInfo.Create();
+        directoryInfo.Refresh();
+        const int iterations = 1000000;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        var stopwatch = new Stopwatch();
+        var PathFileName = directoryInfo.FullName + @"\Test.csv";
+        stopwatch.Start();
+        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 2 << 12, FileOptions.SequentialScan)) {
+          using (var streamWriter = new StreamWriter(fileStream)) {
+            for (int i = 0; i < iterations; i++) {
+              streamWriter.WriteLine("1;12;123;1234;12345;123456;1234567;12345678;123;");
+            }
+          }
+        }
+        var writeTime0 = stopwatch.Elapsed;
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        var startTime1 = stopwatch.Elapsed;
+        PathFileName = directoryInfo.FullName + @"\Test1.csv";
+        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 2 << 12, FileOptions.SequentialScan)) {
+          using (var streamWriter = new StreamWriter(fileStream)) {
+            for (int i = 0; i < iterations; i++) {
+              streamWriter.WriteLine($"{i};{i+1};{i+2};{i+3};{i+4};{i+5};{i+6};");
+            }
+          }
+        }
+        var writeTime1 = stopwatch.Elapsed;
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        var startTime2 = stopwatch.Elapsed;
+        PathFileName = directoryInfo.FullName + @"\Test2.csv";
+        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 2 << 12, FileOptions.SequentialScan)) {
+          using (var streamWriter = new StreamWriter(fileStream)) {
+            var lineBuffer = new char[100];
+            for (int i = 0; i < iterations; i++) {
+              var index = 0;
+              lineBuffer.WriteB(i, ref index);
+              lineBuffer[index++] = ';';
+              lineBuffer.WriteB(i+1, ref index);
+              lineBuffer[index++] = ';';
+              lineBuffer.WriteB(i+2, ref index);
+              lineBuffer[index++] = ';';
+              lineBuffer.WriteB(i+3, ref index);
+              lineBuffer[index++] = ';';
+              lineBuffer.WriteB(i+4, ref index);
+              lineBuffer[index++] = ';';
+              lineBuffer.WriteB(i+5, ref index);
+              lineBuffer[index++] = ';';
+              lineBuffer.WriteB(i+6, ref index);
+              lineBuffer[index++] = ';';
+              streamWriter.WriteLine(lineBuffer, 0, index);
+            }
+          }
+        }
+        var writeTime2 = stopwatch.Elapsed;
+
+        var s =
+          $"writeTime0: {writeTime0}" + Environment.NewLine +
+          $"writeTime1: {writeTime1 - startTime1}" + Environment.NewLine +
+          $"writeTime2: {writeTime2 - startTime2}" + Environment.NewLine;
+        Debug.WriteLine(s);
+      } finally {
+        dictionary?.Dispose();
+        directoryInfo.Delete(recursive: true);
+      }
+    }
+    #endregion
+
+  }
+
+
+  public static class SpanExtensions{
+
+    public static void WriteB(this char[] charArray, int i, ref int index) {
+      if (i<0) {
+        charArray[index++] = '-';
+        i = -i;
+      }
+      //var length = 0;
+      //var iCopy = i;
+      //do {
+      //  iCopy /= 10;
+      //  length++;
+      //} while (iCopy>0);
+      //index += length - 1;
+      int length;
+      //if (i<10) {
+      //  length = 1;
+      //} else if (i<100) {
+      //  length = 2;
+      //} else if (i<1000) {
+      //  length = 3;
+      //} else if (i<10000) {
+      //  length = 4;
+      //} else if (i<100000) {
+      //  length = 5;
+      //} else if (i<1000000) {
+      //  length = 6;
+      //} else if (i<10000000) {
+      //  length = 7;
+      //} else if (i<100000000) {
+      //  length = 8;
+      //} else if (i<1000000000) {
+      //  length = 9;
+      //} else { 
+      //  length = 10;
+      //}
+      if (i<10000) {
+        if (i<100) {
+          if (i<10) {
+            length = 1;
+          } else {
+            length = 2;
+          }
+        } else {
+          if (i<1000) {
+            length = 3;
+          } else {
+            length = 4;
+          }
+        }
+      } else if (i<100000000) {
+        if (i<1000000) {
+          if (i<100000) {
+            length = 5;
+          } else {
+            length = 6;
+          }
+        } else {
+          if (i<10000000) {
+            length = 7;
+          } else {
+            length = 8;
+          }
+        }
+      } else if (i<1000000000) {
+        length = 9;
+      } else { 
+        length = 10;
+      }
+      index += length - 1;
+      while (i>9) {
+        charArray[index--] = (char)((i % 10) + '0');
+        i /= 10;
+      }
+      charArray[index--] = (char)(i + '0');
+      index += length + 1;
     }
   }
 }

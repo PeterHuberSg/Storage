@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
@@ -53,16 +54,16 @@ namespace StorageTest {
       assertDate(DateTime.MinValue);
       assertDate(DateTime.Now.Date);
       assertDate(DateTime.MaxValue.Date.AddHours(23));
-      AssertDateFailed("");
-      AssertDateFailed(DateTime.MinValue.ToString()+"1");
-      AssertDateFailed(DateTime.MaxValue.ToString()+"1");
+      assertDateFailed("");
+      assertDateFailed(DateTime.MinValue.ToString()+"1");
+      assertDateFailed(DateTime.MaxValue.ToString()+"1");
 
       assertDateNull(null);
       assertDateNull(DateTime.MinValue);
       assertDateNull(DateTime.Now.Date);
       assertDateNull(DateTime.MaxValue.Date.AddHours(23));
-      AssertDateNullFailed(DateTime.MinValue.ToString()+"1");
-      AssertDateNullFailed(DateTime.MaxValue.ToString()+"1");
+      assertDateNullFailed(DateTime.MinValue.ToString()+"1");
+      assertDateNullFailed(DateTime.MaxValue.ToString()+"1");
     }
 
 
@@ -139,9 +140,9 @@ namespace StorageTest {
     }
 
 
-    private void AssertDateFailed(string field) {
+    private void assertDateFailed(string field) {
       var errorStringBuilder = new StringBuilder();
-      var i2 = Csv.ParseDateTime("Test", field, field, errorStringBuilder);
+      Csv.ParseDateTime("Test", field, field, errorStringBuilder);
       Assert.AreNotEqual(0, errorStringBuilder.Length);
     }
 
@@ -158,9 +159,9 @@ namespace StorageTest {
     }
 
 
-    private void AssertDateNullFailed(string field) {
+    private void assertDateNullFailed(string field) {
       var errorStringBuilder = new StringBuilder();
-      var i2 = Csv.ParseDateTimeNull("Test", field, field, errorStringBuilder);
+      Csv.ParseDateTimeNull("Test", field, field, errorStringBuilder);
       Assert.AreNotEqual(0, errorStringBuilder.Length);
     }
 

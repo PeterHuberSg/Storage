@@ -23,16 +23,16 @@ namespace StorageTest {
     private string text;
 
 
-    public TestItemCsv(int key, string text) {
-      Key = key;
-      this.text = text;
-    }
-
-
     public static readonly string[] Headers = { "Key", "Text" };
 
 
     public event Action<TestItemCsv>? HasChanged;
+
+
+    public TestItemCsv(int key, string text) {
+      Key = key;
+      this.text = text;
+    }
 
 
     public bool CanDelete() { return true; }

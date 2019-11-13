@@ -14,11 +14,11 @@ namespace Storage {
     /// 
     /// </summary>
     public int Key { get; private set; }
-    private static int lastId = -1;
+    private static int lastKey = -1;
 
 
-    public void ResetLastId() {
-      lastId = -1;
+    public void ResetLastKey() {
+      lastKey = -1;
     }
 
 
@@ -52,6 +52,12 @@ namespace Storage {
     /// 
     /// </summary>
     public List<SampleItem> Items { get; }
+
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public static readonly string[] Headers = { "Key", "Text", "Number", "Amount", "Date", "Optional" };
     #endregion
 
 
@@ -66,7 +72,7 @@ namespace Storage {
     //      ------------
 
     public Sample(int id, string text, int number, decimal amount, DateTime date, string? optional = null) {
-      Key = IStorage<Sample>.HandleId(this, ref lastId, id);
+      Key = IStorage<Sample>.HandleId(this, ref lastKey, id);
       Text = text;
       Number = number;
       Amount = amount;
@@ -74,7 +80,6 @@ namespace Storage {
       Optional = optional;
       Items = new List<SampleItem>();
     }
-
     #endregion
 
 
@@ -96,15 +101,37 @@ namespace Storage {
     }
 
 
-    public bool CanDelete() { return true; }
+    public bool CanDelete() {
+      return Items.Count==0;
+    }
 
 
     public string ToCsvString(char delimiter) {
-      //return "" +
-      //  Key + delimiter +
-      //  Info + delimiter;
-      throw new NotImplementedException();
+      return "" +
+        Key + delimiter +
+        Text + delimiter +
+        Number + delimiter +
+        Amount + delimiter +
+        Date + delimiter +
+        Optional + delimiter;
     }
+
+
+    //public static Sample? ReadCsvLine(string line, char delimiter, StringBuilder errorStringBuilder) {
+    //  var fields = line.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+    //  if (fields.Length!=Headers.Length) {
+    //    errorStringBuilder.AppendLine($"TestItem should have {Headers.Length} fields, but had {fields.Length}: '{line}'.");
+    //    return null;
+    //  }
+
+    //  var fieldIndex = 0;
+    //  var key = Csv.ParseInt("Sample.Key", fields[fieldIndex++], line, errorStringBuilder);
+    //  var text = fields[fieldIndex++];
+    //  var number = Csv.ParseInt("Sample.Mumber", fields[fieldIndex++], line, errorStringBuilder);
+    //  var amount = Csv.ParseDecimalFast("Sample.Mumber", fields[fieldIndex++], line, errorStringBuilder);
+    //  var sample = new Sample(key, text);
+    //  return sample;
+    //}
 
 
     public override string ToString() {
