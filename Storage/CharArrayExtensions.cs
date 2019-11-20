@@ -80,66 +80,6 @@ namespace Storage {
         return i;
       }
     }
-
-
-    /// <summary>
-    /// Parse field into int
-    /// </summary>
-    public static int? ReadIntNull(
-      this char[] charArray,
-      string fieldName,
-      ref int index,
-      int lenght,
-      int lineStart,
-      int lineLength,
-      StringBuilder errorStringBuilder) 
-    {
-      if (lenght==0) return null;
-
-      return ReadIntNull(charArray, fieldName, ref index, lenght, lineStart, lineLength, errorStringBuilder);
-    }
-
-
-    public static int ParseInt(String fieldName, String line, int lineLength, ref int charIndex, char delimiter, ref Boolean isLineError, StringBuilder errorStringBuilder) {
-      if (isLineError) return int.MinValue;
-
-      var number = 0;
-      var isFoundNumber = false;
-      var isNegative = 1;
-      while (charIndex<lineLength) {
-        var c = line[charIndex++];
-        if (c>='0' && c<='9') {
-          isFoundNumber = true;
-          number = number * 10 + (c - '0');
-        } else if (!isFoundNumber && c=='-') {
-          isNegative = -1;
-        } else if (c==delimiter && isFoundNumber) {
-          return isNegative * number;
-        } else {
-          break;
-        }
-      };
-
-      isLineError = true;
-      errorStringBuilder.AppendLine(fieldName + " should be int in line '" + line + "' at position " + charIndex + ".");
-      return int.MinValue;
-    }
-
-
-
-    /// <summary>
-    /// Parse field into int?
-    /// </summary>
-    public static int? ParseIntNull(string fieldName, string field, string line, StringBuilder errorStringBuilder) {
-      if (field.Length==0)
-        return null;
-
-      if (int.TryParse(field, out var value))
-        return value;
-
-      errorStringBuilder.AppendLine(fieldName + " should be int?, but was '" + field + "' in line: '" + line + "'.");
-      return null;
-    }
     #endregion
 
   }

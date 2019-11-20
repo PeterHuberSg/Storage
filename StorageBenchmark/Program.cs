@@ -18,11 +18,23 @@ namespace StorageBenchmark {
       Console.WriteLine();
       //new Benchmarks().WriteStaticString();
 
-      var tst = new TestToString();
-      tst.WriteTo4();
+      /* TestToString*/
+      var benchmarkToString = new BenchmarkToString();
+      //benchmarkToString.WriteTo4();
+      benchmarkToString.WriteToCsvWriter();
+
+      /* BenchmarkFromString*/
+      //var benchmarkFromString = new BenchmarkFromString();
+      //benchmarkFromString.ReadString();
+      //benchmarkFromString.ReadFileStream();
+      //benchmarkFromString.ReadCSVReader();
+
+
 #endif
 #if RELEASE
-      var summary = BenchmarkRunner.Run(typeof(Program).Assembly);
+      //var summary = BenchmarkRunner.Run(typeof(Program).Assembly);
+      //var summary = BenchmarkRunner.Run<BenchmarkFromString>();
+      var summary = BenchmarkRunner.Run<BenchmarkToString>();
 #endif
       Console.WriteLine();
       Console.WriteLine("press any key to exit");

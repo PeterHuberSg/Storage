@@ -216,7 +216,7 @@ namespace StorageTest {
         var stopwatch = new Stopwatch();
         var PathFileName = directoryInfo.FullName + @"\Test.csv";
         stopwatch.Start();
-        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 2 << 12, FileOptions.SequentialScan)) {
+        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1 << 12, FileOptions.SequentialScan)) {
           using (var streamWriter = new StreamWriter(fileStream)) {
             for (int i = 0; i < iterations; i++) {
               streamWriter.WriteLine("1;12;123;1234;12345;123456;1234567;12345678;123;");
@@ -229,7 +229,7 @@ namespace StorageTest {
         GC.WaitForPendingFinalizers();
         var startTime1 = stopwatch.Elapsed;
         PathFileName = directoryInfo.FullName + @"\Test1.csv";
-        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 2 << 12, FileOptions.SequentialScan)) {
+        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1 << 12, FileOptions.SequentialScan)) {
           using (var streamWriter = new StreamWriter(fileStream)) {
             for (int i = 0; i < iterations; i++) {
               streamWriter.WriteLine($"{i};{i+1};{i+2};{i+3};{i+4};{i+5};{i+6};");
@@ -242,7 +242,7 @@ namespace StorageTest {
         GC.WaitForPendingFinalizers();
         var startTime2 = stopwatch.Elapsed;
         PathFileName = directoryInfo.FullName + @"\Test2.csv";
-        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 2 << 12, FileOptions.SequentialScan)) {
+        using (var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1 << 12, FileOptions.SequentialScan)) {
           using (var streamWriter = new StreamWriter(fileStream)) {
             var lineBuffer = new char[100];
             for (int i = 0; i < iterations; i++) {

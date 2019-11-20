@@ -63,7 +63,7 @@ namespace Storage {
       string directoryPath,
       char delimiter = '\t',
       Encoding? encoding = null,
-      int bufferSize = 2 << 12,
+      int bufferSize = 1 << 12,
       //uint writingIntervall = 1000,
       //uint maxWaitIntervalls = 5,
       Action<Exception>? reportException = null) 
