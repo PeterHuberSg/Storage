@@ -30,7 +30,7 @@ namespace Storage {
 
 
     #region Constructor
-    //      ----------
+    //      -----------
 #pragma warning disable IDE0069 // Disposable fields should be disposed
     FileStream? fileStream;
 #pragma warning restore IDE0069 // Disposable fields should be disposed
@@ -39,7 +39,8 @@ namespace Storage {
     readonly int maxBufferWriteLength;
     readonly byte delimiter;
     Timer? flushTimer;
-
+    byte[] tempBytes;
+    char[] tempChars;
 
 
     public CsvWriter(string fileName, CsvConfig csvConfig, int maxLineLenght, bool isAsciiOnly = true, int flushDelay = 200) {
@@ -50,6 +51,13 @@ namespace Storage {
       }
       delimiter = (byte)csvConfig.Delimiter;
       MaxLineLenght = maxLineLenght;
+      if (maxLineLenght==int.MaxValue) {
+        tempBytes = new byte[csvConfig.BufferSize];
+        tempChars = new char[csvConfig.BufferSize];
+      } else {
+        tempBytes = new byte[maxLineLenght];
+        tempChars = new char[maxLineLenght];
+      }
       IsAsciiOnly = isAsciiOnly;
       FlushDelay = flushDelay;
       //fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
@@ -136,12 +144,23 @@ namespace Storage {
     //      -------
 
     bool isNotLocked = true;
+#if DEBUG
+    int lineStart = 0;
+#endif
 
 
     public void WriteEndOfLine() {
+      if (isNotLocked) {
+        Monitor.Enter(byteArray);
+        isNotLocked = false;
+      }
       try {
         byteArray[writePos++] = 0x0D;
         byteArray[writePos++] = 0x0A;
+
+#if DEBUG
+        if (writePos-lineStart>MaxLineLenght) throw new Exception();
+#endif
 
         if (writePos>maxBufferWriteLength) {
           //var sw = new Stopwatch();
@@ -159,6 +178,10 @@ namespace Storage {
           kickFlushTimer();
           //sw.Stop();
         }
+#if DEBUG
+        lineStart = writePos;
+#endif
+
       } finally {
         Monitor.Exit(byteArray);
         isNotLocked = true;
@@ -209,16 +232,159 @@ namespace Storage {
     }
 
 
+    public void Write(int? i) {
+      if (isNotLocked) {
+        Monitor.Enter(byteArray);
+        isNotLocked = false;
+      }
+      if (i is null) {
+        byteArray[writePos++] = delimiter;
+      } else {
+        Write(i.Value);
+      }
+    }
+
+
+    /// <summary>
+    /// Write integer to UTF8 filestream including delimiter.
+    /// </summary>
+    public void Write(long l) {
+      if (isNotLocked) {
+        Monitor.Enter(byteArray);
+        isNotLocked = false;
+      }
+      int start;
+      if (l<0) {
+        byteArray[writePos++] = minusByte;
+        start = writePos;
+        //since -long.MinValue is bigger than long.MaxValue, l=-l does not work for long.Minvalue.
+        //therfore write 1 digit first and guarantee that l>long.MinValue
+        byteArray[writePos++] = (byte)(-(l % 10) + '0');
+        l /= 10;
+        if (l==0) {
+          byteArray[writePos++] = delimiter;
+          return;
+        }
+        l = -l;
+      } else {
+        start = writePos;
+      }
+
+      while (l>9) {
+        byteArray[writePos++] = (byte)((l % 10) + '0');
+        l /= 10;
+      }
+      byteArray[writePos++] = (byte)(l + '0');
+      var end = writePos-1;
+      while (end>start) {
+        var temp = byteArray[end];
+        byteArray[end--] = byteArray[start];
+        byteArray[start++] = temp;
+      }
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    static string[] formats = { 
+      ".",
+      ".#",
+      ".##",
+      ".###",
+      ".####",
+      ".#####",
+      ".######",
+      ".#######",
+      ".########",
+    };
+
+
+    /// <summary>
+    /// writes at most number of digitsAfterComma, if they are not zero. Trailing zeros get trancated.
+    /// </summary>
+    public void Write(decimal d, int digitsAfterComma = int.MaxValue) {
+      if (isNotLocked) {
+        Monitor.Enter(byteArray);
+        isNotLocked = false;
+      }
+
+      int charsWritten;
+      if (digitsAfterComma<=8) {
+        if (!d.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) throw new Exception();
+      } else {
+        if (!d.TryFormat(tempChars, out charsWritten)) throw new Exception();
+      }
+
+      //deal with zero here, this simplifies the code for removing trailing 0. Any other single digit value
+      //can also be handled here.
+      if (charsWritten==0) {
+        //code like csvWriter.Write(0.4m, 0) results in charsWritten==0
+        byteArray[writePos++] = (byte)'0';
+        byteArray[writePos++] = delimiter;
+        return;
+      } else  if (charsWritten==1) {
+        byteArray[writePos++] = (byte)tempChars[0];
+        byteArray[writePos++] = delimiter;
+        return;
+      }
+
+      //remove trailing '0' and '.'
+      var charIndex = charsWritten - 1;
+      while (true) {
+        var tempChar = tempChars[charIndex--];
+        if (tempChar>='1' && tempChar<='9') {
+          charIndex++;
+          break;
+        }
+        if (tempChar=='0') continue;
+
+        if (tempChar=='.') break;
+        throw new Exception();
+      }
+
+      for (int copyIndex = 0; copyIndex <= charIndex; copyIndex++) {
+        byteArray[writePos++] = (byte)tempChars[copyIndex];
+      }
+      byteArray[writePos++] = delimiter;
+    }
+
+
     public void Write(char c) {
       if (isNotLocked) {
         Monitor.Enter(byteArray);
         isNotLocked = false;
       }
+      if (c==delimiter) throw new Exception();
+
       if (c<0x80) {
         byteArray[writePos++] = (byte)c;
       } else {
         foreach (var utf8Byte in Encoding.UTF8.GetBytes(new string(c, 1))) {
           byteArray[writePos++] = utf8Byte;
+        }
+      }
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    public void Write(string? s) {
+      if (isNotLocked) {
+        Monitor.Enter(byteArray);
+        isNotLocked = false;
+      }
+      if (s!=null) {
+        for (int readIndex = 0; readIndex < s.Length; readIndex++) {
+          var c = s[readIndex];
+          if (c==delimiter) throw new Exception();
+
+          if (c<0x80) {
+            byteArray[writePos++] = (byte)c;
+          } else {
+            var readOnlySpan = ((ReadOnlySpan<char>)s).Slice(readIndex, s.Length-readIndex);
+            var byteLength = Encoding.UTF8.GetBytes(readOnlySpan, tempBytes);
+            Array.Copy(tempBytes, 0, byteArray, writePos, byteLength);
+            writePos += byteLength;
+            break;
+          }
         }
       }
       byteArray[writePos++] = delimiter;
