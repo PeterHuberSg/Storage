@@ -489,6 +489,7 @@ namespace Storage {
       }
     }
 
+
     public char ReadChar() {
       char returnChar;
       if (readPos>=endPos) {
@@ -600,6 +601,47 @@ namespace Storage {
           }
         }
       }
+    }
+
+
+    public DateTime ReadDate() {
+      var byteLength = endPos - readPos;
+      if (byteLength<=0) {
+        if (!fillBufferFromFileStream()) throw new Exception();
+        byteLength = endPos - readPos;
+      }
+
+      //if (byteLength<MaxLineLenght) {
+      //  //maybe not enough bytes in the buffer, need to check before each read
+      //  //if (readPos>=endPos) {
+      //  //  if (!fillBufferFromFileStream()) throw new Exception();
+      //  //}
+
+      //} else {
+        //enough bytes in the buffer, no need to check before each read
+        var day = (int)(byteArray[readPos++] - '0');
+        var readByteAsChar = (char)byteArray[readPos++];
+        if (readByteAsChar!='.') {
+          day = day*10 + (int)(readByteAsChar - '0');
+          if ((char)byteArray[readPos++]!='.') throw new Exception();
+        }
+
+        var month = (int)(byteArray[readPos++] - '0');
+        readByteAsChar = (char)byteArray[readPos++];
+        if (readByteAsChar!='.') {
+          month = month*10 + (int)(readByteAsChar - '0');
+          if ((char)byteArray[readPos++]!='.') throw new Exception();
+        }
+
+        var year = (int)(byteArray[readPos++] - '0'); 
+        year = 10*year + (int)(byteArray[readPos++] - '0');
+        year = 10*year + (int)(byteArray[readPos++] - '0');
+        year = 10*year + (int)(byteArray[readPos++] - '0');
+
+        if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception();
+
+        return new DateTime(year, month, day);
+      //}
     }
     #endregion
   }

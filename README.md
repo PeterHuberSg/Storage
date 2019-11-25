@@ -4,7 +4,7 @@ C# only library for fast object oriented data storage in RAM and long term stora
 For single user applications using a database for permanent data storage is overkill, adds a lot of unnecessary complexity and slows
 down the progran execution.
 
-Nowadays PC have lots of RAMS and for many single user application it is possible to keep all the data in RAM and to do queries using Linq, 
+Nowadays PC have lots of RAMS and for many single user applications is it possible to keep all the data in RAM and to do queries using Linq, 
 which leads to much faster programs than interfacing with a "slow" database. Also the mismatch between data types in DotNet and databases
 can be avoided.
 

@@ -83,6 +83,18 @@ namespace StorageTest {
           csvWriter.Write("aÄ☹");
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteDate(DateTime.MaxValue.Date);
+          csvWriter.WriteDate(DateTime.MinValue.Date);
+          csvWriter.WriteDate(new DateTime(2000, 1, 1));
+          csvWriter.WriteDate(new DateTime(2009, 12, 31));
+          csvWriter.WriteDate(new DateTime(2010, 1, 1));
+          csvWriter.WriteDate(new DateTime(2019, 12, 31));
+          csvWriter.WriteDate(new DateTime(2020, 1, 1));
+          csvWriter.WriteDate(new DateTime(2029, 12, 31));
+          csvWriter.WriteDate(new DateTime(2020, 1, 1));
+          csvWriter.WriteDate(new DateTime(2120, 1, 1));
+          csvWriter.WriteEndOfLine();
+
           for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
             csvWriter.Write(i);
             csvWriter.WriteEndOfLine();
@@ -175,6 +187,19 @@ namespace StorageTest {
         Assert.AreEqual("abc", fieldStrings[2]);
         Assert.AreEqual("Ä", fieldStrings[3]);
         Assert.AreEqual("aÄ☹", fieldStrings[4]);
+
+        line = streamReader.ReadLine();
+        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual("31.12.9999", fieldStrings[0]);
+        Assert.AreEqual("1.1.0001", fieldStrings[1]);
+        Assert.AreEqual("1.1.2000", fieldStrings[2]);
+        Assert.AreEqual("31.12.2009", fieldStrings[3]);
+        Assert.AreEqual("1.1.2010", fieldStrings[4]);
+        Assert.AreEqual("31.12.2019", fieldStrings[5]);
+        Assert.AreEqual("1.1.2020", fieldStrings[6]);
+        Assert.AreEqual("31.12.2029", fieldStrings[7]);
+        Assert.AreEqual("1.1.2020", fieldStrings[8]);
+        Assert.AreEqual("1.1.2120", fieldStrings[9]);
 
         for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
           line = streamReader.ReadLine();

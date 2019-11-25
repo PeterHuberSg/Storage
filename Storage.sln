@@ -10,8 +10,11 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StorageSample", "StorageSample\StorageSample.csproj", "{8A32840C-A6F6-4DA6-8DFB-99DBD20CE016}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FFD62FB7-9078-41A8-BFCC-DEB79BCBDA0B}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StorageBenchmark", "StorageBenchmark\StorageBenchmark.csproj", "{29B2D26E-999D-4DD7-97A9-C11BEFB3EAF9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StorageBenchmark", "StorageBenchmark\StorageBenchmark.csproj", "{29B2D26E-999D-4DD7-97A9-C11BEFB3EAF9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

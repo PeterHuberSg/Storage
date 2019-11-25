@@ -83,8 +83,12 @@ namespace StorageTest {
             streamWriter.Write("Ä" + csvConfig.Delimiter);
             streamWriter.Write("aÄ" + csvConfig.Delimiter);
             streamWriter.Write("abcÄ ☹de" + csvConfig.Delimiter);
-
             streamWriter.WriteLine();
+
+            streamWriter.Write("31.12.9999" + csvConfig.Delimiter);
+            streamWriter.Write("1.1.0001" + csvConfig.Delimiter);
+            streamWriter.WriteLine();
+
             for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
               streamWriter.WriteLine(i.ToString() + csvConfig.Delimiter);
             }
@@ -155,6 +159,10 @@ namespace StorageTest {
             Assert.AreEqual("Ä", csvReader.ReadString());
             Assert.AreEqual("aÄ", csvReader.ReadString());
             Assert.AreEqual("abcÄ ☹de", csvReader.ReadString());
+            csvReader.ReadEndOfLine();
+
+            Assert.AreEqual(DateTime.MaxValue.Date, csvReader.ReadDate());
+            Assert.AreEqual(DateTime.MinValue.Date, csvReader.ReadDate());
             csvReader.ReadEndOfLine();
 
             //more than 1 buffer data

@@ -285,7 +285,7 @@ namespace Storage {
     }
 
 
-    static string[] formats = { 
+    static readonly string[] formats = {
       ".",
       ".#",
       ".##",
@@ -321,7 +321,7 @@ namespace Storage {
         byteArray[writePos++] = (byte)'0';
         byteArray[writePos++] = delimiter;
         return;
-      } else  if (charsWritten==1) {
+      } else if (charsWritten==1) {
         byteArray[writePos++] = (byte)tempChars[0];
         byteArray[writePos++] = delimiter;
         return;
@@ -387,6 +387,43 @@ namespace Storage {
           }
         }
       }
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    public void WriteDate(DateTime date) {
+      if (date!=date.Date) throw new Exception();
+
+      var day = date.Day;
+      if (day>=30) {
+        byteArray[writePos++] = (byte)'3';
+        day -= 30;
+      } else if (day>=20) {
+        byteArray[writePos++] = (byte)'2';
+        day -= 20;
+      } else if (day>=10) {
+        byteArray[writePos++] = (byte)'1';
+        day -= 10;
+      }
+      byteArray[writePos++] = (byte)(day + '0');
+      byteArray[writePos++] = (byte)('.');
+
+      var month = date.Month;
+      if (month>=10) {
+        byteArray[writePos++] = (byte)'1';
+        month -= 10;
+      }
+      byteArray[writePos++] = (byte)(month + '0');
+      byteArray[writePos++] = (byte)('.');
+
+      var year = date.Year;
+      byteArray[writePos++] = (byte)(('0') + year / 1000);
+      year %= 1000;
+      byteArray[writePos++] = (byte)(('0') + year / 100);
+      year %= 100;
+      byteArray[writePos++] = (byte)(('0') + year / 10);
+      year %= 10;
+      byteArray[writePos++] = (byte)(('0') + year);
       byteArray[writePos++] = delimiter;
     }
     #endregion
