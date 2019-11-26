@@ -39,23 +39,23 @@ namespace Storage {
     char[] tempChars;
 
 
-    public CsvReader(string fileName, CsvConfig csvConfig, int maxLineLenght = int.MaxValue) {
+    public CsvReader(string fileName, CsvConfig csvConfig, int maxLineLenght) {
       FileName = fileName;
       CsvConfig = csvConfig;
-      if (csvConfig.Encoding!=Encoding.UTF8) {
+      if (csvConfig.Encoding!=Encoding.UTF8) 
         throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
-      }
+      
       delimiter = (int)csvConfig.Delimiter;
+      if (maxLineLenght>CsvConfig.BufferSize/10)
+        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least 10 times bigger than MaxLineLenght {MaxLineLenght} for file {fileName}.");
+
       MaxLineLenght = maxLineLenght;
       //fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
       fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
-      byteArray = new byte[CsvConfig.BufferSize];
+      byteArray = new byte[CsvConfig.BufferSize + maxLineLenght];
       readPos = 0;
       endPos = 0;
       IsEof = false;
-      if (maxLineLenght==int.MaxValue) {
-        maxLineLenght = csvConfig.BufferSize;
-      }
       tempBytes = new byte[maxLineLenght];
       tempChars = new char[maxLineLenght/2];
     }
@@ -164,9 +164,13 @@ namespace Storage {
 
 
     private bool fillBufferFromFileStream() {
-      endPos = fileStream!.Read(byteArray, 0, CsvConfig.BufferSize);
+      var availableBytesCount = endPos-readPos;
+      if (availableBytesCount>0) {
+        Array.Copy(byteArray, readPos, byteArray, 0, availableBytesCount);
+      }
       readPos = 0;
-      if (endPos<0) {
+      endPos = availableBytesCount + fileStream!.Read(byteArray, availableBytesCount, CsvConfig.BufferSize);
+      if (endPos<=0) {
         IsEof = true;
         return false;
       }
@@ -179,85 +183,222 @@ namespace Storage {
     /// </summary>
     public int ReadInt() {
       var byteLength = endPos - readPos;
-      if (byteLength<=0) {
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
-        byteLength = endPos - readPos;
       }
 
-      if (byteLength<MaxLineLenght) {
-        //maybe not enough bytes in the buffer, need to check before each read
+      //check for minus sign
+      int readByteAsInt = (int)byteArray[readPos++];
+      var isMinus = readByteAsInt=='-';
+      if (isMinus) {
+        readByteAsInt = (int)byteArray[readPos++];
+      }
 
-        //check for minus sign
-        int readByteAsInt = (int)byteArray[readPos++];
-        var isMinus = readByteAsInt=='-';
-        if (isMinus) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
-          }
-          readByteAsInt = (int)byteArray[readPos++];
-        }
+      //read first digit. There must be at least 1
+      var i = 0;
+      if (readByteAsInt>='0' && readByteAsInt<='9') {
+        i = 10*i + readByteAsInt - '0';
+      }
 
-        //read first digit. There must be at least 1
-        var i = 0;
+      //read other digits until delimiter is reached
+      while (true) {
+        readByteAsInt = (int)byteArray[readPos++];
         if (readByteAsInt>='0' && readByteAsInt<='9') {
           i = 10*i + readByteAsInt - '0';
+          continue;
         }
 
-        //read other digits until delimiter is reached
-        while (true) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
+        if (readByteAsInt==delimiter) {
+          if (isMinus) {
+            return -i;
+          } else {
+            return i;
           }
-          readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>='0' && readByteAsInt<='9') {
-            i = 10*i + readByteAsInt - '0';
-            continue;
-          }
-
-          if (readByteAsInt==delimiter) {
-            if (isMinus) {
-              return -i;
-            } else {
-              return i;
-            }
-          }
-          throw new Exception();
         }
-
-      } else {
-        //enough bytes in the buffer, no need to check before each read
-        //check for minus sign
-        int readByteAsInt = (int)byteArray[readPos++];
-        var isMinus = readByteAsInt=='-';
-        if (isMinus) {
-          readByteAsInt = (int)byteArray[readPos++];
-        }
-
-        //read first digit. There must be at least 1
-        var i = 0;
-        if (readByteAsInt>='0' && readByteAsInt<='9') {
-          i = 10*i + readByteAsInt - '0';
-        }
-
-        //read other digits until delimiter is reached
-        while (true) {
-          readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>='0' && readByteAsInt<='9') {
-            i = 10*i + readByteAsInt - '0';
-            continue;
-          }
-
-          if (readByteAsInt==delimiter) {
-            if (isMinus) {
-              return -i;
-            } else {
-              return i;
-            }
-          }
-          throw new Exception();
-        }
+        throw new Exception();
       }
     }
+
+
+    ///// <summary>
+    ///// Read integer from UTF8 filestream including delimiter.
+    ///// </summary>
+    //public int ReadInt() {
+    //  var byteLength = endPos - readPos;
+    //  if (byteLength<=0) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //    byteLength = endPos - readPos;
+    //  }
+
+    //  if (byteLength<MaxLineLenght) {
+    //    //maybe not enough bytes in the buffer, need to check before each read
+
+    //    //check for minus sign
+    //    int readByteAsInt = (int)byteArray[readPos++];
+    //    var isMinus = readByteAsInt=='-';
+    //    if (isMinus) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //    }
+
+    //    //read first digit. There must be at least 1
+    //    var i = 0;
+    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //      i = 10*i + readByteAsInt - '0';
+    //    }
+
+    //    //read other digits until delimiter is reached
+    //    while (true) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //        i = 10*i + readByteAsInt - '0';
+    //        continue;
+    //      }
+
+    //      if (readByteAsInt==delimiter) {
+    //        if (isMinus) {
+    //          return -i;
+    //        } else {
+    //          return i;
+    //        }
+    //      }
+    //      throw new Exception();
+    //    }
+
+    //  } else {
+    //    //enough bytes in the buffer, no need to check before each read
+    //    //check for minus sign
+    //    int readByteAsInt = (int)byteArray[readPos++];
+    //    var isMinus = readByteAsInt=='-';
+    //    if (isMinus) {
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //    }
+
+    //    //read first digit. There must be at least 1
+    //    var i = 0;
+    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //      i = 10*i + readByteAsInt - '0';
+    //    }
+
+    //    //read other digits until delimiter is reached
+    //    while (true) {
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //        i = 10*i + readByteAsInt - '0';
+    //        continue;
+    //      }
+
+    //      if (readByteAsInt==delimiter) {
+    //        if (isMinus) {
+    //          return -i;
+    //        } else {
+    //          return i;
+    //        }
+    //      }
+    //      throw new Exception();
+    //    }
+    //  }
+    //}
+
+
+    ///// <summary>
+    ///// Read integer from UTF8 filestream including delimiter.
+    ///// </summary>
+    //public int? ReadIntNull() {
+    //  var byteLength = endPos - readPos;
+    //  if (byteLength<=0) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //    byteLength = endPos - readPos;
+    //  }
+
+    //  if (byteLength<MaxLineLenght) {
+    //    //maybe not enough bytes in the buffer, need to check before each read
+
+    //    int readByteAsInt = (int)byteArray[readPos++];
+    //    //check for null
+    //    if (readByteAsInt==delimiter) {
+    //      return null;
+    //    }
+    //    //check for minus sign
+    //    var isMinus = readByteAsInt=='-';
+    //    if (isMinus) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //    }
+
+    //    //read first digit. There must be at least 1
+    //    var i = 0;
+    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //      i = 10*i + readByteAsInt - '0';
+    //    }
+
+    //    //read other digits until delimiter is reached
+    //    while (true) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //        i = 10*i + readByteAsInt - '0';
+    //        continue;
+    //      }
+
+    //      if (readByteAsInt==delimiter) {
+    //        if (isMinus) {
+    //          return -i;
+    //        } else {
+    //          return i;
+    //        }
+    //      }
+    //      throw new Exception();
+    //    }
+
+    //  } else {
+    //    //enough bytes in the buffer, no need to check before each read
+    //    //check for minus sign
+    //    int readByteAsInt = (int)byteArray[readPos++];
+    //    //check for null
+    //    if (readByteAsInt==delimiter) {
+    //      return null;
+    //    }
+
+    //    var isMinus = readByteAsInt=='-';
+    //    if (isMinus) {
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //    }
+
+    //    //read first digit. There must be at least 1
+    //    var i = 0;
+    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //      i = 10*i + readByteAsInt - '0';
+    //    }
+
+    //    //read other digits until delimiter is reached
+    //    while (true) {
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //        i = 10*i + readByteAsInt - '0';
+    //        continue;
+    //      }
+
+    //      if (readByteAsInt==delimiter) {
+    //        if (isMinus) {
+    //          return -i;
+    //        } else {
+    //          return i;
+    //        }
+    //      }
+    //      throw new Exception();
+    //    }
+    //  }
+    //}
 
 
     /// <summary>
@@ -265,94 +406,131 @@ namespace Storage {
     /// </summary>
     public int? ReadIntNull() {
       var byteLength = endPos - readPos;
-      if (byteLength<=0) {
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
-        byteLength = endPos - readPos;
       }
 
-      if (byteLength<MaxLineLenght) {
-        //maybe not enough bytes in the buffer, need to check before each read
+      //check for minus sign
+      int readByteAsInt = (int)byteArray[readPos++];
+      //check for null
+      if (readByteAsInt==delimiter) {
+        return null;
+      }
 
-        int readByteAsInt = (int)byteArray[readPos++];
-        //check for null
-        if (readByteAsInt==delimiter) {
-          return null;
-        }
-        //check for minus sign
-        var isMinus = readByteAsInt=='-';
-        if (isMinus) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
-          }
-          readByteAsInt = (int)byteArray[readPos++];
-        }
+      var isMinus = readByteAsInt=='-';
+      if (isMinus) {
+        readByteAsInt = (int)byteArray[readPos++];
+      }
 
-        //read first digit. There must be at least 1
-        var i = 0;
+      //read first digit. There must be at least 1
+      var i = 0;
+      if (readByteAsInt>='0' && readByteAsInt<='9') {
+        i = 10*i + readByteAsInt - '0';
+      }
+
+      //read other digits until delimiter is reached
+      while (true) {
+        readByteAsInt = (int)byteArray[readPos++];
         if (readByteAsInt>='0' && readByteAsInt<='9') {
           i = 10*i + readByteAsInt - '0';
+          continue;
         }
 
-        //read other digits until delimiter is reached
-        while (true) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
-          }
-          readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>='0' && readByteAsInt<='9') {
-            i = 10*i + readByteAsInt - '0';
-            continue;
-          }
-
-          if (readByteAsInt==delimiter) {
-            if (isMinus) {
-              return -i;
-            } else {
-              return i;
-            }
-          }
-          throw new Exception();
-        }
-
-      } else {
-        //enough bytes in the buffer, no need to check before each read
-        //check for minus sign
-        int readByteAsInt = (int)byteArray[readPos++];
-        //check for null
         if (readByteAsInt==delimiter) {
-          return null;
-        }
-
-        var isMinus = readByteAsInt=='-';
-        if (isMinus) {
-          readByteAsInt = (int)byteArray[readPos++];
-        }
-
-        //read first digit. There must be at least 1
-        var i = 0;
-        if (readByteAsInt>='0' && readByteAsInt<='9') {
-          i = 10*i + readByteAsInt - '0';
-        }
-
-        //read other digits until delimiter is reached
-        while (true) {
-          readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>='0' && readByteAsInt<='9') {
-            i = 10*i + readByteAsInt - '0';
-            continue;
+          if (isMinus) {
+            return -i;
+          } else {
+            return i;
           }
-
-          if (readByteAsInt==delimiter) {
-            if (isMinus) {
-              return -i;
-            } else {
-              return i;
-            }
-          }
-          throw new Exception();
         }
+        throw new Exception();
       }
     }
+
+    ///// <summary>
+    ///// Read long from UTF8 filestream including delimiter.
+    ///// </summary>
+    //public long ReadLong() {
+    //  var byteLength = endPos - readPos;
+    //  if (byteLength<=0) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //    byteLength = endPos - readPos;
+    //  }
+
+    //  if (byteLength<MaxLineLenght) {
+    //    //maybe not enough bytes in the buffer, need to check before each read
+
+    //    //check for minus sign
+    //    int readByteAsInt = (int)byteArray[readPos++];
+    //    var isMinus = readByteAsInt=='-';
+    //    if (isMinus) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //    }
+
+    //    //read first digit. There must be at least 1
+    //    var l = 0L;
+    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //      l = 10*l + readByteAsInt - '0';
+    //    }
+
+    //    //read other digits until delimiter is reached
+    //    while (true) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //        l = 10*l + readByteAsInt - '0';
+    //        continue;
+    //      }
+
+    //      if (readByteAsInt==delimiter) {
+    //        if (isMinus) {
+    //          return -l;
+    //        } else {
+    //          return l;
+    //        }
+    //      }
+    //      throw new Exception();
+    //    }
+
+    //  } else {
+    //    //enough bytes in the buffer, no need to check before each read
+    //    //check for minus sign
+    //    int readByteAsInt = (int)byteArray[readPos++];
+    //    var isMinus = readByteAsInt=='-';
+    //    if (isMinus) {
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //    }
+
+    //    //read first digit. There must be at least 1
+    //    var l = 0L;
+    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //      l = 10*l + readByteAsInt - '0';
+    //    }
+
+    //    //read other digits until delimiter is reached
+    //    while (true) {
+    //      readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
+    //        l = 10*l + readByteAsInt - '0';
+    //        continue;
+    //      }
+
+    //      if (readByteAsInt==delimiter) {
+    //        if (isMinus) {
+    //          return -l;
+    //        } else {
+    //          return l;
+    //        }
+    //      }
+    //      throw new Exception();
+    //    }
+    //  }
+    //}
 
 
     /// <summary>
@@ -360,85 +538,90 @@ namespace Storage {
     /// </summary>
     public long ReadLong() {
       var byteLength = endPos - readPos;
-      if (byteLength<=0) {
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
-        byteLength = endPos - readPos;
       }
 
-      if (byteLength<MaxLineLenght) {
-        //maybe not enough bytes in the buffer, need to check before each read
+      //check for minus sign
+      int readByteAsInt = (int)byteArray[readPos++];
+      var isMinus = readByteAsInt=='-';
+      if (isMinus) {
+        readByteAsInt = (int)byteArray[readPos++];
+      }
 
-        //check for minus sign
-        int readByteAsInt = (int)byteArray[readPos++];
-        var isMinus = readByteAsInt=='-';
-        if (isMinus) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
-          }
-          readByteAsInt = (int)byteArray[readPos++];
-        }
+      //read first digit. There must be at least 1
+      var l = 0L;
+      if (readByteAsInt>='0' && readByteAsInt<='9') {
+        l = 10*l + readByteAsInt - '0';
+      }
 
-        //read first digit. There must be at least 1
-        var l = 0L;
+      //read other digits until delimiter is reached
+      while (true) {
+        readByteAsInt = (int)byteArray[readPos++];
         if (readByteAsInt>='0' && readByteAsInt<='9') {
           l = 10*l + readByteAsInt - '0';
+          continue;
         }
 
-        //read other digits until delimiter is reached
-        while (true) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
+        if (readByteAsInt==delimiter) {
+          if (isMinus) {
+            return -l;
+          } else {
+            return l;
           }
-          readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>='0' && readByteAsInt<='9') {
-            l = 10*l + readByteAsInt - '0';
-            continue;
-          }
-
-          if (readByteAsInt==delimiter) {
-            if (isMinus) {
-              return -l;
-            } else {
-              return l;
-            }
-          }
-          throw new Exception();
         }
-
-      } else {
-        //enough bytes in the buffer, no need to check before each read
-        //check for minus sign
-        int readByteAsInt = (int)byteArray[readPos++];
-        var isMinus = readByteAsInt=='-';
-        if (isMinus) {
-          readByteAsInt = (int)byteArray[readPos++];
-        }
-
-        //read first digit. There must be at least 1
-        var l = 0L;
-        if (readByteAsInt>='0' && readByteAsInt<='9') {
-          l = 10*l + readByteAsInt - '0';
-        }
-
-        //read other digits until delimiter is reached
-        while (true) {
-          readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>='0' && readByteAsInt<='9') {
-            l = 10*l + readByteAsInt - '0';
-            continue;
-          }
-
-          if (readByteAsInt==delimiter) {
-            if (isMinus) {
-              return -l;
-            } else {
-              return l;
-            }
-          }
-          throw new Exception();
-        }
+        throw new Exception();
       }
     }
+
+
+    ///// <summary>
+    ///// Read long from UTF8 filestream including delimiter.
+    ///// </summary>
+    //public decimal ReadDecimal() {
+    //  var byteLength = endPos - readPos;
+    //  if (byteLength<=0) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //    byteLength = endPos - readPos;
+    //  }
+
+    //  if (byteLength<MaxLineLenght) {
+    //    //maybe not enough bytes in the buffer, need to check before each read
+    //    var tempCharsIndex = 0;
+    //    while (true) {
+    //      int readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>=0x80) throw new Exception();
+
+    //      if (readByteAsInt==delimiter) {
+    //        var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
+    //        //return Decimal.Parse(tempCharsSpan);
+    //        var sw = new Stopwatch();
+    //        sw.Restart();
+    //        var d = Decimal.Parse(tempCharsSpan);
+    //        sw.Stop();
+    //        return d;
+    //      }
+    //      tempChars[tempCharsIndex++] = (char)readByteAsInt;
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //    }
+
+    //  } else {
+    //    //enough bytes in the buffer, no need to check before each read
+    //    var tempCharsIndex = 0;
+    //    while (true) {
+    //      int readByteAsInt = (int)byteArray[readPos++];
+    //      if (readByteAsInt>=0x80) throw new Exception();
+
+    //      if (readByteAsInt==delimiter) {
+    //        var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
+    //        return Decimal.Parse(tempCharsSpan);
+    //      }
+    //      tempChars[tempCharsIndex++] = (char)readByteAsInt;
+    //    }
+    //  }
+    //}
 
 
     /// <summary>
@@ -446,61 +629,65 @@ namespace Storage {
     /// </summary>
     public decimal ReadDecimal() {
       var byteLength = endPos - readPos;
-      if (byteLength<=0) {
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
-        byteLength = endPos - readPos;
       }
 
-      if (byteLength<MaxLineLenght) {
-        //maybe not enough bytes in the buffer, need to check before each read
-        var tempCharsIndex = 0;
-        while (true) {
-          int readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>=0x80) throw new Exception();
+      var tempCharsIndex = 0;
+      while (true) {
+        int readByteAsInt = (int)byteArray[readPos++];
+        if (readByteAsInt>=0x80) throw new Exception();
 
-          if (readByteAsInt==delimiter) {
-            var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
-            //return Decimal.Parse(tempCharsSpan);
-            var sw = new Stopwatch();
-            sw.Restart();
-            var d = Decimal.Parse(tempCharsSpan);
-            sw.Stop();
-            return d;
-          }
-          tempChars[tempCharsIndex++] = (char)readByteAsInt;
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
-          }
+        if (readByteAsInt==delimiter) {
+          var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
+          return Decimal.Parse(tempCharsSpan);
         }
-
-      } else {
-        //enough bytes in the buffer, no need to check before each read
-        var tempCharsIndex = 0;
-        while (true) {
-          int readByteAsInt = (int)byteArray[readPos++];
-          if (readByteAsInt>=0x80) throw new Exception();
-
-          if (readByteAsInt==delimiter) {
-            var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
-            return Decimal.Parse(tempCharsSpan);
-          }
-          tempChars[tempCharsIndex++] = (char)readByteAsInt;
-        }
+        tempChars[tempCharsIndex++] = (char)readByteAsInt;
       }
     }
 
 
+    //public char ReadChar() {
+    //  char returnChar;
+    //  if (readPos>=endPos) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //  }
+    //  byte readByte = byteArray[readPos++];
+    //  if (readByte<0x80) {
+    //    returnChar = (char)readByte;
+    //    if (readPos>=endPos) {
+    //      if (!fillBufferFromFileStream()) throw new Exception();
+    //    }
+    //    readByte = byteArray[readPos++];
+    //    if (readByte!=delimiter) throw new Exception();
+    //    return returnChar;
+
+    //  } else {
+    //    var charBytesIndex = 0;
+    //    do {
+    //      tempBytes[charBytesIndex++] = readByte;
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      readByte = byteArray[readPos++];
+    //    } while (readByte!=delimiter);
+    //    var length = Encoding.UTF8.GetChars(tempBytes, 0, charBytesIndex, tempChars, 0);
+    //    if (length>1) throw new Exception();
+    //    return tempChars[0];
+    //  }
+    //}
+
+
     public char ReadChar() {
-      char returnChar;
-      if (readPos>=endPos) {
+      var byteLength = endPos - readPos;
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
       }
+
+      char returnChar;
       byte readByte = byteArray[readPos++];
       if (readByte<0x80) {
         returnChar = (char)readByte;
-        if (readPos>=endPos) {
-          if (!fillBufferFromFileStream()) throw new Exception();
-        }
         readByte = byteArray[readPos++];
         if (readByte!=delimiter) throw new Exception();
         return returnChar;
@@ -509,9 +696,6 @@ namespace Storage {
         var charBytesIndex = 0;
         do {
           tempBytes[charBytesIndex++] = readByte;
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
-          }
           readByte = byteArray[readPos++];
         } while (readByte!=delimiter);
         var length = Encoding.UTF8.GetChars(tempBytes, 0, charBytesIndex, tempChars, 0);
@@ -521,126 +705,203 @@ namespace Storage {
     }
 
 
+    //public string? ReadString() {
+    //  var tempCharsIndex = 0;
+    //  var byteLength = endPos - readPos;
+    //  if (byteLength<=0) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //    byteLength = endPos - readPos;
+    //  }
+
+    //  if (byteLength<MaxLineLenght) {
+    //    //maybe not enough bytes in the buffer, need to check before each read
+    //    while (true) {
+    //      if (readPos>=endPos) {
+    //        if (!fillBufferFromFileStream()) throw new Exception();
+    //      }
+    //      var readByte = byteArray[readPos++];
+    //      var readChar = (char)readByte;
+    //      if (readChar==delimiter) {
+    //        if (tempCharsIndex==0) {
+    //          return null;
+    //        }
+    //        return new string(tempChars, 0, tempCharsIndex);
+    //      }
+    //      if (readChar<0x80) {
+    //        tempChars[tempCharsIndex++] = readChar;
+    //      } else {
+    //        var tempBytesIndex = 0;
+    //        for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
+    //          tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
+    //        }
+    //        tempBytes[tempBytesIndex++] = readByte;
+    //        while (true) {
+    //          if (readPos>=endPos) {
+    //            if (!fillBufferFromFileStream()) throw new Exception();
+    //          }
+    //          readByte = byteArray[readPos++];
+    //          readChar = (char)readByte;
+    //          if (readChar==delimiter) {
+    //            return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
+    //          }
+    //          tempBytes[tempBytesIndex++] = readByte;
+    //        }
+    //      }
+    //    }
+
+    //  } else {
+    //    //enough bytes in the buffer, no need to check before each read
+    //    var startReadPos = readPos;
+    //    while (true) {
+    //      var readByte = byteArray[readPos++];
+    //      var readChar = (char)readByte;
+    //      if (readChar==delimiter) {
+    //        if (tempCharsIndex==0) {
+    //          return null;
+    //        }
+    //        return new string(tempChars, 0, tempCharsIndex);
+    //      }
+    //      if (readChar<0x80) {
+    //        tempChars[tempCharsIndex++] = readChar;
+    //      } else {
+    //        var tempBytesIndex = 0;
+    //        //for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
+    //        //  tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
+    //        //}
+    //        //tempBytes[tempBytesIndex++] = readByte;
+    //        var bytesCount = readPos-startReadPos;
+    //        if (bytesCount>0) {
+    //          Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
+    //          tempBytesIndex += bytesCount;
+    //        }
+    //        while (true) {
+    //          readByte = byteArray[readPos++];
+    //          readChar = (char)readByte;
+    //          if (readChar==delimiter) {
+    //            return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
+    //          }
+    //          tempBytes[tempBytesIndex++] = readByte;
+    //        }
+    //      }
+    //    }
+    //  }
+    //}
+
+
+
+
     public string? ReadString() {
-      var tempCharsIndex = 0;
       var byteLength = endPos - readPos;
-      if (byteLength<=0) {
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
-        byteLength = endPos - readPos;
       }
 
-      if (byteLength<MaxLineLenght) {
-        //maybe not enough bytes in the buffer, need to check before each read
-        while (true) {
-          if (readPos>=endPos) {
-            if (!fillBufferFromFileStream()) throw new Exception();
+      var tempCharsIndex = 0;
+      var startReadPos = readPos;
+      while (true) {
+        var readByte = byteArray[readPos++];
+        var readChar = (char)readByte;
+        if (readChar==delimiter) {
+          if (tempCharsIndex==0) {
+            return null;
           }
-          var readByte = byteArray[readPos++];
-          var readChar = (char)readByte;
-          if (readChar==delimiter) {
-            if (tempCharsIndex==0) {
-              return null;
-            }
-            return new string(tempChars, 0, tempCharsIndex);
+          return new string(tempChars, 0, tempCharsIndex);
+        }
+        if (readChar<0x80) {
+          tempChars[tempCharsIndex++] = readChar;
+        } else {
+          var tempBytesIndex = 0;
+          //for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
+          //  tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
+          //}
+          //tempBytes[tempBytesIndex++] = readByte;
+          var bytesCount = readPos-startReadPos;
+          if (bytesCount>0) {
+            Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
+            tempBytesIndex += bytesCount;
           }
-          if (readChar<0x80) {
-            tempChars[tempCharsIndex++] = readChar;
-          } else {
-            var tempBytesIndex = 0;
-            for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
-              tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
+          while (true) {
+            readByte = byteArray[readPos++];
+            readChar = (char)readByte;
+            if (readChar==delimiter) {
+              return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
             }
             tempBytes[tempBytesIndex++] = readByte;
-            while (true) {
-              if (readPos>=endPos) {
-                if (!fillBufferFromFileStream()) throw new Exception();
-              }
-              readByte = byteArray[readPos++];
-              readChar = (char)readByte;
-              if (readChar==delimiter) {
-                return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
-              }
-              tempBytes[tempBytesIndex++] = readByte;
-            }
-          }
-        }
-
-      } else {
-        //enough bytes in the buffer, no need to check before each read
-        var startReadPos = readPos;
-        while (true) {
-          var readByte = byteArray[readPos++];
-          var readChar = (char)readByte;
-          if (readChar==delimiter) {
-            if (tempCharsIndex==0) {
-              return null;
-            }
-            return new string(tempChars, 0, tempCharsIndex);
-          }
-          if (readChar<0x80) {
-            tempChars[tempCharsIndex++] = readChar;
-          } else {
-            var tempBytesIndex = 0;
-            //for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
-            //  tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
-            //}
-            //tempBytes[tempBytesIndex++] = readByte;
-            var bytesCount = readPos-startReadPos;
-            if (bytesCount>0) {
-              Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
-              tempBytesIndex += bytesCount;
-            }
-            while (true) {
-              readByte = byteArray[readPos++];
-              readChar = (char)readByte;
-              if (readChar==delimiter) {
-                return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
-              }
-              tempBytes[tempBytesIndex++] = readByte;
-            }
           }
         }
       }
     }
 
 
+    //public DateTime ReadDate() {
+    //  var byteLength = endPos - readPos;
+    //  if (byteLength<=0) {
+    //    if (!fillBufferFromFileStream()) throw new Exception();
+    //    byteLength = endPos - readPos;
+    //  }
+
+    //  //if (byteLength<MaxLineLenght) {
+    //  //  //maybe not enough bytes in the buffer, need to check before each read
+    //  //  //if (readPos>=endPos) {
+    //  //  //  if (!fillBufferFromFileStream()) throw new Exception();
+    //  //  //}
+
+    //  //} else {
+    //    //enough bytes in the buffer, no need to check before each read
+    //    var day = (int)(byteArray[readPos++] - '0');
+    //    var readByteAsChar = (char)byteArray[readPos++];
+    //    if (readByteAsChar!='.') {
+    //      day = day*10 + (int)(readByteAsChar - '0');
+    //      if ((char)byteArray[readPos++]!='.') throw new Exception();
+    //    }
+
+    //    var month = (int)(byteArray[readPos++] - '0');
+    //    readByteAsChar = (char)byteArray[readPos++];
+    //    if (readByteAsChar!='.') {
+    //      month = month*10 + (int)(readByteAsChar - '0');
+    //      if ((char)byteArray[readPos++]!='.') throw new Exception();
+    //    }
+
+    //    var year = (int)(byteArray[readPos++] - '0'); 
+    //    year = 10*year + (int)(byteArray[readPos++] - '0');
+    //    year = 10*year + (int)(byteArray[readPos++] - '0');
+    //    year = 10*year + (int)(byteArray[readPos++] - '0');
+
+    //    if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception();
+
+    //    return new DateTime(year, month, day);
+    //  //}
+    //}
+
+
     public DateTime ReadDate() {
       var byteLength = endPos - readPos;
-      if (byteLength<=0) {
+      if (byteLength<=MaxLineLenght) {
         if (!fillBufferFromFileStream()) throw new Exception();
-        byteLength = endPos - readPos;
       }
 
-      //if (byteLength<MaxLineLenght) {
-      //  //maybe not enough bytes in the buffer, need to check before each read
-      //  //if (readPos>=endPos) {
-      //  //  if (!fillBufferFromFileStream()) throw new Exception();
-      //  //}
+      var day = (int)(byteArray[readPos++] - '0');
+      var readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar!='.') {
+        day = day*10 + (int)(readByteAsChar - '0');
+        if ((char)byteArray[readPos++]!='.') throw new Exception();
+      }
 
-      //} else {
-        //enough bytes in the buffer, no need to check before each read
-        var day = (int)(byteArray[readPos++] - '0');
-        var readByteAsChar = (char)byteArray[readPos++];
-        if (readByteAsChar!='.') {
-          day = day*10 + (int)(readByteAsChar - '0');
-          if ((char)byteArray[readPos++]!='.') throw new Exception();
-        }
+      var month = (int)(byteArray[readPos++] - '0');
+      readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar!='.') {
+        month = month*10 + (int)(readByteAsChar - '0');
+        if ((char)byteArray[readPos++]!='.') throw new Exception();
+      }
 
-        var month = (int)(byteArray[readPos++] - '0');
-        readByteAsChar = (char)byteArray[readPos++];
-        if (readByteAsChar!='.') {
-          month = month*10 + (int)(readByteAsChar - '0');
-          if ((char)byteArray[readPos++]!='.') throw new Exception();
-        }
+      var year = (int)(byteArray[readPos++] - '0');
+      year = 10*year + (int)(byteArray[readPos++] - '0');
+      year = 10*year + (int)(byteArray[readPos++] - '0');
+      year = 10*year + (int)(byteArray[readPos++] - '0');
 
-        var year = (int)(byteArray[readPos++] - '0'); 
-        year = 10*year + (int)(byteArray[readPos++] - '0');
-        year = 10*year + (int)(byteArray[readPos++] - '0');
-        year = 10*year + (int)(byteArray[readPos++] - '0');
+      if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception();
 
-        if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception();
-
-        return new DateTime(year, month, day);
+      return new DateTime(year, month, day);
       //}
     }
     #endregion

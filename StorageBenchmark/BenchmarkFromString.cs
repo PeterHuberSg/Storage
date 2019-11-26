@@ -40,50 +40,52 @@ namespace StorageBenchmark {
     }
 
 
-    //[Benchmark]
-    //public int ReadString() {
-    //  var total = 0;
-    //  var sw = new Stopwatch();
-    //  sw.Start();
-    //  using (var fileStream = new FileStream(pathFileName, FileMode.Open)) {
-    //    using var streamReader = new StreamReader(fileStream);
-    //    while (!streamReader.EndOfStream) {
-    //      var line = streamReader.ReadLine();
-    //      foreach (var field in line.Split(';', StringSplitOptions.RemoveEmptyEntries)) {
-    //        var i = int.Parse(field);
-    //        total += i;
-    //      }
-    //    }
-    //  }
-    //  sw.Stop();
-    //  return total;
-    //}
+    [Benchmark]
+    public int ReadString() {
+      var total = 0;
+      var sw = new Stopwatch();
+      sw.Start();
+      using (var fileStream = new FileStream(pathFileName, FileMode.Open)) {
+        using var streamReader = new StreamReader(fileStream);
+        while (!streamReader.EndOfStream) {
+          var line = streamReader.ReadLine();
+          foreach (var field in line.Split(';', StringSplitOptions.RemoveEmptyEntries)) {
+            var i = int.Parse(field);
+            total += i;
+          }
+        }
+      }
+      sw.Stop();
+      return total;
+    }
 
 
-    //[Benchmark]
-    //public int ReadFileStream() {
-    //  var total = 0;
-    //  var esb = new StringBuilder();
-    //  using var fileStream = new FileStream(pathFileName, FileMode.Open);
-    //  var fileLength = fileStream.Length;
-    //  while (true) {
-    //    for (int fieldIndex = 0; fieldIndex < 7; fieldIndex++) {
-    //      var (isEof, i)= fileStream.ReadInt(delimiter, "Test", esb);
-    //      if (isEof) {
-    //        if (fieldIndex==0) {
-    //          return total;
-    //        }
+    [Benchmark]
+    public int ReadFileStream() {
+      var total = 0;
+      var esb = new StringBuilder();
+      using var fileStream = new FileStream(pathFileName, FileMode.Open);
+      var fileLength = fileStream.Length;
+      while (true) {
+        for (int fieldIndex = 0; fieldIndex < 7; fieldIndex++) {
+          var (isEof, i)= fileStream.ReadInt(delimiter, "Test", esb);
+          if (isEof) {
+            if (fieldIndex==0) {
+              return total;
+            }
 
-    //        throw new Exception();
-    //      }
-    //      total += i;
-    //    }
-    //    var newLineByte0 = fileStream.ReadByte();
-    //    if (newLineByte0!=newLine0) throw new Exception();
-    //    var newLineByte1 = fileStream.ReadByte();
-    //    if (newLineByte1!=newLine1) throw new Exception();
-    //  }
-    //}
+            throw new Exception();
+          }
+          total += i;
+        }
+        var newLineByte0 = fileStream.ReadByte();
+        if (newLineByte0!=newLine0) throw new Exception();
+        var newLineByte1 = fileStream.ReadByte();
+        if (newLineByte1!=newLine1) throw new Exception();
+      }
+    }
+
+
     /*
     filestream buffer has the same size as byteArray, FileAccess.Read, FileMode.Open
 | Buffer |     Mean |   Error |  StdDev |
@@ -100,6 +102,14 @@ namespace StorageBenchmark {
 |   128k | 108.7 ms | 1.37 ms | 1.15 ms | FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, FileOptions.SequentialScan | FileOptions.WriteThrough
     */
 
+    /* after removing checks for every byte read if there is another byte in the buffer
+|         Method |      Mean |     Error |    StdDev |    Median |
+|--------------- |----------:|----------:|----------:|----------:|
+|     ReadString | 573.33 ms | 24.275 ms | 71.194 ms | 539.47 ms |
+| ReadFileStream | 519.38 ms | 10.375 ms | 25.837 ms | 519.64 ms |
+|  ReadCSVReader |  99.86 ms |  1.256 ms |  1.175 ms |  99.95 ms |
+
+    */
     [Benchmark]
     public int ReadCSVReader() {
       var total = 0;

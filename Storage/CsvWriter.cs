@@ -46,18 +46,16 @@ namespace Storage {
     public CsvWriter(string fileName, CsvConfig csvConfig, int maxLineLenght, bool isAsciiOnly = true, int flushDelay = 200) {
       FileName = fileName;
       CsvConfig = csvConfig;
-      if (csvConfig.Encoding!=Encoding.UTF8) {
-        throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
-      }
+      if (csvConfig.Encoding!=Encoding.UTF8) 
+        throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName} for file {fileName}.");
+      
       delimiter = (byte)csvConfig.Delimiter;
+      if (maxLineLenght>CsvConfig.BufferSize/10) 
+        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least 10 times bigger than MaxLineLenght {MaxLineLenght} for file {fileName}.");
+
       MaxLineLenght = maxLineLenght;
-      if (maxLineLenght==int.MaxValue) {
-        tempBytes = new byte[csvConfig.BufferSize];
-        tempChars = new char[csvConfig.BufferSize];
-      } else {
-        tempBytes = new byte[maxLineLenght];
-        tempChars = new char[maxLineLenght];
-      }
+      tempBytes = new byte[maxLineLenght];
+      tempChars = new char[maxLineLenght];
       IsAsciiOnly = isAsciiOnly;
       FlushDelay = flushDelay;
       //fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
