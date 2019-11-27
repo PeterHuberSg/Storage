@@ -38,6 +38,11 @@ namespace StorageTest {
     public bool CanDelete() { return true; }
 
 
+    public string Write(CsvWriter csvWriter) {
+      throw new NotImplementedException();
+    }
+
+
     public string ToCsvString(char delimiter) {
       return "" +
         Key + delimiter +

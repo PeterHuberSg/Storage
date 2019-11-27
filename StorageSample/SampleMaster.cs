@@ -92,6 +92,11 @@ namespace Storage {
     }
 
 
+    public string Write(CsvWriter csvWriter) {
+      throw new NotImplementedException();
+    }
+
+
     public string ToCsvString(char delimiter) {
       return "" +
         Key + delimiter +

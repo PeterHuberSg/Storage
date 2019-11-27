@@ -131,7 +131,8 @@ namespace Storage {
       this FileStream filestream,
       int delimiter,
       string fieldName,
-      StringBuilder errorStringBuilder) {
+      StringBuilder errorStringBuilder) 
+    {
       var i = 0;
       var isMinus = false;
       var isFirstbyte = true;

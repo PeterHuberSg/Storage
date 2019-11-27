@@ -7,6 +7,6 @@ namespace Storage {
 
   public interface IStorageCSV<TItem>: IStorage<TItem> {
 
-    public string ToCsvString(char delimiter);
+    public string Write(CsvWriter csvWriter);
   }
 }

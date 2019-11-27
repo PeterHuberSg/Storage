@@ -10,6 +10,9 @@ namespace Storage {
   /// </summary>
   public static class Csv {
 
+    public const int Utf8BytesPerChar = 4; //UTF8 can have 4 bytes for 1 character
+    public const int LineToBufferRatio = 10 * Utf8BytesPerChar;
+
 
     #region Parsing
     //      -------

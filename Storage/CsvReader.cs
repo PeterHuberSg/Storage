@@ -18,9 +18,15 @@ namespace Storage {
     public CsvConfig CsvConfig { get; }
 
     /// <summary>
-    /// How many chars can a line max contain ? int.MaxValue: don't use MaxLineLenght
+    /// How many chars can a line max contain ?
     /// </summary>
-    public int MaxLineLenght { get; }
+    public int MaxLineCharLenght { get; }
+
+    /// <summary>
+    /// How many bytes can a line max contain ?
+    /// </summary>
+    public int MaxLineByteLenght { get; }
+
 
     public bool IsEof { get; private set; }
     #endregion
@@ -31,33 +37,44 @@ namespace Storage {
 #pragma warning disable IDE0069 // Disposable fields should be disposed
     FileStream? fileStream;
 #pragma warning restore IDE0069 // Disposable fields should be disposed
+    readonly bool isFileStreamOwner;
     readonly byte[] byteArray;
     int readPos;
     int endPos;
     readonly int delimiter;
-    byte[] tempBytes;
-    char[] tempChars;
+    readonly byte[] tempBytes;
+    readonly char[] tempChars;
 
 
-    public CsvReader(string fileName, CsvConfig csvConfig, int maxLineLenght) {
-      FileName = fileName;
+    public CsvReader(string? fileName, CsvConfig csvConfig, int maxLineLenght, FileStream? existingFileStream = null) {
+      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception();
+
       CsvConfig = csvConfig;
       if (csvConfig.Encoding!=Encoding.UTF8) 
         throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
       
       delimiter = (int)csvConfig.Delimiter;
-      if (maxLineLenght>CsvConfig.BufferSize/10)
-        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least 10 times bigger than MaxLineLenght {MaxLineLenght} for file {fileName}.");
+      if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
+        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
 
-      MaxLineLenght = maxLineLenght;
-      //fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
-      fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
-      byteArray = new byte[CsvConfig.BufferSize + maxLineLenght];
+      MaxLineCharLenght = maxLineLenght;
+      MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
+      if (existingFileStream is null) {
+        isFileStreamOwner = true;
+        if (string.IsNullOrEmpty(fileName)) throw new Exception();
+        FileName = fileName;
+        fileStream = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
+      } else {
+        isFileStreamOwner = false;
+        fileStream = existingFileStream;
+        FileName = fileStream.Name;
+      }
+      byteArray = new byte[CsvConfig.BufferSize + MaxLineByteLenght];
       readPos = 0;
       endPos = 0;
       IsEof = false;
-      tempBytes = new byte[maxLineLenght];
-      tempChars = new char[maxLineLenght/2];
+      tempBytes = new byte[MaxLineByteLenght];
+      tempChars = new char[maxLineLenght];
     }
     #endregion
 
@@ -105,6 +122,8 @@ namespace Storage {
 
 
     private void releaseFileStream() {
+      if (!isFileStreamOwner) return;
+
       var wasFileStream = Interlocked.Exchange(ref fileStream, null);//prevents that 2 threads release simultaneously
       if (wasFileStream!=null) {
         wasFileStream.Dispose();
@@ -126,7 +145,7 @@ namespace Storage {
       }
 
       //in very rare cases the file fits exactly into the buffer. Read again to see if there are more bytes.
-      if (!fillBufferFromFileStream()) {
+      if (!fillBufferFromFileStream(0)) {
         IsEof = true;
         return true;
       } else {
@@ -141,35 +160,59 @@ namespace Storage {
 
 
     public void ReadEndOfLine() {
-      // test for Carriage Return
-      if (readPos>=endPos) {
-        if (!fillBufferFromFileStream()) throw new Exception();
+      var remainingBytesCount = endPos - readPos;
+      if (remainingBytesCount<=MaxLineByteLenght) {
+        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
       }
+
+      // test for Carriage Return
       if (byteArray[readPos++]!=0x0D) { //carriage return) {
         throw new Exception();
       }
 
       //test for line feed
-      if (readPos>=endPos) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
       if (byteArray[readPos++]!=0x0A) { //line feed) {
         throw new Exception();
       }
 #if DEBUG
-      if ((readPos-lineStart)%CsvConfig.BufferSize > MaxLineLenght) throw new Exception();
+      if ((readPos-lineStart)%CsvConfig.BufferSize > MaxLineByteLenght) throw new Exception();
       lineStart = readPos;
 #endif
     }
 
 
-    private bool fillBufferFromFileStream() {
-      var availableBytesCount = endPos-readPos;
-      if (availableBytesCount>0) {
-        Array.Copy(byteArray, readPos, byteArray, 0, availableBytesCount);
+    public void SkipToEndOfLine() {
+      while (true) {
+        if (byteArray[readPos++]==0x0D) { //carriage return) {
+          if (byteArray[readPos++]==0x0A) { //line feed) {
+            return;
+          } else {
+            throw new Exception();
+          }
+        }
+      }
+      // test for Carriage Return
+
+      //test for line feed
+    }
+
+
+    bool areAllBytesRead = false;
+
+
+    private bool fillBufferFromFileStream(int remainingBytesCount) {
+      if (areAllBytesRead) {
+        return remainingBytesCount>0;
+      }
+
+      if (remainingBytesCount>0) {
+        Array.Copy(byteArray, readPos, byteArray, 0, remainingBytesCount);
       }
       readPos = 0;
-      endPos = availableBytesCount + fileStream!.Read(byteArray, availableBytesCount, CsvConfig.BufferSize);
+      var bytesRead = fileStream!.Read(byteArray, remainingBytesCount, CsvConfig.BufferSize);
+      if (bytesRead<CsvConfig.BufferSize) areAllBytesRead = true;
+
+      endPos = remainingBytesCount + bytesRead;
       if (endPos<=0) {
         IsEof = true;
         return false;
@@ -182,10 +225,10 @@ namespace Storage {
     /// Read integer from UTF8 filestream including delimiter.
     /// </summary>
     public int ReadInt() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       //check for minus sign
       int readByteAsInt = (int)byteArray[readPos++];
@@ -405,10 +448,10 @@ namespace Storage {
     /// Read integer from UTF8 filestream including delimiter.
     /// </summary>
     public int? ReadIntNull() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       //check for minus sign
       int readByteAsInt = (int)byteArray[readPos++];
@@ -537,10 +580,10 @@ namespace Storage {
     /// Read long from UTF8 filestream including delimiter.
     /// </summary>
     public long ReadLong() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       //check for minus sign
       int readByteAsInt = (int)byteArray[readPos++];
@@ -628,10 +671,10 @@ namespace Storage {
     /// Read long from UTF8 filestream including delimiter.
     /// </summary>
     public decimal ReadDecimal() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       var tempCharsIndex = 0;
       while (true) {
@@ -679,10 +722,10 @@ namespace Storage {
 
 
     public char ReadChar() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       char returnChar;
       byte readByte = byteArray[readPos++];
@@ -702,6 +745,23 @@ namespace Storage {
         if (length>1) throw new Exception();
         return tempChars[0];
       }
+    }
+
+
+    /// <summary>
+    /// Reads the very first character from a new line. It also ensures that enough bytes are in read from the file 
+    /// that the whole line can be read. ReadLeadingLineChar() must be called before any other Readxxx() except ReadLine().
+    /// </summary>
+    public char ReadFirstLineChar() {
+      var remainingBytesCount = endPos - readPos;
+      if (remainingBytesCount<=MaxLineByteLenght) {
+        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      }
+
+      char readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar>=0x80) throw new Exception();
+
+      return readByteAsChar;
     }
 
 
@@ -788,13 +848,11 @@ namespace Storage {
     //}
 
 
-
-
     public string? ReadString() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       var tempCharsIndex = 0;
       var startReadPos = readPos;
@@ -875,10 +933,10 @@ namespace Storage {
 
 
     public DateTime ReadDate() {
-      var byteLength = endPos - readPos;
-      if (byteLength<=MaxLineLenght) {
-        if (!fillBufferFromFileStream()) throw new Exception();
-      }
+      //var remainingBytesCount = endPos - readPos;
+      //if (remainingBytesCount<=MaxLineByteLenght) {
+      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      //}
 
       var day = (int)(byteArray[readPos++] - '0');
       var readByteAsChar = (char)byteArray[readPos++];
@@ -903,6 +961,53 @@ namespace Storage {
 
       return new DateTime(year, month, day);
       //}
+    }
+
+
+    /// <summary>
+    /// reads one complete line as string. ReadLine() should be avoided, because of the string creation overhead.
+    /// </summary>
+    /// <returns></returns>
+    public string ReadLine() {
+      var remainingBytesCount = endPos - readPos;
+      if (remainingBytesCount<=MaxLineByteLenght) {
+        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+      }
+
+      var tempCharsIndex = 0;
+      var startReadPos = readPos;
+      while (true) {
+        var readByteAsChar = (char)byteArray[readPos++];
+        if (readByteAsChar==0x0D) { //carriage return) {
+          if (byteArray[readPos++]==0x0A) { //line feed) {
+            return new string(tempChars, 0, tempCharsIndex);
+          } else {
+            throw new Exception();
+          }
+        }
+        if (readByteAsChar<0x80) {
+          tempChars[tempCharsIndex++] = readByteAsChar;
+        } else {
+          var tempBytesIndex = 0;
+          var bytesCount = readPos-startReadPos;
+          if (bytesCount>0) {
+            Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
+            tempBytesIndex += bytesCount;
+          }
+          while (true) {
+            var readByte = byteArray[readPos++];
+            if (readByte==0x0D) { //carriage return) {
+              if (byteArray[readPos++]==0x0A) { //line feed) {
+                return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
+              } else {
+                throw new Exception();
+              }
+            }
+            tempBytes[tempBytesIndex++] = readByte;
+          }
+        }
+
+      }
     }
     #endregion
   }

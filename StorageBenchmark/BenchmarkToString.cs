@@ -38,13 +38,24 @@ namespace StorageBenchmark {
 |          WriteTo3 | 162.02 ms |  3.193 ms |  4.370 ms |
 |          WriteTo4 | 283.55 ms |  5.590 ms | 10.769 ms |
 |  WriteToCsvWriter | 144.01 ms |  2.378 ms |  1.985 ms |
+
+after removing locks checks for every Readxxx() method, adding '+' as start char for every line, 32k, FileMode.OpenOrCreate, FileAccess.Write
+|                Method |      Mean |     Error |    StdDev |
+|---------------------- |----------:|----------:|----------:|
+|     WriteStaticString |  50.91 ms |  1.018 ms |  1.523 ms |
+| WriteStringWithParams | 634.28 ms | 12.377 ms | 19.987 ms |
+|         WriteBufferIf | 180.78 ms |  3.143 ms |  2.786 ms |
+|    WriteBufferReverse | 186.11 ms |  3.696 ms |  6.851 ms |
+|             WriteSpan | 328.76 ms |  8.055 ms | 23.624 ms |
+|      WriteToCsvWriter | 182.44 ms |  3.537 ms |  5.294 ms |
   */
 
   public class BenchmarkToString {
     readonly DirectoryInfo directoryInfo;
     const int iterations = 1000000;
     //const int bufferSize = 1 << 12;
-    const int bufferSize = 1 << 16;
+    const int bufferSize = 1 << 15; //32kByte
+    public readonly CsvConfig CsvConfig;
 
 
     public BenchmarkToString() {
@@ -59,130 +70,125 @@ namespace StorageBenchmark {
 #if DEBUG
       Console.WriteLine($"Directory: {directoryInfo.FullName}");
 #endif
+      CsvConfig = new CsvConfig("");
     }
 
 
-    //[Benchmark]
-    //public void WriteStaticString() {
-    //  var PathFileName = directoryInfo.FullName + @"\Test.csv";
-    //  using (var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan)) {
-    //    using (var streamWriter = new StreamWriter(fileStream)) {
-    //      for (int i = 0; i < iterations; i++) {
-    //        streamWriter.WriteLine("1;12;123;1234;12345;123456;1234567;12345678;123;");
-    //      }
-    //    }
-    //  }
-    //}
+    [Benchmark]
+    public void WriteStaticString() {
+      var PathFileName = directoryInfo.FullName + @"\Test.csv";
+      using var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan);
+      using var streamWriter = new StreamWriter(fileStream);
+      for (int i = 0; i < iterations; i++) {
+        streamWriter.WriteLine("+1;12;123;1234;12345;123456;1234567;12345678;123;");
+      }
+    }
 
 
-    //[Benchmark]
-    //public void WriteTo1() {
-    //  var PathFileName = directoryInfo.FullName + @"\Test1.csv";
-    //  using (var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan)) {
-    //    using (var streamWriter = new StreamWriter(fileStream)) {
-    //      for (int i = 0; i < iterations; i++) {
-    //        streamWriter.WriteLine($"{i};{i+1};{i+2};{i+3};{i+4};{i+5};{i+6};");
-    //      }
-    //    }
-    //  }
-    //}
+    [Benchmark]
+    public void WriteStringWithParams() {
+      var PathFileName = directoryInfo.FullName + @"\Test1.csv";
+      using var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan);
+      using var streamWriter = new StreamWriter(fileStream);
+      for (int i = 0; i < iterations; i++) {
+        streamWriter.WriteLine($"+{i};{i+1};{i+2};{i+3};{i+4};{i+5};{i+6};");
+      }
+    }
 
 
-    //[Benchmark]
-    //public void WriteTo2() {
-    //  var PathFileName = directoryInfo.FullName + @"\Test2.csv";
-    //  using (var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan)) {
-    //    using (var streamWriter = new StreamWriter(fileStream)) {
-    //      var lineBuffer = new char[100];
-    //      for (int i = 0; i < iterations; i++) {
-    //        var index = 0;
-    //        lineBuffer.Write2(i, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write2(i+1, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write2(i+2, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write2(i+3, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write2(i+4, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write2(i+5, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write2(i+6, ref index);
-    //        lineBuffer[index++] = ';';
-    //        streamWriter.WriteLine(lineBuffer, 0, index);
-    //      }
-    //    }
-    //  }
-    //}
+    [Benchmark]
+    public void WriteBufferIf() {
+      var PathFileName = directoryInfo.FullName + @"\Test2.csv";
+      using var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan);
+      using var streamWriter = new StreamWriter(fileStream);
+      var lineBuffer = new char[100];
+      for (int i = 0; i < iterations; i++) {
+        var index = 0;
+        lineBuffer[index++] = CsvConfig.LineCharAdd;
+        lineBuffer.Write2(i, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write2(i+1, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write2(i+2, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write2(i+3, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write2(i+4, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write2(i+5, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write2(i+6, ref index);
+        lineBuffer[index++] = ';';
+        streamWriter.WriteLine(lineBuffer, 0, index);
+      }
+    }
 
 
-    //[Benchmark]
-    //public void WriteTo3() {
-    //  var PathFileName = directoryInfo.FullName + @"\Test3.csv";
-    //  using (var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan)) {
-    //    using (var streamWriter = new StreamWriter(fileStream)) {
-    //      var lineBuffer = new char[100];
-    //      for (int i = 0; i < iterations; i++) {
-    //        var index = 0;
-    //        lineBuffer.Write3(i, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write3(i+1, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write3(i+2, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write3(i+3, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write3(i+4, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write3(i+5, ref index);
-    //        lineBuffer[index++] = ';';
-    //        lineBuffer.Write3(i+6, ref index);
-    //        lineBuffer[index++] = ';';
-    //        streamWriter.WriteLine(lineBuffer, 0, index);
-    //      }
-    //    }
-    //  }
-    //}
+    [Benchmark]
+    public void WriteBufferReverse() {
+      var PathFileName = directoryInfo.FullName + @"\Test3.csv";
+      using var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan);
+      using var streamWriter = new StreamWriter(fileStream);
+      var lineBuffer = new char[100];
+      for (int i = 0; i < iterations; i++) {
+        var index = 0;
+        lineBuffer[index++] = CsvConfig.LineCharAdd;
+        lineBuffer.Write3(i, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write3(i+1, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write3(i+2, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write3(i+3, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write3(i+4, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write3(i+5, ref index);
+        lineBuffer[index++] = ';';
+        lineBuffer.Write3(i+6, ref index);
+        lineBuffer[index++] = ';';
+        streamWriter.WriteLine(lineBuffer, 0, index);
+      }
+    }
 
 
 
 
-    //[Benchmark]
-    //public void WriteTo4() {
-    //  var PathFileName = directoryInfo.FullName + @"\Test4.csv";
-    //  using (var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan)) {
-    //    using (var streamWriter = new StreamWriter(fileStream)) {
-    //      var lineBuffer = new char[100];
-    //      Span<char> span = lineBuffer;
-    //      for (int i = 0; i < iterations; i++) {
-    //        var ok = i.TryFormat(span, out var charsWritten);
-    //        lineBuffer[charsWritten++] = ';';
-    //        var span1 = span[charsWritten..];
-    //        ok = (i+1).TryFormat(span1, out charsWritten);
-    //        span1[charsWritten++] = ';';
-    //        span1 = span1[charsWritten..];
-    //        ok = (i+2).TryFormat(span1, out charsWritten);
-    //        span1[charsWritten++] = ';';
-    //        span1 = span1[charsWritten..];
-    //        ok = (i+3).TryFormat(span1, out charsWritten);
-    //        span1[charsWritten++] = ';';
-    //        span1 = span1[charsWritten..];
-    //        ok = (i+4).TryFormat(span1, out charsWritten);
-    //        span1[charsWritten++] = ';';
-    //        span1 = span1[charsWritten..];
-    //        ok = (i+5).TryFormat(span1, out charsWritten);
-    //        span1[charsWritten++] = ';';
-    //        span1 = span1[charsWritten..];
-    //        ok = (i+6).TryFormat(span1, out charsWritten);
-    //        span1[charsWritten++] = ';';
+    [Benchmark]
+    public void WriteSpan() {
+      var PathFileName = directoryInfo.FullName + @"\Test4.csv";
+      using var fileStream = new FileStream(PathFileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan);
+      using var streamWriter = new StreamWriter(fileStream);
+      var lineBuffer = new char[100];
+      Span<char> span = lineBuffer;
+      for (int i = 0; i < iterations; i++) {
+        lineBuffer[0] = CsvConfig.LineCharAdd;
+        var span1 = span[1..];
+        var ok = i.TryFormat(span1, out var charsWritten);
+        lineBuffer[charsWritten++] = ';';
+        span1 = span[charsWritten..];
+        ok = (i+1).TryFormat(span1, out charsWritten);
+        span1[charsWritten++] = ';';
+        span1 = span1[charsWritten..];
+        ok = (i+2).TryFormat(span1, out charsWritten);
+        span1[charsWritten++] = ';';
+        span1 = span1[charsWritten..];
+        ok = (i+3).TryFormat(span1, out charsWritten);
+        span1[charsWritten++] = ';';
+        span1 = span1[charsWritten..];
+        ok = (i+4).TryFormat(span1, out charsWritten);
+        span1[charsWritten++] = ';';
+        span1 = span1[charsWritten..];
+        ok = (i+5).TryFormat(span1, out charsWritten);
+        span1[charsWritten++] = ';';
+        span1 = span1[charsWritten..];
+        ok = (i+6).TryFormat(span1, out charsWritten);
+        span1[charsWritten++] = ';';
 
-    //        var ca = lineBuffer[..(lineBuffer.Length - span1.Length + charsWritten)];
-    //        streamWriter.WriteLine(lineBuffer, 0, lineBuffer.Length - span1.Length + charsWritten);
-    //      }
-    //    }
-    //  }
-    //}
+        var ca = lineBuffer[..(lineBuffer.Length - span1.Length + charsWritten)];
+        streamWriter.WriteLine(lineBuffer, 0, lineBuffer.Length - span1.Length + charsWritten);
+      }
+    }
 
     /*
 |           Method |     Mean |    Error |   StdDev |
@@ -203,22 +209,23 @@ namespace StorageBenchmark {
 
 | WriteToCsvWriter | 141.3 ms | 2.04 ms | 1.71 ms | writing full buffers to FileStream
 | WriteToCsvWriter | 161.2 ms | 4.40 ms | 4.32 ms | with locks for flushtimer
-    */
+
+      */
     [Benchmark]
     public void WriteToCsvWriter() {
       var PathFileName = directoryInfo.FullName + @"\Test5.csv";
-      var csvConfig = new CsvConfig(directoryInfo.FullName, bufferSize: 1<<16);
-      using (var csvWriter = new CsvWriter(PathFileName, csvConfig, 60, isAsciiOnly: true)) {
-        for (int i = 0; i < iterations; i++) {
-          csvWriter.Write(i);
-          csvWriter.Write(i+1);
-          csvWriter.Write(i+2);
-          csvWriter.Write(i+3);
-          csvWriter.Write(i+4);
-          csvWriter.Write(i+5);
-          csvWriter.Write(i+6);
-          csvWriter.WriteEndOfLine();
-        }
+      var csvConfig = new CsvConfig(directoryInfo.FullName, bufferSize: bufferSize);
+      using var csvWriter = new CsvWriter(PathFileName, csvConfig, 60);
+      for (int i = 0; i < iterations; i++) {
+        csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+        csvWriter.Write(i);
+        csvWriter.Write(i+1);
+        csvWriter.Write(i+2);
+        csvWriter.Write(i+3);
+        csvWriter.Write(i+4);
+        csvWriter.Write(i+5);
+        csvWriter.Write(i+6);
+        csvWriter.WriteEndOfLine();
       }
     }
   }

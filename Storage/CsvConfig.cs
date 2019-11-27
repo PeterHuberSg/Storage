@@ -43,6 +43,15 @@ namespace Storage {
     /// The timer throws exception on a ThreadPool thread. reportException() needs to pass the exception to the main thread of the application.
     /// </summary>
     public readonly Action<Exception>? ReportException;
+
+
+    public readonly char LineCharAdd;
+
+
+    public readonly char LineCharUpdate;
+
+
+    public readonly char LineCharDelete;
     #endregion
 
 
@@ -63,10 +72,11 @@ namespace Storage {
       string directoryPath,
       char delimiter = '\t',
       Encoding? encoding = null,
-      int bufferSize = 1 << 12,
-      //uint writingIntervall = 1000,
-      //uint maxWaitIntervalls = 5,
-      Action<Exception>? reportException = null) 
+      int bufferSize = 1 << 15, //32k
+      Action<Exception>? reportException = null,
+      char lineCharAdd = '+',
+      char lineCharUpdate = '*',
+      char lineCharDelete = '-') 
     {
       DirectoryPath = directoryPath;
       Delimiter = delimiter;
@@ -79,6 +89,9 @@ namespace Storage {
       //WritingIntervall = writingIntervall;
       //MaxWaitIntervalls = maxWaitIntervalls;
       ReportException = reportException;
+      LineCharAdd = lineCharAdd;
+      LineCharUpdate = lineCharUpdate;
+      LineCharDelete = lineCharDelete;
     }
     #endregion
 

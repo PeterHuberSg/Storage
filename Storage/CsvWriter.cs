@@ -17,7 +17,15 @@ namespace Storage {
 
     public CsvConfig CsvConfig { get; }
 
-    public int MaxLineLenght { get; }
+    /// <summary>
+    /// How many chars can a line max contain ?
+    /// </summary>
+    public int MaxLineCharLenght { get; }
+
+    /// <summary>
+    /// How many bytes can a line max contain ?
+    /// </summary>
+    public int MaxLineByteLenght { get; }
 
     public bool IsAsciiOnly { get; }
 
@@ -34,32 +42,49 @@ namespace Storage {
 #pragma warning disable IDE0069 // Disposable fields should be disposed
     FileStream? fileStream;
 #pragma warning restore IDE0069 // Disposable fields should be disposed
+    readonly bool isFileStreamOwner;
     readonly byte[] byteArray;
     int writePos;
     readonly int maxBufferWriteLength;
     readonly byte delimiter;
     Timer? flushTimer;
-    byte[] tempBytes;
-    char[] tempChars;
+    readonly byte[] tempBytes;
+    readonly char[] tempChars;
 
 
-    public CsvWriter(string fileName, CsvConfig csvConfig, int maxLineLenght, bool isAsciiOnly = true, int flushDelay = 200) {
+    public CsvWriter(
+      string fileName, 
+      CsvConfig csvConfig, 
+      int maxLineLenght, 
+      FileStream? existingFileStream = null, 
+      bool isAsciiOnly = true, 
+      int flushDelay = 200) 
+    {
+      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception();
+
       FileName = fileName;
       CsvConfig = csvConfig;
       if (csvConfig.Encoding!=Encoding.UTF8) 
         throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName} for file {fileName}.");
       
       delimiter = (byte)csvConfig.Delimiter;
-      if (maxLineLenght>CsvConfig.BufferSize/10) 
-        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least 10 times bigger than MaxLineLenght {MaxLineLenght} for file {fileName}.");
+      if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
+        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
 
-      MaxLineLenght = maxLineLenght;
-      tempBytes = new byte[maxLineLenght];
+      MaxLineCharLenght = maxLineLenght;
+      MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
+      tempBytes = new byte[MaxLineByteLenght];
       tempChars = new char[maxLineLenght];
       IsAsciiOnly = isAsciiOnly;
       FlushDelay = flushDelay;
-      //fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
-      fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
+      if (existingFileStream is null) {
+        isFileStreamOwner = true;
+        //fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
+        fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, CsvConfig.BufferSize);
+      } else {
+        isFileStreamOwner = false;
+        fileStream = existingFileStream;
+      }
       //byteArray = new byte[csvConfig.BufferSize];
       //writePos = 0;
       //maxBufferWriteLength = CsvConfig.BufferSize - maxLineLenght;
@@ -131,7 +156,9 @@ namespace Storage {
           fileStream.Write(byteArray, 0, writePos);
           writePos = 0;
         }
-        fileStream.Dispose();
+        if (isFileStreamOwner) {
+          fileStream.Dispose();
+        }
         fileStream = null;
       }
     }
@@ -141,23 +168,25 @@ namespace Storage {
     #region Methods
     //      -------
 
-    bool isNotLocked = true;
 #if DEBUG
+    bool isLocked = false;
     int lineStart = 0;
 #endif
 
 
     public void WriteEndOfLine() {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
+#if DEBUG
+      if (!isLocked) {
+        throw new Exception();
       }
+      isLocked = false;
+#endif
       try {
         byteArray[writePos++] = 0x0D;
         byteArray[writePos++] = 0x0A;
 
 #if DEBUG
-        if (writePos-lineStart>MaxLineLenght) throw new Exception();
+        if (writePos-lineStart>MaxLineByteLenght) throw new Exception($"MaxLineByteLenght {MaxLineByteLenght} should be at least {writePos-lineStart}.");
 #endif
 
         if (writePos>maxBufferWriteLength) {
@@ -182,7 +211,6 @@ namespace Storage {
 
       } finally {
         Monitor.Exit(byteArray);
-        isNotLocked = true;
       }
     }
 
@@ -194,10 +222,10 @@ namespace Storage {
     /// Write integer to UTF8 filestream including delimiter.
     /// </summary>
     public void Write(int i) {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
-      }
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
       int start;
       if (i<0) {
         byteArray[writePos++] = minusByte;
@@ -231,10 +259,10 @@ namespace Storage {
 
 
     public void Write(int? i) {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
-      }
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
       if (i is null) {
         byteArray[writePos++] = delimiter;
       } else {
@@ -247,10 +275,10 @@ namespace Storage {
     /// Write integer to UTF8 filestream including delimiter.
     /// </summary>
     public void Write(long l) {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
-      }
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
       int start;
       if (l<0) {
         byteArray[writePos++] = minusByte;
@@ -300,10 +328,10 @@ namespace Storage {
     /// writes at most number of digitsAfterComma, if they are not zero. Trailing zeros get trancated.
     /// </summary>
     public void Write(decimal d, int digitsAfterComma = int.MaxValue) {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
-      }
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
 
       int charsWritten;
       if (digitsAfterComma<=8) {
@@ -347,10 +375,10 @@ namespace Storage {
 
 
     public void Write(char c) {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
-      }
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
       if (c==delimiter) throw new Exception();
 
       if (c<0x80) {
@@ -364,11 +392,29 @@ namespace Storage {
     }
 
 
-    public void Write(string? s) {
-      if (isNotLocked) {
-        Monitor.Enter(byteArray);
-        isNotLocked = false;
+    public void WriteFirstLineChar(char c) {
+      Monitor.Enter(byteArray);
+#if DEBUG
+      if (isLocked) {
+        throw new Exception();
       }
+      isLocked = true;
+#endif
+      if (c==delimiter) throw new Exception();
+
+      if (c<0x80) {
+        byteArray[writePos++] = (byte)c;
+      } else {
+        throw new Exception();
+      }
+    }
+
+
+    public void Write(string? s) {
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
       if (s!=null) {
         for (int readIndex = 0; readIndex < s.Length; readIndex++) {
           var c = s[readIndex];
@@ -423,6 +469,28 @@ namespace Storage {
       year %= 10;
       byteArray[writePos++] = (byte)(('0') + year);
       byteArray[writePos++] = delimiter;
+    }
+
+
+    public void WriteLine(string line) {
+      lock (byteArray) {
+        for (int readIndex = 0; readIndex < line.Length; readIndex++) {
+          var c = line[readIndex];
+          if (c==delimiter) throw new Exception();
+
+          if (c<0x80) {
+            byteArray[writePos++] = (byte)c;
+          } else {
+            var readOnlySpan = ((ReadOnlySpan<char>)line).Slice(readIndex, line.Length-readIndex);
+            var byteLength = Encoding.UTF8.GetBytes(readOnlySpan, tempBytes);
+            Array.Copy(tempBytes, 0, byteArray, writePos, byteLength);
+            writePos += byteLength;
+            break;
+          }
+        }
+        byteArray[writePos++] = 0x0D;
+        byteArray[writePos++] = 0x0A;
+      }
     }
     #endregion
 

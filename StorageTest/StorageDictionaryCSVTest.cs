@@ -25,74 +25,74 @@ namespace StorageTest {
     CsvConfig? csvConfig;
 
 
-    [TestMethod]
-    public void TestStorageDictionaryCSV() {
-      var directoryInfo = new DirectoryInfo("TestCsv");
-      try {
-        if (directoryInfo.Exists) {
-          directoryInfo.Delete(recursive: true);
-          directoryInfo.Refresh();
-        }
+    //[TestMethod]
+    //public void TestStorageDictionaryCSV() {
+    //  var directoryInfo = new DirectoryInfo("TestCsv");
+    //  try {
+    //    if (directoryInfo.Exists) {
+    //      directoryInfo.Delete(recursive: true);
+    //      directoryInfo.Refresh();
+    //    }
 
-        directoryInfo.Create();
-        directoryInfo.Refresh();
+    //    directoryInfo.Create();
+    //    directoryInfo.Refresh();
 
-        csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
-        dictionary = createDictionary();
-        var expectedList = new List<string>();
-        assert(expectedList, cont, ref dictionary);
+    //    csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
+    //    dictionary = createDictionary();
+    //    var expectedList = new List<string>();
+    //    assert(expectedList, cont, ref dictionary);
 
-        add(dictionary, expectedList, 2, "2", cont);
-        add(dictionary, expectedList, 3, "3", cont);
-        add(dictionary, expectedList, 4, "4", cont);
-        add(dictionary, expectedList, 6, "6", notC);
-        add(dictionary, expectedList, 7, "7", notC);
+    //    add(dictionary, expectedList, 2, "2", cont);
+    //    add(dictionary, expectedList, 3, "3", cont);
+    //    add(dictionary, expectedList, 4, "4", cont);
+    //    add(dictionary, expectedList, 6, "6", notC);
+    //    add(dictionary, expectedList, 7, "7", notC);
 
-        remove(dictionary, expectedList, 7, notC);
-        add(dictionary, expectedList, 7, "7a", notC);
-        remove(dictionary, expectedList, 7, notC);
+    //    remove(dictionary, expectedList, 7, notC);
+    //    add(dictionary, expectedList, 7, "7a", notC);
+    //    remove(dictionary, expectedList, 7, notC);
 
-        remove(dictionary, expectedList, 6, cont);
-        add(dictionary, expectedList, 6, "6a", notC);
-        remove(dictionary, expectedList, 6, cont);
+    //    remove(dictionary, expectedList, 6, cont);
+    //    add(dictionary, expectedList, 6, "6a", notC);
+    //    remove(dictionary, expectedList, 6, cont);
 
-        add(dictionary, expectedList, 5, "5", cont);
-        add(dictionary, expectedList, 6, "6", cont);
+    //    add(dictionary, expectedList, 5, "5", cont);
+    //    add(dictionary, expectedList, 6, "6", cont);
 
-        update(dictionary, expectedList, 4, "4a", cont);
+    //    update(dictionary, expectedList, 4, "4a", cont);
 
-        remove(dictionary, expectedList, 2, cont);
-        remove(dictionary, expectedList, 6, cont);
-        remove(dictionary, expectedList, 4, notC);
-        remove(dictionary, expectedList, 5, cont);
-        remove(dictionary, expectedList, 3, cont);
+    //    remove(dictionary, expectedList, 2, cont);
+    //    remove(dictionary, expectedList, 6, cont);
+    //    remove(dictionary, expectedList, 4, notC);
+    //    remove(dictionary, expectedList, 5, cont);
+    //    remove(dictionary, expectedList, 3, cont);
 
-        add(dictionary, expectedList, 1, "1a", cont);
-        add(dictionary, expectedList, 6, "6b", notC);
+    //    add(dictionary, expectedList, 1, "1a", cont);
+    //    add(dictionary, expectedList, 6, "6b", notC);
 
-      } finally {
-        dictionary?.Dispose();
-        directoryInfo.Delete(recursive: true);
-      }
-
-
-    }
+    //  } finally {
+    //    dictionary?.Dispose();
+    //    directoryInfo.Delete(recursive: true);
+    //  }
 
 
-    private StorageDictionary<TestItemCsv> createDictionary() {
-      dictionary = new StorageDictionaryCSV<TestItemCsv>(
-        csvConfig!,
-        TestItemCsv.Headers,
-        TestItemCsv.ReadCsvLine,
-        true,
-        true,
-        true,
-        TestItemCsv.UpdateFromCsvLine);
-      dictionary.Added += dictionary_Added;
-      dictionary.Changed += dictionary_Changed;
-      dictionary.Removed += dictionary_Deleted;
-      return dictionary;
-    }
+    //}
+
+
+    //private StorageDictionary<TestItemCsv> createDictionary() {
+    //  dictionary = new StorageDictionaryCSV<TestItemCsv>(
+    //    csvConfig!,
+    //    TestItemCsv.Headers,
+    //    TestItemCsv.ReadCsvLine,
+    //    true,
+    //    true,
+    //    true,
+    //    TestItemCsv.UpdateFromCsvLine);
+    //  dictionary.Added += dictionary_Added;
+    //  dictionary.Changed += dictionary_Changed;
+    //  dictionary.Removed += dictionary_Deleted;
+    //  return dictionary;
+    //}
 
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "ex is required by CsvConfig")]
@@ -168,30 +168,30 @@ namespace StorageTest {
 
 
     private void assert(List<string> expectedList, bool areKeysContinous, ref StorageDictionary<TestItemCsv> dictionary) {
-      int count = expectedList.Count;
-      Assert.AreEqual(count, dictionary.Count);
-      Assert.AreEqual(count, dictionary.Keys.Count);
-      Assert.AreEqual(count, dictionary.Values.Count);
-      Assert.AreEqual(areKeysContinous, dictionary.AreKeysContinous);
-      for (int index = 0; index < count; index++) {
-        var fields = expectedList[index].Split("|");
-        var key = int.Parse(fields[0]);
-        var data = dictionary[key];
-        Assert.AreEqual(fields[1], data.Text);
-        Assert.IsTrue(dictionary.Keys.Contains(key));
-        Assert.IsTrue(dictionary.Values.Contains(data));
-      }
-      var countedItems = 0;
-      foreach (var data in dictionary) {
-        countedItems++;
-        var dataString = $"{data.Key}|{data.Text}";
-        Assert.IsTrue(expectedList.Contains(dataString));
-      }
-      Assert.AreEqual(count, countedItems);
+      //int count = expectedList.Count;
+      //Assert.AreEqual(count, dictionary.Count);
+      //Assert.AreEqual(count, dictionary.Keys.Count);
+      //Assert.AreEqual(count, dictionary.Values.Count);
+      //Assert.AreEqual(areKeysContinous, dictionary.AreKeysContinous);
+      //for (int index = 0; index < count; index++) {
+      //  var fields = expectedList[index].Split("|");
+      //  var key = int.Parse(fields[0]);
+      //  var data = dictionary[key];
+      //  Assert.AreEqual(fields[1], data.Text);
+      //  Assert.IsTrue(dictionary.Keys.Contains(key));
+      //  Assert.IsTrue(dictionary.Values.Contains(data));
+      //}
+      //var countedItems = 0;
+      //foreach (var data in dictionary) {
+      //  countedItems++;
+      //  var dataString = $"{data.Key}|{data.Text}";
+      //  Assert.IsTrue(expectedList.Contains(dataString));
+      //}
+      //Assert.AreEqual(count, countedItems);
 
-      dictionary.Dispose();
+      //dictionary.Dispose();
 
-      dictionary = createDictionary();
+      //dictionary = createDictionary();
     }
 
 

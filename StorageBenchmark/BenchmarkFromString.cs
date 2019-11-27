@@ -31,7 +31,7 @@ namespace StorageBenchmark {
       using (var fileStream = new FileStream(pathFileName, FileMode.CreateNew)) {
         using var streamWriter = new StreamWriter(fileStream);
         for (int i = 0; i < iterations; i++) {
-          streamWriter.WriteLine($"{i};{i+1};{i+2};{i+3};{i+4};{i+5};{i+6};");
+          streamWriter.WriteLine($"+{i};{i+1};{i+2};{i+3};{i+4};{i+5};{i+6};");
         }
       }
 #if DEBUG
@@ -49,7 +49,7 @@ namespace StorageBenchmark {
         using var streamReader = new StreamReader(fileStream);
         while (!streamReader.EndOfStream) {
           var line = streamReader.ReadLine();
-          foreach (var field in line.Split(';', StringSplitOptions.RemoveEmptyEntries)) {
+          foreach (var field in line[1..].Split(';', StringSplitOptions.RemoveEmptyEntries)) {
             var i = int.Parse(field);
             total += i;
           }
@@ -67,6 +67,7 @@ namespace StorageBenchmark {
       using var fileStream = new FileStream(pathFileName, FileMode.Open);
       var fileLength = fileStream.Length;
       while (true) {
+        fileStream.ReadByte(); //reads leading +
         for (int fieldIndex = 0; fieldIndex < 7; fieldIndex++) {
           var (isEof, i)= fileStream.ReadInt(delimiter, "Test", esb);
           if (isEof) {
@@ -102,13 +103,19 @@ namespace StorageBenchmark {
 |   128k | 108.7 ms | 1.37 ms | 1.15 ms | FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, FileOptions.SequentialScan | FileOptions.WriteThrough
     */
 
-    /* after removing checks for every byte read if there is another byte in the buffer
+    /* after removing checks for every byte read if there is another byte in the buffer, 32k buffer
 |         Method |      Mean |     Error |    StdDev |    Median |
 |--------------- |----------:|----------:|----------:|----------:|
 |     ReadString | 573.33 ms | 24.275 ms | 71.194 ms | 539.47 ms |
 | ReadFileStream | 519.38 ms | 10.375 ms | 25.837 ms | 519.64 ms |
 |  ReadCSVReader |  99.86 ms |  1.256 ms |  1.175 ms |  99.95 ms |
 
+after removing checks for every read method if there is another byte in the buffer, added '+' as first character of every line
+|         Method |     Mean |    Error |   StdDev |   Median |
+|--------------- |---------:|---------:|---------:|---------:|
+|     ReadString | 682.9 ms | 29.92 ms | 87.27 ms | 644.4 ms |
+| ReadFileStream | 575.8 ms | 14.00 ms | 41.07 ms | 579.4 ms |
+|  ReadCSVReader | 106.6 ms |  1.99 ms |  1.95 ms | 106.4 ms |
     */
     [Benchmark]
     public int ReadCSVReader() {
@@ -118,6 +125,7 @@ namespace StorageBenchmark {
 
       using var csvReader = new CsvReader(pathFileName, csvConfig, maxLineLenght: 60);
       do {
+        csvReader.ReadFirstLineChar();
         for (int fieldIndex = 0; fieldIndex<7; fieldIndex++) {
           var i = csvReader.ReadInt();
           total += i;

@@ -25,73 +25,79 @@ namespace StorageTest {
         directoryInfo.Refresh();
 
         var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
-        var fileName = csvConfig.DirectoryPath + @"\TestCsvReaderInt.csv";
+        var fileName = csvConfig.DirectoryPath + @"\TestCsvReader.csv";
 
         var expectedInts = new List<int>();
         var expectedNullInts = new List<int?>();
         var expectedLongs = new List<long>();
         var expectedDecimals = new List<decimal>();
         using (var fileStream = new FileStream(fileName, FileMode.Create)) {
-          using (var streamWriter = new StreamWriter(fileStream)) {
-            writeInt(streamWriter, int.MaxValue, expectedInts, csvConfig.Delimiter);
-            writeInt(streamWriter, 1, expectedInts, csvConfig.Delimiter);
-            writeInt(streamWriter, 0, expectedInts, csvConfig.Delimiter);
-            writeInt(streamWriter, -1, expectedInts, csvConfig.Delimiter);
-            writeInt(streamWriter, -10, expectedInts, csvConfig.Delimiter);
-            writeInt(streamWriter, -111, expectedInts, csvConfig.Delimiter);
-            writeInt(streamWriter, int.MinValue, expectedInts, csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          using var streamWriter = new StreamWriter(fileStream);
+          streamWriter.Write(csvConfig.LineCharAdd);
+          writeInt(streamWriter, int.MaxValue, expectedInts, csvConfig.Delimiter);
+          writeInt(streamWriter, 1, expectedInts, csvConfig.Delimiter);
+          writeInt(streamWriter, 0, expectedInts, csvConfig.Delimiter);
+          writeInt(streamWriter, -1, expectedInts, csvConfig.Delimiter);
+          writeInt(streamWriter, -10, expectedInts, csvConfig.Delimiter);
+          writeInt(streamWriter, -111, expectedInts, csvConfig.Delimiter);
+          writeInt(streamWriter, int.MinValue, expectedInts, csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            writeIntNull(streamWriter, null, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, int.MaxValue, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, 1, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, 0, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, -1, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, -10, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, -111, expectedNullInts, csvConfig.Delimiter);
-            writeIntNull(streamWriter, int.MinValue, expectedNullInts, csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          streamWriter.Write(csvConfig.LineCharAdd);
+          writeIntNull(streamWriter, null, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, int.MaxValue, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, 1, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, 0, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, -1, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, -10, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, -111, expectedNullInts, csvConfig.Delimiter);
+          writeIntNull(streamWriter, int.MinValue, expectedNullInts, csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            writeLong(streamWriter, long.MaxValue, expectedLongs, csvConfig.Delimiter);
-            writeLong(streamWriter, 1, expectedLongs, csvConfig.Delimiter);
-            writeLong(streamWriter, 0, expectedLongs, csvConfig.Delimiter);
-            writeLong(streamWriter, -1, expectedLongs, csvConfig.Delimiter);
-            writeLong(streamWriter, -10, expectedLongs, csvConfig.Delimiter);
-            writeLong(streamWriter, -111, expectedLongs, csvConfig.Delimiter);
-            writeLong(streamWriter, long.MinValue, expectedLongs, csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          streamWriter.Write(csvConfig.LineCharAdd);
+          writeLong(streamWriter, long.MaxValue, expectedLongs, csvConfig.Delimiter);
+          writeLong(streamWriter, 1, expectedLongs, csvConfig.Delimiter);
+          writeLong(streamWriter, 0, expectedLongs, csvConfig.Delimiter);
+          writeLong(streamWriter, -1, expectedLongs, csvConfig.Delimiter);
+          writeLong(streamWriter, -10, expectedLongs, csvConfig.Delimiter);
+          writeLong(streamWriter, -111, expectedLongs, csvConfig.Delimiter);
+          writeLong(streamWriter, long.MinValue, expectedLongs, csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            writeDecimal(streamWriter, decimal.MaxValue, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, 1234567890.1234567890m, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, 1234567890.12m, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, decimal.One, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, decimal.Zero, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, decimal.MinusOne, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, -1234567890.12m, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, -1234567890.1234567890m, expectedDecimals, csvConfig.Delimiter);
-            writeDecimal(streamWriter, decimal.MinValue, expectedDecimals, csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          streamWriter.Write(csvConfig.LineCharAdd);
+          writeDecimal(streamWriter, decimal.MaxValue, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, 1234567890.1234567890m, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, 1234567890.12m, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.One, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.Zero, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.MinusOne, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, -1234567890.12m, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, -1234567890.1234567890m, expectedDecimals, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.MinValue, expectedDecimals, csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            streamWriter.Write("a" + csvConfig.Delimiter);
-            streamWriter.Write("Ä" + csvConfig.Delimiter);
-            streamWriter.Write("☹" + csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          streamWriter.Write(csvConfig.LineCharAdd);
+          streamWriter.Write("a" + csvConfig.Delimiter);
+          streamWriter.Write("Ä" + csvConfig.Delimiter);
+          streamWriter.Write("☹" + csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            streamWriter.Write(csvConfig.Delimiter);
-            streamWriter.Write("a" + csvConfig.Delimiter);
-            streamWriter.Write("abc" + csvConfig.Delimiter);
-            streamWriter.Write("Ä" + csvConfig.Delimiter);
-            streamWriter.Write("aÄ" + csvConfig.Delimiter);
-            streamWriter.Write("abcÄ ☹de" + csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          streamWriter.Write(csvConfig.LineCharAdd);
+          streamWriter.Write(csvConfig.Delimiter);
+          streamWriter.Write("a" + csvConfig.Delimiter);
+          streamWriter.Write("abc" + csvConfig.Delimiter);
+          streamWriter.Write("Ä" + csvConfig.Delimiter);
+          streamWriter.Write("aÄ" + csvConfig.Delimiter);
+          streamWriter.Write("abcÄ ☹de" + csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            streamWriter.Write("31.12.9999" + csvConfig.Delimiter);
-            streamWriter.Write("1.1.0001" + csvConfig.Delimiter);
-            streamWriter.WriteLine();
+          streamWriter.Write(csvConfig.LineCharAdd);
+          streamWriter.Write("31.12.9999" + csvConfig.Delimiter);
+          streamWriter.Write("1.1.0001" + csvConfig.Delimiter);
+          streamWriter.WriteLine();
 
-            for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
-              streamWriter.WriteLine(i.ToString() + csvConfig.Delimiter);
-            }
+          for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
+            streamWriter.WriteLine(csvConfig.LineCharAdd + i.ToString() + csvConfig.Delimiter);
           }
         }
 
@@ -104,6 +110,7 @@ namespace StorageTest {
         int maxLineLenght = 150;
         using (var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght)) {
           //int
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           foreach (var expectedInt in expectedInts) {
             Assert.AreEqual(expectedInt, csvReader.ReadInt());
             Assert.IsFalse(csvReader.IsEndOfFileReached());
@@ -113,6 +120,7 @@ namespace StorageTest {
           Assert.IsFalse(csvReader.IsEof);
 
           //int?
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           foreach (var expectedInt in expectedNullInts) {
             var actualInt = csvReader.ReadIntNull();
             if (expectedInt.HasValue) {
@@ -127,6 +135,7 @@ namespace StorageTest {
           Assert.IsFalse(csvReader.IsEof);
 
           //long
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           foreach (var expectedLong in expectedLongs) {
             Assert.AreEqual(expectedLong, csvReader.ReadLong());
             Assert.IsFalse(csvReader.IsEndOfFileReached());
@@ -136,6 +145,7 @@ namespace StorageTest {
           Assert.IsFalse(csvReader.IsEof);
 
           //decimal
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           foreach (var expectedDecimal in expectedDecimals) {
             Assert.AreEqual(expectedDecimal, csvReader.ReadDecimal());
             Assert.IsFalse(csvReader.IsEndOfFileReached());
@@ -145,6 +155,7 @@ namespace StorageTest {
           Assert.IsFalse(csvReader.IsEof);
 
           //char
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           Assert.AreEqual('a', csvReader.ReadChar());
           Assert.AreEqual('Ä', csvReader.ReadChar());
           Assert.AreEqual('☹', csvReader.ReadChar());
@@ -152,6 +163,7 @@ namespace StorageTest {
           Assert.IsFalse(csvReader.IsEof);
 
           //string?
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           Assert.IsNull(csvReader.ReadString());
           Assert.AreEqual("a", csvReader.ReadString());
           Assert.AreEqual("abc", csvReader.ReadString());
@@ -160,12 +172,15 @@ namespace StorageTest {
           Assert.AreEqual("abcÄ ☹de", csvReader.ReadString());
           csvReader.ReadEndOfLine();
 
+          //DateTime
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           Assert.AreEqual(DateTime.MaxValue.Date, csvReader.ReadDate());
           Assert.AreEqual(DateTime.MinValue.Date, csvReader.ReadDate());
           csvReader.ReadEndOfLine();
 
           //more than 1 buffer data
           for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
+            Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
             Assert.AreEqual(i, csvReader.ReadInt());
             Assert.IsFalse(csvReader.IsEndOfFileReached());
             Assert.IsFalse(csvReader.IsEof);
@@ -219,6 +234,50 @@ namespace StorageTest {
       expectedDecimalss.Add(d);
     }
 
+
+    #region 
+    [TestMethod()]
+    public void TestCsvReaderLine() {
+      var directoryInfo = new DirectoryInfo("TestCsv");
+      try {
+        if (directoryInfo.Exists) {
+          directoryInfo.Delete(recursive: true);
+          directoryInfo.Refresh();
+        }
+
+        directoryInfo.Create();
+        directoryInfo.Refresh();
+
+        var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
+        var fileName = csvConfig.DirectoryPath + @"\TestCsvReaderLine.csv";
+
+        using (var fileStream = new FileStream(fileName, FileMode.Create)) {
+          using var streamWriter = new StreamWriter(fileStream);
+          streamWriter.WriteLine();
+          streamWriter.WriteLine("a");
+          streamWriter.WriteLine("abc" + csvConfig.Delimiter);
+          streamWriter.WriteLine("Ä");
+          streamWriter.WriteLine("aÄ" + csvConfig.Delimiter);
+          streamWriter.WriteLine("abcÄ ☹de" + csvConfig.Delimiter);
+        }
+
+        int maxLineLenght = 6;
+        using (var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght)) {
+          Assert.AreEqual("", csvReader.ReadLine());
+          Assert.AreEqual("a", csvReader.ReadLine());
+          Assert.AreEqual("abc" + csvConfig.Delimiter, csvReader.ReadLine());
+          Assert.AreEqual("Ä", csvReader.ReadLine());
+          Assert.AreEqual("aÄ" + csvConfig.Delimiter, csvReader.ReadLine());
+          Assert.AreEqual("abcÄ ☹de" + csvConfig.Delimiter, csvReader.ReadLine());
+          Assert.IsTrue(csvReader.IsEndOfFileReached());
+          Assert.IsTrue(csvReader.IsEof);
+        }
+      } finally {
+        directoryInfo.Delete(recursive: true);
+      }
+    }
+
+    #endregion
 
   }
 }

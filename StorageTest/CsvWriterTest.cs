@@ -12,7 +12,7 @@ namespace StorageTest {
   [TestClass()]
   public class CsvWriterTest {
     [TestMethod()]
-    public void TestCsvReader() {
+    public void TestCsvWriter() {
       var directoryInfo = new DirectoryInfo("TestCsv");
       try {
         if (directoryInfo.Exists) {
@@ -26,6 +26,9 @@ namespace StorageTest {
         var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
         var fileName = csvConfig.DirectoryPath + @"\TestCsvWriterInt.csv";
         using (var csvWriter = new CsvWriter(fileName, csvConfig, 250, isAsciiOnly: true)) {
+          csvWriter.WriteLine("Some header");
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write(int.MaxValue);
           csvWriter.Write(1);
           csvWriter.Write(0);
@@ -33,6 +36,7 @@ namespace StorageTest {
           csvWriter.Write(int.MinValue);
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write((int?)null);
           csvWriter.Write((int?)int.MaxValue);
           csvWriter.Write((int?)1);
@@ -41,6 +45,7 @@ namespace StorageTest {
           csvWriter.Write((int?)int.MinValue);
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write(long.MaxValue);
           csvWriter.Write(1L);
           csvWriter.Write(0L);
@@ -48,6 +53,7 @@ namespace StorageTest {
           csvWriter.Write(long.MinValue);
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write(decimal.MaxValue, 0);
           csvWriter.Write(decimal.MaxValue);
           csvWriter.Write(1234567890.12345678m, 8);
@@ -71,11 +77,13 @@ namespace StorageTest {
           csvWriter.Write(decimal.MinValue, 0);
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write('a');// 
           csvWriter.Write('Ä');// 
           csvWriter.Write('☹');// Smiley with white frowning face
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write((string?)null);
           csvWriter.Write("");
           csvWriter.Write("abc");
@@ -83,6 +91,7 @@ namespace StorageTest {
           csvWriter.Write("aÄ☹");
           csvWriter.WriteEndOfLine();
 
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.WriteDate(DateTime.MaxValue.Date);
           csvWriter.WriteDate(DateTime.MinValue.Date);
           csvWriter.WriteDate(new DateTime(2000, 1, 1));
@@ -96,6 +105,7 @@ namespace StorageTest {
           csvWriter.WriteEndOfLine();
 
           for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
             csvWriter.Write(i);
             csvWriter.WriteEndOfLine();
           }
@@ -104,7 +114,11 @@ namespace StorageTest {
         using var fileStream = new FileStream(fileName, FileMode.Open);
         using var streamReader = new StreamReader(fileStream);
         var line = streamReader.ReadLine();
-        var fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual("Some header", line);
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        var fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual(int.MaxValue, int.Parse(fieldStrings[0]));
         Assert.AreEqual(1, int.Parse(fieldStrings[1]));
         Assert.AreEqual(0, int.Parse(fieldStrings[2]));
@@ -112,7 +126,8 @@ namespace StorageTest {
         Assert.AreEqual(int.MinValue, int.Parse(fieldStrings[4]));
 
         line = streamReader.ReadLine();
-        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual("", fieldStrings[0]);
         Assert.AreEqual(int.MaxValue, int.Parse(fieldStrings[1]));
         Assert.AreEqual(1, int.Parse(fieldStrings[2]));
@@ -121,7 +136,8 @@ namespace StorageTest {
         Assert.AreEqual(int.MinValue, int.Parse(fieldStrings[5]));
 
         line = streamReader.ReadLine();
-        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual(long.MaxValue, long.Parse(fieldStrings[0]));
         Assert.AreEqual(1L, long.Parse(fieldStrings[1]));
         Assert.AreEqual(0L, long.Parse(fieldStrings[2]));
@@ -129,7 +145,8 @@ namespace StorageTest {
         Assert.AreEqual(long.MinValue, long.Parse(fieldStrings[4]));
 
         line = streamReader.ReadLine();
-        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         var fieldIndex = 0;
         //csvWriter.Write(decimal.MaxValue, 0);
         Assert.AreEqual(decimal.MaxValue, decimal.Parse(fieldStrings[fieldIndex++]));
@@ -175,13 +192,15 @@ namespace StorageTest {
         Assert.AreEqual(decimal.MinValue, decimal.Parse(fieldStrings[fieldIndex++]));
 
         line = streamReader.ReadLine();
-        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual("a", fieldStrings[0]);
         Assert.AreEqual("Ä", fieldStrings[1]);
         Assert.AreEqual("☹", fieldStrings[2]);
 
         line = streamReader.ReadLine();
-        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual("", fieldStrings[0]);
         Assert.AreEqual("", fieldStrings[1]);
         Assert.AreEqual("abc", fieldStrings[2]);
@@ -189,7 +208,8 @@ namespace StorageTest {
         Assert.AreEqual("aÄ☹", fieldStrings[4]);
 
         line = streamReader.ReadLine();
-        fieldStrings = line!.Split(csvConfig.Delimiter);
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual("31.12.9999", fieldStrings[0]);
         Assert.AreEqual("1.1.0001", fieldStrings[1]);
         Assert.AreEqual("1.1.2000", fieldStrings[2]);
@@ -203,7 +223,7 @@ namespace StorageTest {
 
         for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
           line = streamReader.ReadLine();
-          Assert.AreEqual(i.ToString() + '\t', line);
+          Assert.AreEqual(i.ToString() + '\t', line![1..]);
         }
         Assert.IsTrue(fileStream.ReadByte()<0);
       } finally {

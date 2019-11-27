@@ -20,7 +20,11 @@ namespace StorageBenchmark {
 
       /* TestToString*/
       var benchmarkToString = new BenchmarkToString();
-      //benchmarkToString.WriteTo4();
+      //benchmarkToString.WriteStaticString();
+      //benchmarkToString.WriteStringWithParams();
+      //benchmarkToString.WriteBufferIf();
+      //benchmarkToString.WriteBufferReverse();
+      //benchmarkToString.WriteSpan();
       benchmarkToString.WriteToCsvWriter();
 
       /* BenchmarkFromString*/
@@ -33,8 +37,8 @@ namespace StorageBenchmark {
 #endif
 #if RELEASE
       //var summary = BenchmarkRunner.Run(typeof(Program).Assembly);
-      var summary = BenchmarkRunner.Run<BenchmarkFromString>();
-      //var summary = BenchmarkRunner.Run<BenchmarkToString>();
+      //var summary = BenchmarkRunner.Run<BenchmarkFromString>();
+      var summary = BenchmarkRunner.Run<BenchmarkToString>();
 #endif
       Console.WriteLine();
       Console.WriteLine("press any key to exit");
