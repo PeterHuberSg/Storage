@@ -92,7 +92,7 @@ namespace Storage {
     }
 
 
-    public string Write(CsvWriter csvWriter) {
+    public void Write(CsvWriter csvWriter) {
       throw new NotImplementedException();
     }
 
@@ -123,6 +123,10 @@ namespace Storage {
       return
         $"Id: {Key};" +
         $" Text: {Text};";
+    }
+
+    public void UpdateFromCsvLine(CsvReader csvReader) {
+      throw new NotImplementedException();
     }
     #endregion
   }

@@ -34,6 +34,13 @@ namespace Storage {
     /// Dealy in millisecond before flush gets executed after the last write
     /// </summary>
     public readonly int FlushDelay;
+
+
+    /// <summary>
+    /// Number of bytes not written to file yet
+    /// </summary>
+    public int ByteBufferLength { get { return writePos; } }
+
     #endregion
 
 
@@ -91,7 +98,7 @@ namespace Storage {
       byteArray = new byte[csvConfig.BufferSize + maxLineLenght];
       writePos = 0;
       maxBufferWriteLength = CsvConfig.BufferSize;
-      //flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
+      flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
     }
     #endregion
 
@@ -115,6 +122,8 @@ namespace Storage {
     protected bool IsDisposed {
       get { return isDisposed==1; }
     }
+
+
     int isDisposed = 0;
 
 
@@ -190,10 +199,6 @@ namespace Storage {
 #endif
 
         if (writePos>maxBufferWriteLength) {
-          //var sw = new Stopwatch();
-          //sw.Restart();
-
-          //fileStream!.Write(byteArray, 0, writePos);
           fileStream!.Write(byteArray, 0, maxBufferWriteLength);
           var numberOfBytesToCopy = writePos - maxBufferWriteLength;
           if (numberOfBytesToCopy>0) {
@@ -202,9 +207,8 @@ namespace Storage {
           } else {
             writePos = 0;
           }
-          kickFlushTimer();
-          //sw.Stop();
         }
+        kickFlushTimer();
 #if DEBUG
         lineStart = writePos;
 #endif
@@ -476,7 +480,6 @@ namespace Storage {
       lock (byteArray) {
         for (int readIndex = 0; readIndex < line.Length; readIndex++) {
           var c = line[readIndex];
-          if (c==delimiter) throw new Exception();
 
           if (c<0x80) {
             byteArray[writePos++] = (byte)c;

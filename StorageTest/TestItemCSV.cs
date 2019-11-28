@@ -25,6 +25,7 @@ namespace StorageTest {
 
     public static readonly string[] Headers = { "Key", "Text" };
 
+    public const int MaxLineLength = 30;
 
     public event Action<TestItemCsv>? HasChanged;
 
@@ -38,44 +39,25 @@ namespace StorageTest {
     public bool CanDelete() { return true; }
 
 
-    public string Write(CsvWriter csvWriter) {
-      throw new NotImplementedException();
+    public void Write(CsvWriter csvWriter) {
+      csvWriter.Write(Key);
+      csvWriter.Write(Text);
     }
 
 
-    public string ToCsvString(char delimiter) {
-      return "" +
-        Key + delimiter +
-        Text + delimiter;
-    }
 
-
-    public static TestItemCsv? ReadCsvLine(string line, char delimiter, StringBuilder errorStringBuilder) {
-      var fields = line.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
-      if (fields.Length!=Headers.Length) {
-        errorStringBuilder.AppendLine($"TestItem should have {Headers.Length} fields, but had {fields.Length}: '{line}'.");
-        return null;
-      }
-
-      int fieldIndex = 0;
-      int key = Csv.ParseInt("TestRecord.Id", fields[fieldIndex++], line, errorStringBuilder);
-      string text = fields[fieldIndex++];
+    public static TestItemCsv? ReadCsvLine(CsvReader csvReader) {
+      int key = csvReader.ReadInt();
+      string text = csvReader.ReadString()!;
       var item = new TestItemCsv(key, text);
       return item;
     }
 
 
-    public static void UpdateFromCsvLine(
-      string line, 
-      char delimiter, 
-      StorageDictionary<TestItemCsv> storageDirectoryCSV, 
-      StringBuilder errorStringBuilder) 
+    public void UpdateFromCsvLine(CsvReader csvReader) 
     {
-      var itemChanged = ReadCsvLine(line, delimiter, errorStringBuilder);
-      if (itemChanged==null) return;
-
-      var item = storageDirectoryCSV[itemChanged.Key];
-      item.Update(itemChanged);
+      Text = csvReader.ReadString()!;
+      HasChanged?.Invoke(this);
     }
 
 

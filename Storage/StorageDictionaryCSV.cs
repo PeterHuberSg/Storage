@@ -70,25 +70,23 @@ namespace Storage {
     #region Constructor
     //     ------------
 
-    readonly Func<CsvReader, char, StringBuilder, TItemCSV?> readCsvLine;
-    readonly Action<CsvReader, char, StorageDictionary<TItemCSV>, StringBuilder>? updateFromCsvLine;
+    readonly Func<CsvReader, TItemCSV?> readCsvLine;
     readonly bool isInitialReading;
     FileStream? fileStream;
     CsvWriter? csvWriter;
 
-    Timer? flushTimer;
+    //Timer? flushTimer;
 
 
     public StorageDictionaryCSV(
       CsvConfig csvConfig,
       int maxLineLenght,
       string[] headers,
-      Func<CsvReader, char, StringBuilder, TItemCSV?> readCsvLine,
+      Func<CsvReader, TItemCSV?> readCsvLine,
       bool areItemsUpdatable = false,
       bool areItemsDeletable = false,
       bool isCompactDuringDispose = true,
       bool isAsciiOnly = true,
-      Action<CsvReader, char, StorageDictionary<TItemCSV>, StringBuilder>? updateFromCsvLine = null,
       int capacity = 0,
       int flushDelay = 200) : base(areItemsUpdatable, areItemsDeletable, capacity) 
     {
@@ -98,14 +96,9 @@ namespace Storage {
       CsvHeaderString = Csv.ToCsvHeaderString(headers, csvConfig.Delimiter);
       IsAsciiOnly = isAsciiOnly;
       this.readCsvLine = readCsvLine;
-      if (areItemsUpdatable) {
-        if (updateFromCsvLine==null) throw new Exception();
-
-        this.updateFromCsvLine = updateFromCsvLine;
-      }
 
       PathFileName = Csv.ToPathFileName(csvConfig, typeof(TItemCSV).Name);
-      var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, csvConfig.BufferSize, FileOptions.SequentialScan);
+      fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, csvConfig.BufferSize, FileOptions.SequentialScan);
       if (fileStream.Length>0) {
         using (var csvReader = new CsvReader(null, CsvConfig, maxLineLenght, fileStream)) {
           isInitialReading = true;
@@ -113,13 +106,13 @@ namespace Storage {
           isInitialReading = false;
           fileStream.Position = fileStream.Length;
         }
-        csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, isAsciiOnly);
+        csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, isAsciiOnly, flushDelay: flushDelay);
       } else {
         //there is no file yet. Write an empty file with just the CSV header
-        csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, isAsciiOnly);
+        csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, isAsciiOnly, flushDelay: flushDelay);
         WriteToCsvFile(csvWriter);
       }
-      flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
+      //flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
       FlushDelay = flushDelay;
     }
     #endregion
@@ -133,14 +126,14 @@ namespace Storage {
 
     protected override void OnDispose(bool disposing) {
       lock (disposingLock) {
-        var wasflushTimer = Interlocked.Exchange(ref flushTimer, null);
-        if (wasflushTimer!=null) {
-          try {
-            wasflushTimer.Dispose();//Dispose() is multithreading safe
-          } catch (Exception ex) {
-            CsvConfig.ReportException?.Invoke(ex);
-          }
-        }
+        //var wasflushTimer = Interlocked.Exchange(ref flushTimer, null);
+        //if (wasflushTimer!=null) {
+        //  try {
+        //    wasflushTimer.Dispose();//Dispose() is multithreading safe
+        //  } catch (Exception ex) {
+        //    CsvConfig.ReportException?.Invoke(ex);
+        //  }
+        //}
 
         var wasCsvWriter = Interlocked.Exchange(ref csvWriter, null);
         if (wasCsvWriter!=null) {
@@ -164,9 +157,9 @@ namespace Storage {
               File.Delete(backupFileName);
             }
             File.Move(PathFileName, backupFileName);
-            var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
-            using var streamWriter = new CsvWriter("", CsvConfig, MaxLineLenght, fileStream, IsAsciiOnly);
-            WriteToCsvFile(streamWriter);
+            using var fileStream = new FileStream(PathFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
+            using var csvWriter = new CsvWriter("", CsvConfig, MaxLineLenght, fileStream, IsAsciiOnly);
+            WriteToCsvFile(csvWriter);
           } catch (Exception ex) {
             CsvConfig.ReportException?.Invoke(ex);
           }
@@ -179,7 +172,6 @@ namespace Storage {
     #region Methods
     //      -------
 
-
     private void readFromCsvFile(CsvReader csvReader) {
       //verify headers line
       var headerLine = csvReader.ReadLine();
@@ -191,7 +183,10 @@ namespace Storage {
         var firstLineChar = csvReader.ReadFirstLineChar();
         if (firstLineChar==CsvConfig.LineCharUpdate) {
           //update
-          updateFromCsvLine!(csvReader, CsvConfig.Delimiter, this, errorStringBuilder);//throws an exception when updateFromCsvLine==null
+          var key = csvReader.ReadInt();
+          var item = this[key];
+          item.UpdateFromCsvLine(csvReader);
+          csvReader.ReadEndOfLine();
 
         } else if (firstLineChar==CsvConfig.LineCharDelete) {
           //delete
@@ -206,29 +201,17 @@ namespace Storage {
 #endif
         } else {
           //add
-          var item = readCsvLine(csvReader, CsvConfig.Delimiter, errorStringBuilder);
+          var item = readCsvLine(csvReader);
           if (errorStringBuilder.Length==0) {
             Add(item!);
           }
+          csvReader.ReadEndOfLine();
         }
 
       }
       if (errorStringBuilder.Length>0) {
         throw new Exception($"Errors reading file {csvReader.FileName}, wrong formatting on following lines:" + Environment.NewLine +
           errorStringBuilder.ToString());
-      }
-    }
-
-
-    private int readKey(string line, char delimiter, StringBuilder errorStringBuilder) {
-      try {
-        var delimiterPos = line.IndexOf(delimiter);
-        var keyString = line[1..delimiterPos ];
-        var key = int.Parse(keyString);
-        return key;
-      } catch {
-        errorStringBuilder.AppendLine($"Could not read key in line '{line}'.");
-        return -1;
       }
     }
 
@@ -246,7 +229,7 @@ namespace Storage {
 
 
 #region Overrides
-    //      ---------
+//      ---------
 
     protected override void OnItemAdded(TItemCSV item) {
       if (isInitialReading) return;
@@ -257,7 +240,7 @@ namespace Storage {
           item.Write(csvWriter);
           csvWriter.WriteEndOfLine();
         }
-        kickFlushTimer();
+        //kickFlushTimer();
       } catch (Exception ex) {
         CsvConfig.ReportException?.Invoke(ex);
       }
@@ -269,11 +252,11 @@ namespace Storage {
 
       try {
         lock (csvWriter!) {
-          csvWriter.WriteFirstLineChar('*');
+          csvWriter.WriteFirstLineChar(CsvConfig.LineCharUpdate);
           item.Write(csvWriter);
           csvWriter.WriteEndOfLine();
         }
-        kickFlushTimer();
+        //kickFlushTimer();
       } catch (Exception ex) {
         CsvConfig.ReportException?.Invoke(ex);
       }
@@ -285,11 +268,11 @@ namespace Storage {
 
       try {
         lock (csvWriter!) {
-          csvWriter.WriteFirstLineChar('-');
+          csvWriter.WriteFirstLineChar(CsvConfig.LineCharDelete);
           item.Write(csvWriter);
           csvWriter.WriteEndOfLine();
         }
-        kickFlushTimer();
+        //kickFlushTimer();
       } catch (Exception ex) {
         CsvConfig.ReportException?.Invoke(ex);
       }
@@ -297,52 +280,52 @@ namespace Storage {
 #endregion
 
 
-#region Flushing
-    //      --------
+//#region Flushing
+//    //      --------
 
-    private void kickFlushTimer() {
-      flushTimer!.Change(FlushDelay, Timeout.Infinite); //the callers catch any exception
-    }
-
-
-    private void flushTimerMethod(object? state) {
-      try {
-        flush();
-      } catch (Exception ex) {
-        CsvConfig.ReportException?.Invoke(ex);
-      }
-    }
+//    private void kickFlushTimer() {
+//      flushTimer!.Change(FlushDelay, Timeout.Infinite); //the callers catch any exception
+//    }
 
 
-    private void flush() {
-      var wasCsvWriter = csvWriter;
-      if (IsDisposed) return;
-
-      if (wasCsvWriter!=null) {
-        lock (wasCsvWriter) {
-          wasCsvWriter.Flush();
-        }
-      }
-    }
+//    private void flushTimerMethod(object? state) {
+//      try {
+//        flush();
+//      } catch (Exception ex) {
+//        CsvConfig.ReportException?.Invoke(ex);
+//      }
+//    }
 
 
-    /// <summary>
-    /// Asks the OS to flush the data immediately to the disk. Normally, this happens FlushDelay miliseconds after last write. 
-    /// Flush() is multithreading safe.
-    /// </summary>
-    public void Flush() {
-      flush();
-      stopFlushTimer();
-    }
+//    private void flush() {
+//      var wasCsvWriter = csvWriter;
+//      if (IsDisposed) return;
+
+//      if (wasCsvWriter!=null) {
+//        lock (wasCsvWriter) {
+//          wasCsvWriter.Flush();
+//        }
+//      }
+//    }
 
 
-    private void stopFlushTimer() {
-      var wasFlushTimer = flushTimer;
-      if (wasFlushTimer!=null) {
-        wasFlushTimer.Change(Timeout.Infinite, Timeout.Infinite);//change is multithreading safe
-      }
-    }
-#endregion
+//    /// <summary>
+//    /// Asks the OS to flush the data immediately to the disk. Normally, this happens FlushDelay miliseconds after last write. 
+//    /// Flush() is multithreading safe.
+//    /// </summary>
+//    public void Flush() {
+//      flush();
+//      stopFlushTimer();
+//    }
+
+
+//    private void stopFlushTimer() {
+//      var wasFlushTimer = flushTimer;
+//      if (wasFlushTimer!=null) {
+//        wasFlushTimer.Change(Timeout.Infinite, Timeout.Infinite);//change is multithreading safe
+//      }
+//    }
+//#endregion
 #endregion
   }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
 
@@ -234,6 +235,76 @@ namespace StorageTest {
 
     private void reportException(Exception obj) {
       throw new Exception();
+    }
+
+
+    [TestMethod()]
+    public void TestCsvWriterFlushTimer() {
+      var directoryInfo = new DirectoryInfo("TestCsv");
+      try {
+        if (directoryInfo.Exists) {
+          directoryInfo.Delete(recursive: true);
+          directoryInfo.Refresh();
+        }
+
+        directoryInfo.Create();
+        directoryInfo.Refresh();
+
+        var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
+        var fileName = csvConfig.DirectoryPath + @"\TestCsvWriterInt.csv";
+        using (var csvWriter = new CsvWriter(fileName, csvConfig, maxLineLenght: 250, isAsciiOnly: true, flushDelay: 50)) {
+          csvWriter.WriteLine("Some header");
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+          csvWriter.Write(int.MaxValue);
+          csvWriter.Write(1);
+          csvWriter.Write(0);
+          csvWriter.Write(-1);
+          csvWriter.Write(int.MinValue);
+          csvWriter.WriteEndOfLine();
+
+          Assert.IsTrue(csvWriter.ByteBufferLength>0);
+          Thread.Sleep(300);
+          Assert.AreEqual(0, csvWriter.ByteBufferLength);
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+          csvWriter.Write((int?)null);
+          csvWriter.Write((int?)int.MaxValue);
+          csvWriter.Write((int?)1);
+          csvWriter.Write((int?)0);
+          csvWriter.Write((int?)-1);
+          csvWriter.Write((int?)int.MinValue);
+          csvWriter.WriteEndOfLine();
+        }
+
+        using var fileStream = new FileStream(fileName, FileMode.Open);
+        using var streamReader = new StreamReader(fileStream);
+        var line = streamReader.ReadLine();
+        Assert.AreEqual("Some header", line);
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        var fieldStrings = line![1..].Split(csvConfig.Delimiter);
+        Assert.AreEqual(int.MaxValue, int.Parse(fieldStrings[0]));
+        Assert.AreEqual(1, int.Parse(fieldStrings[1]));
+        Assert.AreEqual(0, int.Parse(fieldStrings[2]));
+        Assert.AreEqual(-1, int.Parse(fieldStrings[3]));
+        Assert.AreEqual(int.MinValue, int.Parse(fieldStrings[4]));
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
+        Assert.AreEqual("", fieldStrings[0]);
+        Assert.AreEqual(int.MaxValue, int.Parse(fieldStrings[1]));
+        Assert.AreEqual(1, int.Parse(fieldStrings[2]));
+        Assert.AreEqual(0, int.Parse(fieldStrings[3]));
+        Assert.AreEqual(-1, int.Parse(fieldStrings[4]));
+        Assert.AreEqual(int.MinValue, int.Parse(fieldStrings[5]));
+
+        Assert.IsTrue(fileStream.ReadByte()<0);
+      } finally {
+        directoryInfo.Delete(recursive: true);
+      }
     }
   }
 }
