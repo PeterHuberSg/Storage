@@ -47,21 +47,26 @@ namespace Storage {
 
 
     public CsvReader(string? fileName, CsvConfig csvConfig, int maxLineLenght, FileStream? existingFileStream = null) {
-      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception();
+      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception("CsvReader constructor: There was neither an existingFileStream nor a fileName proided.");
 
+      if (existingFileStream!=null) {
+        FileName = existingFileStream.Name;
+      } else {
+        FileName = fileName!;
+      }
       CsvConfig = csvConfig;
       if (csvConfig.Encoding!=Encoding.UTF8) 
-        throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
+        throw new Exception($"CsvReader constructor '{FileName}': Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
       
       delimiter = (int)csvConfig.Delimiter;
       if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
-        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+        throw new Exception($"CsvReader constructor '{FileName}': Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
 
       MaxLineCharLenght = maxLineLenght;
       MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
       if (existingFileStream is null) {
         isFileStreamOwner = true;
-        if (string.IsNullOrEmpty(fileName)) throw new Exception();
+        if (string.IsNullOrEmpty(fileName)) throw new Exception("CsvReader constructor: File name is missing.");
         FileName = fileName;
         fileStream = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan);
       } else {
@@ -162,17 +167,17 @@ namespace Storage {
     public void ReadEndOfLine() {
       var remainingBytesCount = endPos - readPos;
       if (remainingBytesCount<=MaxLineByteLenght) {
-        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception($"CsvReader.ReadEndOfLine() '{FileName}': premature EOF found:" + Environment.NewLine + GetPresentContent());
       }
 
       // test for Carriage Return
       if (byteArray[readPos++]!=0x0D) { //carriage return) {
-        throw new Exception();
+        throw new Exception($"CsvReader.ReadEndOfLine() '{FileName}': Carriage return missing: " + Environment.NewLine + GetPresentContent());
       }
 
       //test for line feed
       if (byteArray[readPos++]!=0x0A) { //line feed) {
-        throw new Exception();
+        throw new Exception($"CsvReader.ReadEndOfLine() '{FileName}': Line feed missing: " + Environment.NewLine + GetPresentContent());
       }
 #if DEBUG
       if ((readPos-lineStart)%CsvConfig.BufferSize > MaxLineByteLenght) throw new Exception();
@@ -187,7 +192,7 @@ namespace Storage {
           if (byteArray[readPos++]==0x0A) { //line feed) {
             return;
           } else {
-            throw new Exception();
+            throw new Exception($"CsvReader.SkipToEndOfLine() '{FileName}': Line feed missing: " + Environment.NewLine + GetPresentContent());
           }
         }
       }
@@ -241,6 +246,8 @@ namespace Storage {
       var i = 0;
       if (readByteAsInt>='0' && readByteAsInt<='9') {
         i = 10*i + readByteAsInt - '0';
+      } else {
+        throw new Exception($"CsvReader.ReadInt() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
       }
 
       //read other digits until delimiter is reached
@@ -258,7 +265,7 @@ namespace Storage {
             return i;
           }
         }
-        throw new Exception();
+        throw new Exception($"CsvReader.ReadInt() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
       }
     }
 
@@ -469,6 +476,8 @@ namespace Storage {
       var i = 0;
       if (readByteAsInt>='0' && readByteAsInt<='9') {
         i = 10*i + readByteAsInt - '0';
+      } else {
+        throw new Exception($"CsvReader '{FileName}': Illegal integer: " + Environment.NewLine + GetPresentContent());
       }
 
       //read other digits until delimiter is reached
@@ -486,9 +495,10 @@ namespace Storage {
             return i;
           }
         }
-        throw new Exception();
+        throw new Exception($"CsvReader '{FileName}': Illegal integer: " + Environment.NewLine + GetPresentContent());
       }
     }
+
 
     ///// <summary>
     ///// Read long from UTF8 filestream including delimiter.
@@ -596,6 +606,8 @@ namespace Storage {
       var l = 0L;
       if (readByteAsInt>='0' && readByteAsInt<='9') {
         l = 10*l + readByteAsInt - '0';
+      } else {
+        throw new Exception($"CsvReader.ReadLong() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
       }
 
       //read other digits until delimiter is reached
@@ -613,7 +625,7 @@ namespace Storage {
             return l;
           }
         }
-        throw new Exception();
+        throw new Exception($"CsvReader.ReadLong() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
       }
     }
 
@@ -679,7 +691,7 @@ namespace Storage {
       var tempCharsIndex = 0;
       while (true) {
         int readByteAsInt = (int)byteArray[readPos++];
-        if (readByteAsInt>=0x80) throw new Exception();
+        if (readByteAsInt>=0x80) throw new Exception($"CsvReader.ReadDecimal() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
 
         if (readByteAsInt==delimiter) {
           var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
@@ -732,7 +744,7 @@ namespace Storage {
       if (readByte<0x80) {
         returnChar = (char)readByte;
         readByte = byteArray[readPos++];
-        if (readByte!=delimiter) throw new Exception();
+        if (readByte!=delimiter) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + Environment.NewLine + GetPresentContent());
         return returnChar;
 
       } else {
@@ -742,7 +754,7 @@ namespace Storage {
           readByte = byteArray[readPos++];
         } while (readByte!=delimiter);
         var length = Encoding.UTF8.GetChars(tempBytes, 0, charBytesIndex, tempChars, 0);
-        if (length>1) throw new Exception();
+        if (length>1) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + Environment.NewLine + GetPresentContent());
         return tempChars[0];
       }
     }
@@ -755,11 +767,11 @@ namespace Storage {
     public char ReadFirstLineChar() {
       var remainingBytesCount = endPos - readPos;
       if (remainingBytesCount<=MaxLineByteLenght) {
-        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception($"CsvReader.ReadFirstLineChar() '{FileName}': Premature EOF found: " + Environment.NewLine + GetPresentContent());
       }
 
       char readByteAsChar = (char)byteArray[readPos++];
-      if (readByteAsChar>=0x80) throw new Exception();
+      if (readByteAsChar>=0x80) throw new Exception($"CsvReader.ReadFirstLineChar() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
 
       return readByteAsChar;
     }
@@ -942,14 +954,14 @@ namespace Storage {
       var readByteAsChar = (char)byteArray[readPos++];
       if (readByteAsChar!='.') {
         day = day*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readPos++]!='.') throw new Exception();
+        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
       var month = (int)(byteArray[readPos++] - '0');
       readByteAsChar = (char)byteArray[readPos++];
       if (readByteAsChar!='.') {
         month = month*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readPos++]!='.') throw new Exception();
+        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
       var year = (int)(byteArray[readPos++] - '0');
@@ -957,7 +969,7 @@ namespace Storage {
       year = 10*year + (int)(byteArray[readPos++] - '0');
       year = 10*year + (int)(byteArray[readPos++] - '0');
 
-      if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception();
+      if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception($"CsvReader.ReadDate() '{FileName}': delimiter not found after 4 characters for year: " + Environment.NewLine + GetPresentContent());
 
       return new DateTime(year, month, day);
       //}
@@ -971,7 +983,7 @@ namespace Storage {
     public string ReadLine() {
       var remainingBytesCount = endPos - readPos;
       if (remainingBytesCount<=MaxLineByteLenght) {
-        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
+        if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception($"CsvReader.ReadLine() '{FileName}': Premature EOF found: " + Environment.NewLine + GetPresentContent());
       }
 
       var tempCharsIndex = 0;
@@ -982,7 +994,7 @@ namespace Storage {
           if (byteArray[readPos++]==0x0A) { //line feed) {
             return new string(tempChars, 0, tempCharsIndex);
           } else {
-            throw new Exception();
+            throw new Exception($"CsvReader.ReadLine() '{FileName}': Line feed missing after carriage return: " + Environment.NewLine + GetPresentContent());
           }
         }
         if (readByteAsChar<0x80) {
@@ -1000,15 +1012,30 @@ namespace Storage {
               if (byteArray[readPos++]==0x0A) { //line feed) {
                 return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
               } else {
-                throw new Exception();
+                throw new Exception($"CsvReader.ReadLine() '{FileName}': Line feed missing after carriage return: " + Environment.NewLine + GetPresentContent());
               }
             }
             tempBytes[tempBytesIndex++] = readByte;
           }
         }
-
       }
     }
     #endregion
+
+
+    public string GetPresentContent() {
+      int fromPos;
+      if (readPos>100) {
+        fromPos = readPos - 100;
+      } else {
+        fromPos = 0;
+      }
+      var presentPos = readPos - fromPos;
+
+      int toPos = readPos + 30;
+      toPos = Math.Max(toPos, endPos);
+      var byteString = UTF8Encoding.UTF8.GetString(byteArray, fromPos, toPos-fromPos+1).Replace(CsvConfig.Delimiter, '|');
+      return byteString[..presentPos] + '^' + byteString[presentPos..];
+    }
   }
 }

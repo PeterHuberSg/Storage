@@ -7,13 +7,9 @@ using BenchmarkDotNet.Running;
 //https://benchmarkdotnet.org
 
 namespace StorageBenchmark {
-  struct MutableStruct { public int Value; }
-
   class Program {
     static void Main(string[] args) {
 #if DEBUG
-    var listOfStructs = new List<MutableStruct> { new MutableStruct() };
-
       Console.WriteLine("Debug Tests");
       Console.WriteLine();
       //new Benchmarks().WriteStaticString();

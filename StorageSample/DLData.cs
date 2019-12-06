@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using System.Threading;
 
 namespace Storage {
  
   
-  public class DLData: IDisposable {
+  public partial class DLData: IDisposable {
 
     #region Properties
     //      ----------
 
-    public StorageDictionary<SampleMaster> SampleMasters { get; private set; }
+    public StorageDictionary<SampleMaster, DLData> SampleMasters { get; private set; }
+    public StorageDictionary<Sample, DLData> Samples { get; private set; }
+    public StorageDictionary<SampleDetail, DLData> SampleDetails { get; private set; }
     #endregion
 
 
@@ -24,13 +26,69 @@ namespace Storage {
     #region Constructors
     //      ------------
 
-    public DLData(CsvConfig? csvConfig) {
+    public DLData(CsvConfig? csvConfig, bool isCompactDuringDispose = true) {
       if (csvConfig==null) {
-        SampleMasters = new StorageDictionary<SampleMaster>(areItemsUpdatable: true, areItemsDeletable: true);
+        SampleMasters = new StorageDictionary<SampleMaster, DLData>(
+          this,
+          SampleMaster.SetKey,
+          SampleMaster.Disconnect, 
+          areItemsUpdatable: true, 
+          areItemsDeletable: true);
+        Samples = new StorageDictionary<Sample, DLData>(
+          this,
+          Sample.SetKey,
+          Sample.Disconnect,
+          areItemsUpdatable: true, 
+          areItemsDeletable: true);
+        SampleDetails = new StorageDictionary<SampleDetail, DLData>(
+          this,
+          SampleDetail.SetKey,
+          SampleDetail.Disconnect,
+          areItemsUpdatable: true, 
+          areItemsDeletable: true);
       } else {
-        //SampleMasters = new StorageDictionaryCSV<SampleMaster>(
-        //  csvConfig,
-        //  SampleMaster.Headers,);
+        SampleMasters = new StorageDictionaryCSV<SampleMaster, DLData>(
+          this,
+          csvConfig!,
+          SampleMaster.MaxLineLength,
+          SampleMaster.Headers,
+          SampleMaster.SetKey,
+          SampleMaster.Create,
+          null,
+          SampleMaster.Update,
+          SampleMaster.Write,
+          SampleMaster.Disconnect,
+          areItemsUpdatable: true,
+          areItemsDeletable: true,
+          isCompactDuringDispose: isCompactDuringDispose);
+        Samples = new StorageDictionaryCSV<Sample, DLData>(
+          this,
+          csvConfig!,
+          Sample.MaxLineLength,
+          Sample.Headers,
+          Sample.SetKey,
+          Sample.Create,
+          Sample.Verify,
+          Sample.Update,
+          Sample.Write,
+          Sample.Disconnect,
+          areItemsUpdatable: true,
+          areItemsDeletable: true,
+          isCompactDuringDispose: isCompactDuringDispose);
+        SampleDetails = new StorageDictionaryCSV<SampleDetail, DLData>(
+          this,
+          csvConfig!,
+          SampleDetail.MaxLineLength,
+          SampleDetail.Headers,
+          SampleDetail.SetKey,
+          SampleDetail.Create,
+          SampleDetail.Verify,
+          SampleDetail.Update,
+          SampleDetail.Write,
+          SampleDetail.Disconnect,
+          areItemsUpdatable: true,
+          areItemsDeletable: true,
+          isCompactDuringDispose: isCompactDuringDispose);
       }
     }
     #endregion
@@ -39,20 +97,28 @@ namespace Storage {
     #region IDisposable Support
     //      -------------------
 
-    private bool disposedValue = false; // To detect redundant calls
+    /// <summary>
+    /// Is DLData already disposed ?
+    /// </summary>
+    public bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+    int isDisposed = 0;
 
 
     protected virtual void Dispose(bool disposing) {
-      if (!disposedValue) {
-        if (disposing) {
-          // TODO: dispose managed state (managed objects).
-        }
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
 
-        // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-        // TODO: set large fields to null.
-
-        disposedValue = true;
+      if (disposing) {
+        SampleDetails.Dispose();
+        Samples.Dispose();
+        SampleMasters.Dispose();
       }
+
+      // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+      // TODO: set large fields to null.
+
     }
 
 

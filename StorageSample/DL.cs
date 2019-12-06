@@ -30,16 +30,16 @@ namespace Storage {
     #region Constructors
     //      ------------
 
-    public static void Init(CsvConfig? csvConfig) {
+    public static void Init(CsvConfig? csvConfig, bool isCompactDuringDispose = true) {
       if (Data!=null) throw new Exception();
 
-      Data = new DLData(csvConfig);
+      Data = new DLData(csvConfig, isCompactDuringDispose);
     }
 
 
     public static void DisposeData() {
-      var setLocal = Interlocked.Exchange(ref data, null);
-      setLocal?.Dispose();
+      var dataLocal = Interlocked.Exchange(ref data, null);
+      dataLocal?.Dispose();
     }
     #endregion
 

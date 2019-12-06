@@ -10,44 +10,8 @@ namespace StorageTest {
   [TestClass]
   public class StorageDictionaryTest {
 
-    class testItem: IStorage<testItem> {
-      public int Key { get; set; }
-
-      public string Text {
-        get { return text; }
-        set {
-          if (text!=value) {
-            text = value;
-            HasChanged?.Invoke(this);
-          }
-        }
-      }
-      private string text;
-
-
-      public testItem(int key, string text) {
-        Key = key;
-        this.text = text;
-      }
-
-      public event Action<testItem>? HasChanged;
-
-
-      public void Update(testItem itemChanged) {
-      }
-
-
-      public bool CanDelete() { return true; }
-
-
-      public override string ToString() {
-        return $"Key: {Key}; Text: {Text};";
-      }
-    }
-
-
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
-    StorageDictionary<testItem> dictionary;
+    StorageDictionary<TestItem, object> dictionary;
 #pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
     bool wasAdded = false;
     bool wasChanged = false;
@@ -59,89 +23,98 @@ namespace StorageTest {
 
     [TestMethod]
     public void TestStorageDictionary() {
-      dictionary = new StorageDictionary<testItem>(areItemsUpdatable: true, areItemsDeletable: true);
+      dictionary = new StorageDictionary<TestItem, object>(
+        null,
+        TestItem.SetKey,
+        TestItem.Disconnect, 
+        areItemsUpdatable: true, 
+        areItemsDeletable: true);
       dictionary.Added += dictionary_Added;
       dictionary.Changed += dictionary_Changed;
       dictionary.Removed += dictionary_Deleted;
       var expectedList = new List<string>();
       assert(expectedList, cont, dictionary);
 
+      add(dictionary, expectedList, 0, "0", cont);
+      add(dictionary, expectedList, 1, "1", cont);
       add(dictionary, expectedList, 2, "2", cont);
       add(dictionary, expectedList, 3, "3", cont);
       add(dictionary, expectedList, 4, "4", cont);
-      add(dictionary, expectedList, 6, "6", notC);
-      add(dictionary, expectedList, 7, "7", notC);
 
-      remove(dictionary, expectedList, 7, notC);
-      add(dictionary, expectedList, 7, "7a", notC);
-      remove(dictionary, expectedList, 7, notC);
+      remove(dictionary, expectedList, 3, notC);
+      add(dictionary, expectedList, 5, "5", notC);
+      remove(dictionary, expectedList, 5, notC);
+      remove(dictionary, expectedList, 4, cont);
 
-      remove(dictionary, expectedList, 6, cont);
-      add(dictionary, expectedList, 6, "6a", notC);
-      remove(dictionary, expectedList, 6, cont);
+      add(dictionary, expectedList, 3, "3a", cont);
 
-      add(dictionary, expectedList, 5, "5", cont);
-      add(dictionary, expectedList, 6, "6", cont);
+      update(dictionary, expectedList, 2, "2a", cont);
 
-      update(dictionary, expectedList, 4, "4a", cont);
-
+      remove(dictionary, expectedList, 1, notC);
+      remove(dictionary, expectedList, 0, cont);
       remove(dictionary, expectedList, 2, cont);
-      remove(dictionary, expectedList, 6, cont);
-      remove(dictionary, expectedList, 4, notC);
-      remove(dictionary, expectedList, 5, cont);
       remove(dictionary, expectedList, 3, cont);
 
-      add(dictionary, expectedList, 1, "1a", cont);
-      add(dictionary, expectedList, 6, "6b", notC);
-
+      add(dictionary, expectedList, 0, "0b", cont);
+      add(dictionary, expectedList, 1, "1b", cont);
+      add(dictionary, expectedList, 2, "2b", cont);
+      add(dictionary, expectedList, 3, "3b", cont);
+      remove(dictionary, expectedList, 0, cont);
+      add(dictionary, expectedList, 4, "4b", cont);
+      remove(dictionary, expectedList, 2, notC);
+      add(dictionary, expectedList, 5, "5b", notC);
+      remove(dictionary, expectedList, 3, notC);
+      remove(dictionary, expectedList, 1, cont);
+      remove(dictionary, expectedList, 5, cont);
     }
 
 
-    private void dictionary_Added(testItem item) {
+    private void dictionary_Added(TestItem item) {
       Assert.IsFalse(wasAdded);
       wasAdded = true;
       Assert.IsTrue(dictionary[item.Key].Text==item.Text);
     }
 
 
-    private void dictionary_Changed(testItem item) {
+    private void dictionary_Changed(TestItem item) {
       Assert.IsFalse(wasChanged);
       wasChanged = true;
       Assert.IsTrue(dictionary[item.Key].Text==item.Text);
     }
 
 
-    private void dictionary_Deleted(testItem item) {
+    private void dictionary_Deleted(TestItem item) {
       Assert.IsFalse(wasDeleted);
       wasDeleted = true;
       Assert.IsFalse(dictionary.ContainsKey(item.Key));
     }
 
 
-    private void add(StorageDictionary<testItem> dictionary, List<string> expectedList, int key, string text, bool cont) {
+    private void add(StorageDictionary<TestItem, object> dictionary, List<string> expectedList, int key, string text, bool cont) {
       var dataString = $"{key}|{text}";
       expectedList.Add(dataString);
-      var data = new testItem(key, text);
-      dictionary.Add(data);
+      var testItem = new TestItem(text);
+      Assert.AreEqual(Storage.Storage.NoKey, testItem.Key);
+      dictionary.Add(testItem);
       Assert.IsTrue(wasAdded);
       wasAdded = false;
       assert(expectedList, cont, dictionary);
     }
 
 
-    private void update(StorageDictionary<testItem> dictionary, List<string> expectedList, int key, string text, bool cont) {
+    private void update(StorageDictionary<TestItem, object> dictionary, List<string> expectedList, int key, string text, bool cont) {
       removeExpected(expectedList, key);
       var dataString = $"{key}|{text}";
       expectedList.Add(dataString);
       var item = dictionary[key];
-      item.Text = text; //fires HasChanged event
+      item.Update(text); //fires HasChanged event
       Assert.IsTrue(wasChanged);
       wasChanged = false;
       assert(expectedList, cont, dictionary);
     }
 
 
-    private void remove(StorageDictionary<testItem> dictionary, List<string> expectedList, int key, bool cont) {
+    private void remove(StorageDictionary<TestItem, object> dictionary, List<string> expectedList, int key, bool cont) {
       removeExpected(expectedList, key);
       dictionary.Remove(key);
       Assert.IsTrue(wasDeleted);
@@ -163,7 +136,7 @@ namespace StorageTest {
     }
 
 
-    private void assert(List<string> expectedList, bool areKeysContinous, StorageDictionary<testItem> dictionary) {
+    private void assert(List<string> expectedList, bool areKeysContinous, StorageDictionary<TestItem, object> dictionary) {
       int count = expectedList.Count;
       Assert.AreEqual(count, dictionary.Count);
       Assert.AreEqual(count, dictionary.Keys.Count);

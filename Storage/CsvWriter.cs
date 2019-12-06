@@ -27,8 +27,6 @@ namespace Storage {
     /// </summary>
     public int MaxLineByteLenght { get; }
 
-    public bool IsAsciiOnly { get; }
-
 
     /// <summary>
     /// Dealy in millisecond before flush gets executed after the last write
@@ -60,34 +58,36 @@ namespace Storage {
 
 
     public CsvWriter(
-      string fileName, 
+      string? fileName, 
       CsvConfig csvConfig, 
       int maxLineLenght, 
       FileStream? existingFileStream = null, 
-      bool isAsciiOnly = true, 
       int flushDelay = 200) 
     {
-      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception();
+      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception("CsvWriter constructor: There was neither an existingFileStream nor a fileName proided.");
 
-      FileName = fileName;
+      if (existingFileStream!=null) {
+        FileName = existingFileStream.Name;
+      } else {
+        FileName = fileName!;
+      }
       CsvConfig = csvConfig;
       if (csvConfig.Encoding!=Encoding.UTF8) 
-        throw new Exception($"Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName} for file {fileName}.");
+        throw new Exception($"CsvWriter constructor: Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName} for file {fileName}.");
       
       delimiter = (byte)csvConfig.Delimiter;
       if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
-        throw new Exception($"Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+        throw new Exception($"CsvWriter constructor: Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
 
       MaxLineCharLenght = maxLineLenght;
       MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
       tempBytes = new byte[MaxLineByteLenght];
       tempChars = new char[maxLineLenght];
-      IsAsciiOnly = isAsciiOnly;
       FlushDelay = flushDelay;
       if (existingFileStream is null) {
         isFileStreamOwner = true;
         //fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, CsvConfig.BufferSize, FileOptions.SequentialScan | FileOptions.WriteThrough);
-        fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, CsvConfig.BufferSize);
+        fileStream = new FileStream(fileName!, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, CsvConfig.BufferSize);
       } else {
         isFileStreamOwner = false;
         fileStream = existingFileStream;
@@ -196,8 +196,8 @@ namespace Storage {
 
 #if DEBUG
         if (writePos-lineStart>MaxLineByteLenght) throw new Exception($"MaxLineByteLenght {MaxLineByteLenght} should be at least {writePos-lineStart}.");
-#endif
 
+#endif
         if (writePos>maxBufferWriteLength) {
           fileStream!.Write(byteArray, 0, maxBufferWriteLength);
           var numberOfBytesToCopy = writePos - maxBufferWriteLength;
@@ -339,9 +339,9 @@ namespace Storage {
 
       int charsWritten;
       if (digitsAfterComma<=8) {
-        if (!d.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) throw new Exception();
+        if (!d.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
       } else {
-        if (!d.TryFormat(tempChars, out charsWritten)) throw new Exception();
+        if (!d.TryFormat(tempChars, out charsWritten)) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
       }
 
       //deal with zero here, this simplifies the code for removing trailing 0. Any other single digit value
@@ -368,7 +368,7 @@ namespace Storage {
         if (tempChar=='0') continue;
 
         if (tempChar=='.') break;
-        throw new Exception();
+        throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
       }
 
       for (int copyIndex = 0; copyIndex <= charIndex; copyIndex++) {
@@ -383,7 +383,7 @@ namespace Storage {
       //  Monitor.Enter(byteArray);
       //  isNotLocked = false;
       //}
-      if (c==delimiter) throw new Exception();
+      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') throw new Exception($"CsvWriter.Write(char) '{FileName}':illegal character '{c}'." + Environment.NewLine + GetPresentContent());
 
       if (c<0x80) {
         byteArray[writePos++] = (byte)c;
@@ -404,7 +404,7 @@ namespace Storage {
       }
       isLocked = true;
 #endif
-      if (c==delimiter) throw new Exception();
+      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') throw new Exception($"CsvWriter.WriteFirstLineChar(char) '{FileName}':illegal character '{c}'." + Environment.NewLine + GetPresentContent());
 
       if (c<0x80) {
         byteArray[writePos++] = (byte)c;
@@ -422,7 +422,7 @@ namespace Storage {
       if (s!=null) {
         for (int readIndex = 0; readIndex < s.Length; readIndex++) {
           var c = s[readIndex];
-          if (c==delimiter) throw new Exception();
+          if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') throw new Exception($"CsvWriter.Write(string) '{FileName}':illegal character '{c}'." + Environment.NewLine + GetPresentContent());
 
           if (c<0x80) {
             byteArray[writePos++] = (byte)c;
@@ -440,7 +440,7 @@ namespace Storage {
 
 
     public void WriteDate(DateTime date) {
-      if (date!=date.Date) throw new Exception();
+      if (date!=date.Date) throw new Exception($"CsvWriter.WriteDate() '{FileName}':does not support storing time '{date}'." + Environment.NewLine + GetPresentContent());
 
       var day = date.Day;
       if (day>=30) {
@@ -545,5 +545,19 @@ namespace Storage {
       flushTimer?.Change(Timeout.Infinite, Timeout.Infinite);//change is multithreading safe
     }
     #endregion
+
+
+    public string GetPresentContent() {
+      //byteArray[readPos++]
+      int fromPos;
+      if (writePos>100) {
+        fromPos = writePos - 100;
+      } else {
+        fromPos = 0;
+      }
+      var presentPos = writePos - fromPos;
+
+      return UTF8Encoding.UTF8.GetString(byteArray, fromPos, presentPos).Replace(CsvConfig.Delimiter, '|') + '^';
+    }
   }
 }

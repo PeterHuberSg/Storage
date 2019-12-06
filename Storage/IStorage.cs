@@ -6,7 +6,7 @@ using System.Text;
 namespace Storage {
 
 
-  public interface IStorage<TItem> {
+  public interface IStorage<TItem> where TItem : class, IStorage<TItem> {
 
     #region Properties
     //      ----------
@@ -14,9 +14,7 @@ namespace Storage {
     /// <summary>
     /// 
     /// </summary>
-    public int Key { get; }
-
-
+    public int Key { get;  }
     #endregion
 
 
@@ -30,24 +28,22 @@ namespace Storage {
     #region Methods
     //      -------
 
-    public void Update(TItem itemChanged);
+    ///// <summary>
+    ///// Copies all values from itemChanged to this item.
+    ///// </summary>
+    //public void Update(TItem itemChanged);
 
 
-    public bool CanDelete();
+    /// <summary>
+    /// Removes item from StorageDictionary and parent collections, deletes all children.
+    /// </summary>
+    public void Remove();
 
 
-    public static int HandleId(object lockObject, ref int lastId, int id) {
-      lock (lockObject) {
-        if (id>=0) {
-          if (lastId<id) {
-            lastId = id;
-          }
-        } else {
-          id = lastId++;
-        }
-      }
-      return id;
-    }
+    /// <summary>
+    /// Returns a shorter string than ToString()
+    /// </summary>
+    public string ToShortString();
     #endregion
   }
 

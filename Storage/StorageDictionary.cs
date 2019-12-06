@@ -21,8 +21,12 @@ namespace Storage {
   /// a key grater than any other existing key.
   /// The collection can be kept in RAM only or made permanent in a local file or in a database or ... It's only possible to add 
   /// items, not insert, resulting in very fast implementations. Deletion is made by marking the item deleted.
+  /// Ideally, TContext is the parent and holds all StorageDictionaries of the application.
   /// </summary>
-  public class StorageDictionary<TItem>: IEnumerable<TItem>, IDictionary<int, TItem>, IDisposable where TItem : class, IStorage<TItem> {
+  public class StorageDictionary<TItem, TContext>: IEnumerable<TItem>, IDictionary<int, TItem>, IDisposable 
+    where TItem : class, IStorage<TItem>
+    where TContext: class
+  {
 
     #region Properties
     //      ----------
@@ -74,6 +78,7 @@ namespace Storage {
 
     public int Count => count;
 
+
     public bool IsReadOnly {
       get { return false; }
     }
@@ -106,6 +111,13 @@ namespace Storage {
     /// Are all Keys just incremented by 1 from the previous Key ? 
     /// </summary>
     public bool AreKeysContinous { get; private set; }
+    internal void UpdateAreKeysContinous() {
+      if (count==0) {
+        AreKeysContinous = true;
+      } else {
+        AreKeysContinous = keys[lastItemIndex] - keys[firstItemIndex] + 1 == count;
+      }
+    }
 
 
     /// <summary>
@@ -132,6 +144,9 @@ namespace Storage {
     /// Dispose() a new file is written containing only the undeleted items.
     /// </summary>
     public bool AreItemsDeleted { get; private set; }
+
+
+    public TContext? Context { get; }
     #endregion
 
 
@@ -161,6 +176,9 @@ namespace Storage {
 
     const uint defaultCapacity = 4;
 
+    readonly Action<TItem, int> setKey;
+    readonly Action<TItem> disconnect;
+
     readonly object itemsLock = new object();
     TItem?[] items;
     static readonly TItem?[]  emptyItems = new TItem[0];
@@ -177,10 +195,16 @@ namespace Storage {
     /// number of items. When too many items get added, the capacity gets increased.
     /// </summary>
     public StorageDictionary(
+      TContext? context,
+      Action<TItem, int> setKey,
+      Action<TItem> disconnect,
       bool areItemsUpdatable = false,
       bool areItemsDeletable = false,
       int capacity = 0) 
     {
+      Context = context;
+      this.setKey = setKey;
+      this.disconnect = disconnect;
       if (capacity < 0) throw new ArgumentOutOfRangeException("Capacity must be equal or grater , but was '" + capacity + "'.");
 
       if (capacity==0) {
@@ -312,10 +336,10 @@ namespace Storage {
 
 
     /// <summary>
-    /// Removes the item with key, i.e. marks is as deleted. If the item exists, even if already deleted, true gets returned.
+    /// Provided for compatibility with IDictionary. Use Remove(TItem item) instead;
     /// </summary>
     public bool Remove(int key) {
-      if (!AreItemsDeletable) throw new NotSupportedException($"StorageDictionary does not allow kex '{key}' to be deleted.");
+      if (!AreItemsDeletable) throw new NotSupportedException($"StorageDictionary does not allow key '{key}' to be deleted.");
 
       int index;
       TItem? item;
@@ -327,6 +351,7 @@ namespace Storage {
         item = items[index];
         if (item==null) return true; //item was already deleted
 
+        disconnect(item);
         items[index] = null;
         item.HasChanged -= item_HasChanged;
         version++;
@@ -361,7 +386,7 @@ namespace Storage {
               lastItemIndex--;
             } while (items[lastItemIndex]==null);//since there are at least 2 items left, lastItemkey will always be bigger than firstItemKey
           }
-          AreKeysContinous = keys[lastItemIndex] - keys[firstItemIndex] + 1 == count;
+          UpdateAreKeysContinous();
         }
       }
       version++;
@@ -380,17 +405,27 @@ namespace Storage {
 
 
     /// <summary>
-    /// Provided for compatibility with IDictionary. Use Remove(int key) instead;
+    /// Provided for compatibility with IDictionary. Use Remove(TItem item) instead;
     /// </summary>
-    /// <param name="item"></param>
-    /// <returns></returns>
-    public bool Remove(KeyValuePair<int, TItem> item) {
-      if (item.Key!=item.Value.Key) {
-        throw new ArgumentException($"item.Key {item.Key} must be the same as item.Value.Key {item.Value.Key}.");
+    public bool Remove(KeyValuePair<int, TItem> kvpItem) {
+      if (kvpItem.Key!=kvpItem.Value.Key) {
+        throw new ArgumentException($"item.Key {kvpItem.Key} must be the same as item.Value.Key {kvpItem.Value.Key}.");
       }
-      return Remove(item.Key);
+      if (kvpItem.Key<0) throw new Exception($"StorageDictionary can not remove item '{kvpItem}' with no key (-1).");
+
+      return Remove(kvpItem.Key);
     }
 
+
+    /// <summary>
+    /// Removes item from this StorageDirectory and any children from their StorageDirectories. Removed event gets fired.
+    /// If item was removed alreay, still true gets returned. No Removed event gets fired.
+    /// </summary>
+    public bool Remove(TItem item) {
+      if (item.Key<0) throw new Exception($"StorageDictionary can not remove item '{item}' with no key (-1).");
+
+      return Remove(item.Key);
+    }
 
 
     public bool TryGetValue(int key, [MaybeNullWhen(false)] out TItem value) {
@@ -419,7 +454,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Is StorageDictionary already exposed ?
+    /// Is StorageDictionary already disposed ?
     /// </summary>
     protected bool IsDisposed {
       get { return isDisposed==1; }
@@ -456,21 +491,26 @@ namespace Storage {
 
 
     /// <summary>
-    /// Adds the given item to the end of StorageDictionary. If item.Key is smaller than any stored key, an Exception is thrown.
-    /// The Count is increased by one. If required, the capacity of StorageDictionary is doubled before adding the new element.
+    /// Adds the given item to the end of StorageDictionary and sets the item.Key. The Count is increased by one. If required, 
+    /// the capacity of StorageDictionary is doubled before adding the new item.
     /// </summary>
     public void Add(TItem item) {
+      if (item.Key>=0) throw new Exception($"Cannot add {typeof(TItem).Name} '{item}' to StorageDictionary, because it is already added (Key is 0 or bigger).");
+
+      AddProtected(item);
+    }
+
+
+    protected void AddProtected(TItem item) {
       if (IsDisposed) throw new ObjectDisposedException("StorageDictionary");
 
       lock (itemsLock) {
         var lastItemKey = lastItemIndex==-1 ? -1 : items[lastItemIndex]!.Key;//throws exception if indexed item is null
-        if (item.Key<=lastItemKey) {
-          throw new ArgumentException($"Key of new item {item} must be greater than biggest already stored item.Key {lastItemKey}.");
+        if (item.Key==Storage.NoKey) {
+          setKey(item, ++lastItemKey);
+        } else {
+          if (item.Key<=lastItemKey) throw new Exception($"Cannot add {typeof(TItem).Name} '{item}' to StorageDictionary, because its key should be greater that lastItemKey {lastItemKey}.");
         }
-        if (AreKeysContinous && lastItemKey>=0) {
-          AreKeysContinous = lastItemKey+1==item.Key;
-        }
-
         lastItemIndex++;
         if (count==0) {
           firstItemIndex = lastItemIndex;
@@ -495,7 +535,6 @@ namespace Storage {
         }
 
         item.HasChanged += item_HasChanged;
-        lastItemKey = item.Key;
         items[lastItemIndex] = item;
         keys[lastItemIndex] = item.Key;
         count++;
@@ -598,7 +637,7 @@ namespace Storage {
       }
 
 
-      readonly StorageDictionary<TItem> storageDictionary;
+      readonly StorageDictionary<TItem, TContext> storageDictionary;
       readonly int version;
       int index;
       readonly int maxIndex;
@@ -608,7 +647,7 @@ namespace Storage {
       /// <summary>
       /// Constructor
       /// </summary>
-      internal EnumeratorItems(StorageDictionary<TItem> storageDictionary) {
+      internal EnumeratorItems(StorageDictionary<TItem, TContext> storageDictionary) {
         this.storageDictionary = storageDictionary;
         version = storageDictionary.version;
         if (storageDictionary.Count==0) {

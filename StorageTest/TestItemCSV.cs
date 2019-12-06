@@ -7,20 +7,12 @@ using Storage;
 namespace StorageTest {
 
 
-  public class TestItemCsv: IStorageCSV<TestItemCsv> {
+  public class TestItemCsv: IStorage<TestItemCsv> {
 
-    public int Key { get; set; }
+    public int Key { get; private set; }
+    internal static void SetKey(TestItemCsv testItemCsv, int key) { testItemCsv.Key = key; }
 
-    public string Text {
-      get { return text; }
-      set {
-        if (text!=value) {
-          text = value;
-          HasChanged?.Invoke(this);
-        }
-      }
-    }
-    private string text;
+    public string Text { get; private set; }
 
 
     public static readonly string[] Headers = { "Key", "Text" };
@@ -30,45 +22,67 @@ namespace StorageTest {
     public event Action<TestItemCsv>? HasChanged;
 
 
-    public TestItemCsv(int key, string text) {
+    public TestItemCsv(string text) {
+      Key = Storage.Storage.NoKey;
+      Text = text;
+    }
+
+
+    public TestItemCsv(int key, CsvReader csvReader) {
       Key = key;
-      this.text = text;
-    }
-
-
-    public bool CanDelete() { return true; }
-
-
-    public void Write(CsvWriter csvWriter) {
-      csvWriter.Write(Key);
-      csvWriter.Write(Text);
-    }
-
-
-
-    public static TestItemCsv? ReadCsvLine(CsvReader csvReader) {
-      int key = csvReader.ReadInt();
-      string text = csvReader.ReadString()!;
-      var item = new TestItemCsv(key, text);
-      return item;
-    }
-
-
-    public void UpdateFromCsvLine(CsvReader csvReader) 
-    {
       Text = csvReader.ReadString()!;
-      HasChanged?.Invoke(this);
     }
 
 
-    public void Update(TestItemCsv itemChanged) {
-      Text = itemChanged.Text;
-      HasChanged?.Invoke(this);
+    public static TestItemCsv Create(int key, CsvReader csvReader, object notUsedContext) {
+      return new TestItemCsv(key, csvReader);
+    }
+
+
+    internal static void Write(TestItemCsv testItemCsv, CsvWriter csvWriter) {
+      csvWriter.Write(testItemCsv.Text);
+    }
+
+
+    internal static void Update(TestItemCsv testItemCsv, CsvReader csvReader, object notUsedContext) 
+    {
+      testItemCsv.Text = csvReader.ReadString()!;
+    }
+
+
+    public void Update(string text) {
+      if (Text!=text) {
+        Text = text;
+        HasChanged?.Invoke(this);
+      }
+    }
+
+
+    public void Remove() {
+      throw new NotImplementedException();
+    }
+
+
+    public void Remove(StorageDictionary<TestItemCsv, object> storageDictionary) {
+      if (Key<0) {
+        throw new Exception($"TestItemCsv.Remove(): TestItemCsv is not in storageDictionary, key is {Key}.");
+      }
+      storageDictionary.Remove(Key);
+    }
+
+
+    internal static void Disconnect(TestItemCsv testItemCsv) {
+      //nothing to do
+    }
+
+
+    public string ToShortString() {
+      return $"{Key.ToKeyString()}, {Text};";
     }
 
 
     public override string ToString() {
-      return $"Key: {Key}; Text: {Text};";
+      return $"Key: {Key.ToKeyString()}; Text: {Text};";
     }
   }
 }
