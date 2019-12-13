@@ -972,7 +972,58 @@ namespace Storage {
       if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception($"CsvReader.ReadDate() '{FileName}': delimiter not found after 4 characters for year: " + Environment.NewLine + GetPresentContent());
 
       return new DateTime(year, month, day);
-      //}
+    }
+
+
+    // 0: 0: 0 => "0"
+    // 0: 0: 1 => "0:0:1"
+    // 0: 1: 1 => "0:1:1"
+    // 1: 1: 1 => "1:1:1"
+    //23: 0: 0 => "23"
+    //23:59: 0 => "23:59"
+    //23:59:59 => "23:59:59"
+    public TimeSpan ReadTime() {
+      var hour = (int)(byteArray[readPos++] - '0');
+      var readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar==CsvConfig.Delimiter) return TimeSpan.FromHours(hour);
+
+      if (readByteAsChar!=':') {
+        hour = hour*10 + (int)(readByteAsChar - '0');
+        readByteAsChar = (char)byteArray[readPos++];
+        if (readByteAsChar==CsvConfig.Delimiter) return TimeSpan.FromHours(hour);
+
+        if (readByteAsChar!=':') throw new Exception($"CsvReader.ReadTime() '{FileName}': Hour has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+      }
+
+      var minute = (int)(byteArray[readPos++] - '0');
+      readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, 0);
+      
+      if (readByteAsChar!=':') {
+        minute = minute*10 + (int)(readByteAsChar - '0');
+        readByteAsChar = (char)byteArray[readPos++];
+        if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, 0);
+        
+        if (readByteAsChar!=':') throw new Exception($"CsvReader.ReadTime() '{FileName}': Minute has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+      }
+
+      var second = (int)(byteArray[readPos++] - '0');
+      readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, second);
+
+      if (readByteAsChar!=':') {
+        second = second*10 + (int)(readByteAsChar - '0');
+        readByteAsChar = (char)byteArray[readPos++];
+        if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, second);
+      }
+
+      throw new Exception($"CsvReader.ReadTime() '{FileName}': Second has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+    }
+
+
+    public DateTime ReadDateTime() {
+      var ticks = ReadLong();
+      return new DateTime(ticks);
     }
 
 

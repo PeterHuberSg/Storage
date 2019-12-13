@@ -1,0 +1,38 @@
+﻿// Class Model for StorageClasses
+// ------------------------------
+//
+//any line starting with double slashes is a comment line and gets ignored
+//and indentation and trailing whitespace gets ignored
+//empty lines terminate the CLASS definition, otherwise they get ignored
+//lines starting with " belong to the previous DESCRIPTOR:. Any character is allowed
+
+//directory for the generated classes
+TARGETDIRECTORY: C:\Users\peter\Source\Repos\Storage\StorageClasses 
+//namespace used for the generated classes
+NAMESPACE: StorageClasses 
+
+//Some general comments about the class, will be ignored
+//MAXLINELENGTH: is the maximal number of UTF8 bytes a class needs when written to a CSV file
+CLASS: SampleMaster, MAXLINELENGTH: 50, DESCRIPTOR: Master of Samples
+  //CLASS line is followed by property lines
+  STRING: Text
+  //LIST: Sample generates the follwoing property: List<Sample> Samples
+  LIST: Sample
+
+//Main class with one parent (SampleMaster) and one collection of SampleDetail
+//The DESCRIPTOR of this class is multiline
+CLASS: Sample, MAXLINELENGTH: 100, DESCRIPTOR:
+  "Main class showing all supported C# types
+  "It has one parent (SampleMaster) and one collection of SampleDetail
+  STRING: Text
+  INT: Number
+  DECIMAL: Amount, DIGITS: 2, DESCRIPTOR: Some financial number
+  DATE: Date, DESCRIPTOR: This is a date with no time
+  //a ? makes a property nullable
+  STRING?: Optional
+  PARENT?: SampleMaster
+  LIST: SampleDetail
+
+CLASS: SampleDetail, MAXLINELENGTH: 50
+  STRING: Text
+  Parent: Sample

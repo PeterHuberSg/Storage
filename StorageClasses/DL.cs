@@ -3,7 +3,7 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageSample  {
+namespace StorageModel  {
 
   /// <summary>
   /// A part of DL is static, which gives easy access to all stored data (=context) through DL.Data. But most functionality is in the
@@ -28,10 +28,10 @@ namespace StorageSample  {
     /// Constructs the StorageDirectories for all auto generated classes
     /// </summary>
     /// <param name="csvConfig">null: no permanent data storage, not null: info where to store the data</param>
-    public static void Init(CsvConfig? csvConfig, bool isCompactDuringDispose) {
+    public static void Init(CsvConfig? csvConfig) {
       if (data!=null) throw new Exception();
 
-      data = new DL(csvConfig, isCompactDuringDispose);
+      data = new DL(csvConfig);
     }
 
 
@@ -80,7 +80,7 @@ namespace StorageSample  {
     /// program terminates. With csvConfig defined, existing data gets read at startup, changes immediately
     /// when written and Dispose() ensures by flushing that all data is permanently stored.
     /// </summary>
-    public DL(CsvConfig? csvConfig, bool isCompactDuringDispose) {
+    public DL(CsvConfig? csvConfig) {
       if (csvConfig==null) {
         SampleMasters = new StorageDictionary<SampleMaster, DL>(
           this,
@@ -92,7 +92,7 @@ namespace StorageSample  {
           this,
           Sample.SetKey,
           Sample.Disconnect,
-          areItemsUpdatable: true,
+          areItemsUpdatable: false,
           areItemsDeletable: true);
         SampleDetails = new StorageDictionary<SampleDetail, DL>(
           this,
@@ -114,7 +114,7 @@ namespace StorageSample  {
           SampleMaster.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true,
-          isCompactDuringDispose: isCompactDuringDispose);
+          isCompactDuringDispose: true);
         Samples = new StorageDictionaryCSV<Sample, DL>(
           this,
           csvConfig!,
@@ -126,9 +126,9 @@ namespace StorageSample  {
           Sample.Update,
           Sample.Write,
           Sample.Disconnect,
-          areItemsUpdatable: true,
+          areItemsUpdatable: false,
           areItemsDeletable: true,
-          isCompactDuringDispose: isCompactDuringDispose);
+          isCompactDuringDispose: false);
         SampleDetails = new StorageDictionaryCSV<SampleDetail, DL>(
           this,
           csvConfig!,
@@ -142,7 +142,7 @@ namespace StorageSample  {
           SampleDetail.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true,
-          isCompactDuringDispose: isCompactDuringDispose);
+          isCompactDuringDispose: true);
       }
     }
     #endregion

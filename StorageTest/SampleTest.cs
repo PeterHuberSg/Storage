@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
+using StorageSample;
 
 
 namespace StorageTest {
@@ -22,7 +23,7 @@ namespace StorageTest {
 
 
     CsvConfig? csvConfig;
-    bool isCompactDuringDispose;
+    bool isCompactDuringDispose = false;
 
 
     [TestMethod]
@@ -125,7 +126,7 @@ namespace StorageTest {
       var sampleText = "Sample" + sampleKey;
       Sample sample;
       if (masterKey is null) {
-        sample = new Sample(sampleText, sampleKey, sampleKey, DateTime.Now.Date.AddDays(-sampleKey), isStoring: false);
+        sample = new Sample(sampleText, sampleKey, sampleKey, DateTime.Now.Date.AddDays(-sampleKey), null, null, isStoring: false);
       } else {
         var master =
         sample = new Sample(
@@ -178,7 +179,7 @@ namespace StorageTest {
       expectedData!.Details.Remove(key);
       expectedData!.Details.Add(key, detailText);
       var detail = DL.Data!.SampleDetails[key];
-      detail.Update(detailText);
+      detail.Update(detailText, detail.Sample);
       assertData();
     }
 

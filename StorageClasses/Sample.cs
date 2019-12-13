@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Storage;
 
 
-namespace StorageSample  {
+namespace StorageModel  {
 
 
   /// <summary>

@@ -329,6 +329,14 @@ namespace Storage {
 
 
     /// <summary>
+    /// writes at most 2 digits after comma, if they are not zero. Trailing zeros get trancated.
+    /// </summary>
+    public void WriteDecimal2(decimal d) {
+      Write(d, 2);
+    }
+
+
+    /// <summary>
     /// writes at most number of digitsAfterComma, if they are not zero. Trailing zeros get trancated.
     /// </summary>
     public void Write(decimal d, int digitsAfterComma = int.MaxValue) {
@@ -473,6 +481,60 @@ namespace Storage {
       year %= 10;
       byteArray[writePos++] = (byte)(('0') + year);
       byteArray[writePos++] = delimiter;
+    }
+
+
+    public void WriteTime(TimeSpan time) {
+      var hours = time.Hours;
+      var minutes = time.Minutes;
+      var seconds = time.Seconds;
+      if (hours>=24) throw new Exception($"CsvWriter.WriteTime() '{FileName}':does not support storing 24 hours or more." + Environment.NewLine + GetPresentContent());
+
+      if (hours>=20) {
+        byteArray[writePos++] = (byte)'2';
+        hours -= 20;
+      } else if (hours>=10) {
+        byteArray[writePos++] = (byte)'1';
+        hours -= 10;
+      }
+      byteArray[writePos++] = (byte)('0' + hours);
+      if (minutes==0 && seconds==0) {
+        byteArray[writePos++] = delimiter;
+        return;
+      }
+
+      byteArray[writePos++] = (byte)(':');
+      var minutesTens = minutes / 10;
+      if (minutesTens>0) {
+        byteArray[writePos++] = (byte)('0' + minutesTens);
+        minutes %= 10;
+      }
+      byteArray[writePos++] = (byte)('0' + minutes);
+      if (seconds==0) {
+        byteArray[writePos++] = delimiter;
+        return;
+      }
+
+      byteArray[writePos++] = (byte)(':');
+      var secondTens = seconds / 10;
+      if (secondTens>0) {
+        byteArray[writePos++] = (byte)('0' + secondTens);
+        seconds %= 10;
+      }
+      byteArray[writePos++] = (byte)('0' + seconds);
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    public void WriteDateTime(DateTime dateTime) {
+      Write(dateTime.Ticks);
+      //if (dateTime.TryFormat(tempChars, out var numberOfBytesWritten, "O")) {
+      //  for (int charIndex = 0; charIndex < numberOfBytesWritten; charIndex++) {
+      //    byteArray[writePos++] = (byte)tempChars[charIndex];
+      //  }
+      //  byteArray[writePos++] = delimiter;
+      //  return;
+      //}
     }
 
 

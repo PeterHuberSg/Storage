@@ -339,7 +339,7 @@ namespace Storage {
     /// Provided for compatibility with IDictionary. Use Remove(TItem item) instead;
     /// </summary>
     public bool Remove(int key) {
-      if (!AreItemsDeletable) throw new NotSupportedException($"StorageDictionary does not allow key '{key}' to be deleted.");
+      if (!AreItemsDeletable) throw new NotSupportedException($"StorageDictionary for {typeof(TItem).Name} does not allow key '{key}' to be deleted.");
 
       int index;
       TItem? item;
@@ -426,7 +426,6 @@ namespace Storage {
 
       return Remove(item.Key);
     }
-
 
     public bool TryGetValue(int key, [MaybeNullWhen(false)] out TItem value) {
       var index = binarySearch(key);
@@ -553,7 +552,7 @@ namespace Storage {
 
 
     private void item_HasChanged(TItem item) {
-      if (!AreItemsUpdatable) throw new NotSupportedException($"StorageDictionary does not allow item '{item}' to be updated.");
+      if (!AreItemsUpdatable) throw new NotSupportedException($"StorageDictionary for {typeof(TItem).Name} does not allow item '{item}' to be updated.");
 
       AreItemsUpdated = true;
       version++;

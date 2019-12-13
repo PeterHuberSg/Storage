@@ -96,6 +96,23 @@ namespace StorageTest {
           streamWriter.Write("1.1.0001" + csvConfig.Delimiter);
           streamWriter.WriteLine();
 
+          streamWriter.Write("0" + csvConfig.Delimiter);
+          streamWriter.Write("0:0:1" + csvConfig.Delimiter);
+          streamWriter.Write("0:1:1" + csvConfig.Delimiter);
+          streamWriter.Write("1:1:1" + csvConfig.Delimiter);
+          streamWriter.Write("23" + csvConfig.Delimiter);
+          streamWriter.Write("23:59" + csvConfig.Delimiter);
+          streamWriter.Write("23:59:59" + csvConfig.Delimiter);
+          streamWriter.WriteLine();
+
+          streamWriter.Write("3155378975999999999" + csvConfig.Delimiter); //DateTime.MaxValue
+          streamWriter.Write("0" + csvConfig.Delimiter);                   //DateTime.MinValue
+          streamWriter.Write("630822816000000000" + csvConfig.Delimiter);  //new DateTime(2000, 1, 1)
+          streamWriter.Write("630822852610010000" + csvConfig.Delimiter);  //new DateTime(2000, 1, 1, 1, 1, 1, 1)
+          streamWriter.Write("633978144000000000" + csvConfig.Delimiter);  //new DateTime(2009, 12, 31)
+          streamWriter.Write("633979007999990000" + csvConfig.Delimiter);  //new DateTime(2009, 12, 31, 23, 59, 59, 999)
+          streamWriter.WriteLine();
+
           for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
             streamWriter.WriteLine(csvConfig.LineCharAdd + i.ToString() + csvConfig.Delimiter);
           }
@@ -172,10 +189,29 @@ namespace StorageTest {
           Assert.AreEqual("abcÄ ☹de", csvReader.ReadString());
           csvReader.ReadEndOfLine();
 
-          //DateTime
+          //Date
           Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           Assert.AreEqual(DateTime.MaxValue.Date, csvReader.ReadDate());
           Assert.AreEqual(DateTime.MinValue.Date, csvReader.ReadDate());
+          csvReader.ReadEndOfLine();
+
+          //Time
+          Assert.AreEqual(new TimeSpan( 0,  0,  0), csvReader.ReadTime());
+          Assert.AreEqual(new TimeSpan( 0,  0,  1), csvReader.ReadTime());
+          Assert.AreEqual(new TimeSpan( 0,  1,  1), csvReader.ReadTime());
+          Assert.AreEqual(new TimeSpan( 1,  1,  1), csvReader.ReadTime());
+          Assert.AreEqual(new TimeSpan(23,  0,  0), csvReader.ReadTime());
+          Assert.AreEqual(new TimeSpan(23, 59,  0), csvReader.ReadTime());
+          Assert.AreEqual(new TimeSpan(23, 59, 59), csvReader.ReadTime());
+          csvReader.ReadEndOfLine();
+
+          //DateTime
+          Assert.AreEqual(DateTime.MaxValue, csvReader.ReadDateTime());
+          Assert.AreEqual(DateTime.MinValue, csvReader.ReadDateTime());
+          Assert.AreEqual(new DateTime(2000, 1, 1), csvReader.ReadDateTime());
+          Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1, 1), csvReader.ReadDateTime());
+          Assert.AreEqual(new DateTime(2009, 12, 31), csvReader.ReadDateTime());
+          Assert.AreEqual(new DateTime(2009, 12, 31, 23, 59, 59, 999), csvReader.ReadDateTime());
           csvReader.ReadEndOfLine();
 
           //more than 1 buffer data

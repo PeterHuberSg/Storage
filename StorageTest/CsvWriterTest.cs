@@ -76,6 +76,7 @@ namespace StorageTest {
           csvWriter.Write(-1234567890.12345678m, 8);
           csvWriter.Write(decimal.MinValue);
           csvWriter.Write(decimal.MinValue, 0);
+          csvWriter.Write((decimal)Math.PI);
           csvWriter.WriteEndOfLine();
 
           csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
@@ -103,6 +104,26 @@ namespace StorageTest {
           csvWriter.WriteDate(new DateTime(2029, 12, 31));
           csvWriter.WriteDate(new DateTime(2020, 1, 1));
           csvWriter.WriteDate(new DateTime(2120, 1, 1));
+          csvWriter.WriteEndOfLine();
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+          csvWriter.WriteTime(new TimeSpan( 0,  0,  0));
+          csvWriter.WriteTime(new TimeSpan( 0,  0,  1));
+          csvWriter.WriteTime(new TimeSpan( 0,  1,  1));
+          csvWriter.WriteTime(new TimeSpan( 1,  1,  1));
+          csvWriter.WriteTime(new TimeSpan(23,  0,  0));
+          csvWriter.WriteTime(new TimeSpan(23, 59,  0));
+          csvWriter.WriteTime(new TimeSpan(23, 59, 59));
+          csvWriter.WriteEndOfLine();
+
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+          csvWriter.WriteDateTime(DateTime.MaxValue);
+          csvWriter.WriteDateTime(DateTime.MinValue);
+          csvWriter.WriteDateTime(new DateTime(2000, 1, 1));
+          csvWriter.WriteDateTime(new DateTime(2000, 1, 1, 1, 1, 1, 1));
+          csvWriter.WriteDateTime(new DateTime(2009, 12, 31));
+          csvWriter.WriteDateTime(new DateTime(2009, 12, 31, 23, 59, 59, 999));
           csvWriter.WriteEndOfLine();
 
           for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
@@ -191,6 +212,8 @@ namespace StorageTest {
         Assert.AreEqual(decimal.MinValue, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write(decimal.MinValue, 1);
         Assert.AreEqual(decimal.MinValue, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal)Math.PI);
+        Assert.AreEqual((decimal)Math.PI, decimal.Parse(fieldStrings[fieldIndex++]));
 
         line = streamReader.ReadLine();
         Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
@@ -221,6 +244,27 @@ namespace StorageTest {
         Assert.AreEqual("31.12.2029", fieldStrings[7]);
         Assert.AreEqual("1.1.2020", fieldStrings[8]);
         Assert.AreEqual("1.1.2120", fieldStrings[9]);
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
+        Assert.AreEqual("0", fieldStrings[0]);
+        Assert.AreEqual("0:0:1", fieldStrings[1]);
+        Assert.AreEqual("0:1:1", fieldStrings[2]);
+        Assert.AreEqual("1:1:1", fieldStrings[3]);
+        Assert.AreEqual("23", fieldStrings[4]);
+        Assert.AreEqual("23:59", fieldStrings[5]);
+        Assert.AreEqual("23:59:59", fieldStrings[6]);
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
+        Assert.AreEqual("3155378975999999999", fieldStrings[0]); //DateTime.MaxValue
+        Assert.AreEqual("0", fieldStrings[1]);                   //DateTime.MinValue
+        Assert.AreEqual("630822816000000000", fieldStrings[2]);  //new DateTime(2000, 1, 1)
+        Assert.AreEqual("630822852610010000", fieldStrings[3]);  //new DateTime(2000, 1, 1, 1, 1, 1, 1)
+        Assert.AreEqual("633978144000000000", fieldStrings[4]);  //new DateTime(2009, 12, 31)
+        Assert.AreEqual("633979007999990000", fieldStrings[5]);  //new DateTime(2009, 12, 31, 23, 59, 59, 999)
 
         for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
           line = streamReader.ReadLine();
