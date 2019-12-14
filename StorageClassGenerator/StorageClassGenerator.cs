@@ -25,8 +25,12 @@ namespace Storage {
 
     /// <summary>
     /// Reads all .cs files in sourceDirectoryString. The .cs file can contain one or several classes. If any class contains
-    /// a method, it gets skipped, otherwise StorageClassGenerator generates for each class a new .cs file in targetDirectoryString, 
-    /// adding all code needed for object oriented data storage. The following constants can be used in a class to configure its
+    /// a method, it gets skipped, otherwise StorageClassGenerator generates for each class a new .base.cs file in targetDirectoryString, 
+    /// adding all code needed for object oriented data storage. A corresponding.cs file gets created, if it doesn't exist yet, where
+    /// more code can get added manually. The generator will not overwrite these changes.
+    /// 
+    /// <para/>
+    /// The following constants can be used in a class to configure its
     /// behaviour:
     /// <para/>
     /// MaxLineLenght: Number of UTF8 bytes needed to store longest class instance in a CVS file

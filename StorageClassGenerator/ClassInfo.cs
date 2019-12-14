@@ -14,7 +14,6 @@ namespace Storage {
     public readonly List<ClassInfo> Parents;
     public readonly List<ClassInfo> Children;
 
-    public bool HasParent;
     public bool IsAddedToParentChildTree;
     public string AreItemsUpdatable = "true";
     public string AreItemsDeletable = "true";
@@ -86,14 +85,92 @@ namespace Storage {
     }
 
 
-    public void WriteCodeFile(StreamWriter streamWriter, string nameSpace, string context) {
-      foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.Parent) {
-          HasParent = true;
-          break;
+    internal void WriteCodeFile(StreamWriter streamWriter, string nameSpace) {
+      streamWriter.WriteLine("using System;");
+      streamWriter.WriteLine("using System.Collections.Generic;");
+      streamWriter.WriteLine("using Storage;");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("namespace " + nameSpace + " {");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      if (ClassComment!=null) {
+        var linesArray = ClassComment.Split(Environment.NewLine);
+        foreach (var line in linesArray) {
+          if (!string.IsNullOrWhiteSpace(line)) {
+            streamWriter.WriteLine($"  {line}");
+          }
         }
       }
+      streamWriter.WriteLine("  public partial class " + Name + ": IStorage<" + Name + "> {");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    #region Properties");
+      streamWriter.WriteLine("    //      ----------");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    #endregion");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    #region Events");
+      streamWriter.WriteLine("    //      ------");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    #endregion");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    #region Constructors");
+      streamWriter.WriteLine("    //      ------------");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Called once the constructor has filled all the properties");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    //partial void onCreate() {");
+      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine("    #endregion");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    #region Methods");
+      streamWriter.WriteLine("    //      -------");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Called before storing gets executed");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    //partial void onStore() {");
+      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    //partial void onUpdate() {");
+      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Called before any remove activities get executed");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    //partial void onRemove() {");
+      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Updates returnString with additional info for a short description.");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    //partial void onToShortString(ref string returnString) {");
+      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Updates returnString with additional info for a short description.");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    //partial void onToString(ref string returnString) {");
+      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine("    #endregion");
+      streamWriter.WriteLine("  }");
+      streamWriter.WriteLine("}");
+    }
 
+
+    public void WriteBaseCodeFile(StreamWriter streamWriter, string nameSpace, string context) {
       streamWriter.WriteLine("using System;");
       streamWriter.WriteLine("using System.Collections.Generic;");
       streamWriter.WriteLine("using Storage;");
@@ -221,7 +298,7 @@ namespace Storage {
         for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
           var line = lines[linesIndex];
           if (linesIndex+1==lines.Count) {
-            streamWriter.WriteLine("");
+            streamWriter.WriteLine();
             streamWriter.Write("    /// and " + line);
           } else {
             streamWriter.WriteLine(", ");
@@ -241,10 +318,13 @@ namespace Storage {
           streamWriter.WriteLine($"      {mi.Name} = {mi.LowerName};");
         }
       }
+      streamWriter.WriteLine("      onCreate();");
+      streamWriter.WriteLine();
       streamWriter.WriteLine("      if (isStoring) {");
       streamWriter.WriteLine("        Store();");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine("    partial void onCreate();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion
@@ -254,7 +334,7 @@ namespace Storage {
       streamWriter.WriteLine($"    /// Constructor for {Name} read from CSV file");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write($"    private {Name}(int key, CsvReader csvReader, {context} ");
-      if (HasParent) {
+      if (Parents.Count>0) {
         streamWriter.Write("context");
       } else {
         streamWriter.Write("_");
@@ -352,6 +432,7 @@ namespace Storage {
       streamWriter.WriteLine($"        throw new Exception($\"{Name} '{this}' can not be stored in {context}.Data, " +
         $"key is {{Key}} greater equal 0.\");");
       streamWriter.WriteLine("      }");
+      streamWriter.WriteLine("      onStore();");
       streamWriter.WriteLine($"      {context}.Data!.{Name}s.Add(this);");
       foreach (var parent in Parents) {
         if (Members[parent.Name].IsNullable) {
@@ -364,6 +445,7 @@ namespace Storage {
       }
 
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine("    partial void onStore();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
@@ -468,8 +550,12 @@ namespace Storage {
           }
         }
       }
-      streamWriter.WriteLine("      if (isChangeDetected) HasChanged?.Invoke(this);");
+      streamWriter.WriteLine("      if (isChangeDetected) {");
+      streamWriter.WriteLine("        onUpdate();");
+      streamWriter.WriteLine("        HasChanged?.Invoke(this);");
+      streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine("    partial void onUpdate();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion
@@ -479,7 +565,7 @@ namespace Storage {
       streamWriter.WriteLine($"    /// Updates this {Name} with values from CSV file");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write($"    internal static void Update({Name} {LowerName}, CsvReader csvReader, {context} ");
-      if (HasParent) {
+      if (Parents.Count>0) {
         streamWriter.Write("context");
       } else {
         streamWriter.Write("_");
@@ -578,8 +664,10 @@ namespace Storage {
       streamWriter.WriteLine("      if (Key<0) {");
       streamWriter.WriteLine($"        throw new Exception($\"{Name}.Remove(): {Name} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
       streamWriter.WriteLine("      }");
+      streamWriter.WriteLine("      onRemove();");
       streamWriter.WriteLine($"      {context}.Data!.{Name}s.Remove(Key);");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine("    partial void onRemove();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion
@@ -645,23 +733,12 @@ namespace Storage {
       streamWriter.WriteLine("    /// Returns property values");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    public string ToShortString() {");
-      streamWriter.WriteLine("      return");
+      streamWriter.WriteLine("      var returnString =");
       lines.Clear();
       lines.Add("        $\"{Key.ToKeyString()}");
       foreach (var mi in Members.Values) {
         if (mi.MemberType!=MemberTypeEnum.List) {
           lines.Add($"        $\" {{{mi.Name}{mi.ToStringFunc}}}");
-          //if (mi.MemberType==MemberTypeEnum.Parent) {
-          //  if (mi.IsNullable) {
-          //    lines.Add($"        $\" {{{mi.Name}?.ToShortString()}}");
-          //  } else {
-          //    lines.Add($"        $\" {{{mi.Name}.ToShortString()}}");
-          //  }
-          //}else if (mi.MemberType==MemberTypeEnum.Date) {
-          //  lines.Add($"        $\" {{{mi.Name}}}");
-          //} else {
-          //  lines.Add($"        $\" {{{mi.Name}}}");
-          //}
         }
       }
       for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
@@ -673,7 +750,10 @@ namespace Storage {
           streamWriter.WriteLine("\";");
         }
       }
+      streamWriter.WriteLine("      onToShortString(ref returnString);");
+      streamWriter.WriteLine("      return returnString;");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine("    partial void onToShortString(ref string returnString);");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion
@@ -683,23 +763,14 @@ namespace Storage {
       streamWriter.WriteLine("    /// Returns all property names and values");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    public override string ToString() {");
-      streamWriter.WriteLine("      return");
+      streamWriter.WriteLine("      var returnString =");
       lines.Clear();
       lines.Add("        $\"Key: {Key}");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
           lines.Add($"        $\" {mi.Name}: {{{mi.Name}.Count}}");
         } else {
-          lines.Add($"        $\" {{{mi.Name}{mi.ToStringFunc}}}");
-          //if (mi.MemberType==MemberTypeEnum.Parent) {
-          //  if (mi.IsNullable) {
-          //    lines.Add($"        $\" {mi.Name}: {{{mi.Name}?.ToShortString()}}");
-          //  } else {
-          //    lines.Add($"        $\" {mi.Name}: {{{ mi.Name}.ToShortString()}}");
-          //  }
-          //} else {
-          //  lines.Add($"        $\" {mi.Name}: {{{mi.Name}}}");
-          //}
+          lines.Add($"        $\" {mi.Name}: {{{mi.Name}{mi.ToStringFunc}}}");
         }
       }
       for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
@@ -711,7 +782,10 @@ namespace Storage {
           streamWriter.WriteLine(";\";");
         }
       }
+      streamWriter.WriteLine("      onToString(ref returnString);");
+      streamWriter.WriteLine("      return returnString;");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine("    partial void onToString(ref string returnString);");
       #endregion
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine("  }");

@@ -179,21 +179,29 @@ namespace Storage {
 
     public void WriteCodeFiles(DirectoryInfo targetDirectory, string context) {
       foreach (var classInfo in classes.Values) {
-        var fileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.Name + ".cs";
+        var baseFileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.Name + ".base.cs";
         try {
-          File.Delete(fileNameAndPath);
+          File.Delete(baseFileNameAndPath);
         } catch {
-          throw new GeneratorException($"Cannot delete file {fileNameAndPath}.");
+          throw new GeneratorException($"Cannot delete file {baseFileNameAndPath}.");
         }
-        using var streamWriter = new StreamWriter(fileNameAndPath);
-        Console.WriteLine(classInfo.Name + ".cs");
-        classInfo.WriteCodeFile(streamWriter, nameSpaceString!, context);
+        using (var streamWriter = new StreamWriter(baseFileNameAndPath)) {
+          Console.WriteLine(classInfo.Name + ".base.cs");
+          classInfo.WriteBaseCodeFile(streamWriter, nameSpaceString!, context);
+        }
+
+        var fileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.Name + ".cs";
+        if (!new FileInfo(fileNameAndPath).Exists) {
+          using var streamWriter = new StreamWriter(fileNameAndPath);
+          Console.WriteLine(classInfo.Name + ".cs");
+          classInfo.WriteCodeFile(streamWriter, nameSpaceString!);
+        }
       }
     }
 
 
     public void WriteContextFile(DirectoryInfo targetDirectory, string context) {
-      var fileNameAndPath = targetDirectory!.FullName + '\\' + context + ".cs";
+      var fileNameAndPath = targetDirectory!.FullName + '\\' + context + ".base.cs";
       try {
         File.Delete(fileNameAndPath);
       } catch {
