@@ -13,40 +13,46 @@ namespace Storage {
     DateTime,
     Decimal,
     Decimal2,
+    Bool,
     Int,
     List,
     Parent,
     String,
+    Enum,
     Lenght
   }
 
 
   public class MemberInfo {
-    public readonly string Name;
-    public readonly string LowerName;
-    public readonly MemberTypeEnum MemberType;
+    public readonly string MemberName;
+    public readonly string LowerMemberName;
+    public MemberTypeEnum MemberType;
+    public readonly ClassInfo ClassInfo;
     public readonly bool IsNullable;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
     public readonly string? ChildTypeName;
     public readonly string? LowerChildTypeName;
     public readonly string TypeString;
-    public readonly string? ParentName;
-    public readonly string? LowerParentName;
+    public readonly string? ParentType;//is only different from TypeString when IsNullable
+    public readonly string? LowerParentType;
     public readonly string? CsvReaderRead;
     public readonly string? CsvWriterWrite;
     public readonly string? NoValue; //used to fill NoClass with a obviously bad value
-    public readonly string? ToStringFunc;
+    public string? ToStringFunc;
 
-    public ClassInfo? LinkedClassInfo;
+    public ClassInfo? ChildClassInfo;
+    public ClassInfo? ParentClassInfo; //not really used
+    public EnumInfo? EnumInfo;
 
 
-    public MemberInfo(string name, MemberTypeEnum memberType, bool isNullable, string? comment) {
+    public MemberInfo(string name, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment) {
       if (memberType==MemberTypeEnum.List) throw new Exception();
 
-      Name = name;
-      LowerName = name[0..1].ToLowerInvariant() + name[1..];
+      MemberName = name;
+      LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
       MemberType = memberType;
+      ClassInfo = classInfo;
       IsNullable = isNullable;
       Comment = comment;
       switch (memberType) {
@@ -90,28 +96,24 @@ namespace Storage {
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 2 digits after comma.";
         break;
-      case MemberTypeEnum.Int: 
+      case MemberTypeEnum.Bool:
+        TypeString = "bool";
+        CsvReaderRead = "ReadBool()";
+        CsvWriterWrite = "Write";
+        NoValue = "false";
+        ToStringFunc = "";
+        break;
+      case MemberTypeEnum.Int:
         TypeString = "int";
         CsvReaderRead = "ReadInt()";
         CsvWriterWrite = "Write";
         NoValue = "int.MinValue";
         ToStringFunc = "";
         break;
+      case MemberTypeEnum.List:
+        throw new Exception("List uses its own constructor.");
       case MemberTypeEnum.Parent:
-        ParentName = name;
-        LowerParentName = name[0..1].ToLowerInvariant() + name[1..];
-        TypeString = name;
-        CsvWriterWrite = "Write";
-        if (isNullable) {
-          CsvReaderRead = "ReadIntNull()";
-          NoValue = "null";
-          ToStringFunc = "?.ToShortString()";
-        } else {
-          CsvReaderRead = "ReadInt()";
-          NoValue = $"{name}.No{name}";
-          ToStringFunc = ".ToShortString()";
-        }
-        break;
+        throw new Exception("Parent uses its own constructor.");
       case MemberTypeEnum.String: 
         TypeString = "string";
         CsvReaderRead = "ReadString()!";
@@ -119,6 +121,8 @@ namespace Storage {
         NoValue = isNullable ? "null" : $"\"No{name}\"";
         ToStringFunc = "";
         break;
+      case MemberTypeEnum.Enum:
+        throw new Exception("Enum needs to get constructed as Parent first and only later memberType gets changed to MemberTypeEnum.Enum.");
       default:
         throw new NotSupportedException();
       }
@@ -131,10 +135,11 @@ namespace Storage {
     /// <summary>
     /// constructor for List
     /// </summary>
-    public MemberInfo(string name, string listType, string childType, string? comment) {
+    public MemberInfo(string name, ClassInfo classInfo, string listType, string childType, string? comment) {
       MemberType = MemberTypeEnum.List;
-      Name = name;
-      LowerName = name[0..1].ToLowerInvariant() + name[1..];
+      MemberName = name;
+      LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
+      ClassInfo = classInfo;
       ChildTypeName = childType;
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
       IsNullable = false;
@@ -145,14 +150,41 @@ namespace Storage {
     }
 
 
+    /// <summary>
+    /// constructor for Parent
+    /// </summary>
+    public MemberInfo(string name, ClassInfo classInfo, string memberTypeString, bool isNullable, string? comment) {
+      MemberType = MemberTypeEnum.Parent;
+      MemberName = name;
+      LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
+      ClassInfo = classInfo;
+      IsNullable = isNullable;
+      ParentType = memberTypeString;
+      LowerParentType = memberTypeString[0..1].ToLowerInvariant() + memberTypeString[1..];
+      CsvWriterWrite = "Write";
+      if (isNullable) {
+        TypeString = memberTypeString + '?';
+        CsvReaderRead = "ReadIntNull()";
+        NoValue = "null";
+        ToStringFunc = "?.ToShortString()";
+      } else {
+        TypeString = memberTypeString;
+        CsvReaderRead = "ReadInt()";
+        NoValue = $"{TypeString}.No{TypeString}";
+        ToStringFunc = ".ToShortString()";
+      }
+      Comment = comment;
+    }
+
+
     public override string ToString() {
       string isNullableString = IsNullable ? "?" : "";
       if (MemberType==MemberTypeEnum.List) {
-        return $"List<{ChildTypeName}> {Name}";
+        return $"List<{ChildTypeName}> {MemberName}";
       }else if (MemberType==MemberTypeEnum.List) {
-        return $"{Name}{isNullableString} {Name}";
+        return $"{MemberName}{isNullableString} {MemberName}";
       } else {
-        return $"{MemberType}{isNullableString} {Name}";
+        return $"{MemberType}{isNullableString} {MemberName}";
       }
     }
 
@@ -174,15 +206,15 @@ namespace Storage {
         }
       }
       if (PrecissionComment!=null && !hasWrittenComment) {
-        streamWriter.WriteLine($"    /// <summary>");
+        streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine($"    /// {PrecissionComment}");
-        streamWriter.WriteLine($"    ///  </summary>");
+        streamWriter.WriteLine("    ///  </summary>");
       }
       if (MemberType==MemberTypeEnum.List) {
-        streamWriter.WriteLine("    public IReadOnly" + TypeString + " " + Name + " { get { return " + LowerName + "; } }");
-        streamWriter.WriteLine("    readonly List<" + ChildTypeName + "> " + LowerName + ";");
+        streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} {{ get {{ return {LowerMemberName}; }} }}");
+        streamWriter.WriteLine($"    readonly List<{ChildTypeName}> {LowerMemberName};");
       } else {
-        streamWriter.WriteLine("    public " + TypeString + " " + Name + " { get; private set; }");
+        streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
       }
     }
   }

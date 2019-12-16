@@ -55,9 +55,9 @@ namespace Storage {
         FileName = fileName!;
       }
       CsvConfig = csvConfig;
-      if (csvConfig.Encoding!=Encoding.UTF8) 
+      if (csvConfig.Encoding!=Encoding.UTF8)
         throw new Exception($"CsvReader constructor '{FileName}': Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
-      
+
       delimiter = (int)csvConfig.Delimiter;
       if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
         throw new Exception($"CsvReader constructor '{FileName}': Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
@@ -223,6 +223,27 @@ namespace Storage {
         return false;
       }
       return true;
+    }
+
+
+    /// <summary>
+    /// Read boolean as 0 or 1 from UTF8 filestream including delimiter.
+    /// </summary>
+    public bool ReadBool() {
+      bool b;
+      int readByteAsInt = (int)byteArray[readPos++];
+      if (readByteAsInt=='0') {
+        b = false;
+      } else if (readByteAsInt=='1') {
+        b = true;
+      } else {
+        throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
+      }
+      readByteAsInt = (int)byteArray[readPos++];
+      if (readByteAsInt!=CsvConfig.Delimiter) {
+        throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
+      }
+      return b;
     }
 
 

@@ -34,6 +34,11 @@ namespace StorageTest {
         using (var fileStream = new FileStream(fileName, FileMode.Create)) {
           using var streamWriter = new StreamWriter(fileStream);
           streamWriter.Write(csvConfig.LineCharAdd);
+          streamWriter.Write("0" + csvConfig.Delimiter);
+          streamWriter.Write("1" + csvConfig.Delimiter);
+          streamWriter.WriteLine();
+
+          streamWriter.Write(csvConfig.LineCharAdd);
           writeInt(streamWriter, int.MaxValue, expectedInts, csvConfig.Delimiter);
           writeInt(streamWriter, 1, expectedInts, csvConfig.Delimiter);
           writeInt(streamWriter, 0, expectedInts, csvConfig.Delimiter);
@@ -126,6 +131,13 @@ namespace StorageTest {
 
         int maxLineLenght = 150;
         using (var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght)) {
+          //bool
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+          Assert.AreEqual(false, csvReader.ReadBool());
+          Assert.AreEqual(true, csvReader.ReadBool());
+          csvReader.ReadEndOfLine();
+          Assert.IsFalse(csvReader.IsEof);
+
           //int
           Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           foreach (var expectedInt in expectedInts) {

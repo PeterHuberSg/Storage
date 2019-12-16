@@ -30,6 +30,11 @@ namespace StorageTest {
           csvWriter.WriteLine("Some header");
 
           csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+          csvWriter.Write(false);
+          csvWriter.Write(true);
+          csvWriter.WriteEndOfLine();
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write(int.MaxValue);
           csvWriter.Write(1);
           csvWriter.Write(0);
@@ -141,6 +146,12 @@ namespace StorageTest {
         line = streamReader.ReadLine();
         Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
         var fieldStrings = line![1..].Split(csvConfig.Delimiter);
+        Assert.AreEqual("0", fieldStrings[0]);
+        Assert.AreEqual("1", fieldStrings[1]);
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual(int.MaxValue, int.Parse(fieldStrings[0]));
         Assert.AreEqual(1, int.Parse(fieldStrings[1]));
         Assert.AreEqual(0, int.Parse(fieldStrings[2]));

@@ -4,7 +4,8 @@ using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
-using StorageSample;
+using StorageModel;
+using System.Linq;
 
 
 namespace StorageTest {
@@ -52,6 +53,7 @@ namespace StorageTest {
           addMaster(0);
           addMaster(1);
           addMaster(2);
+          addMaster(3);
           addSample(0, null);
           addSample(1, 1);
           addSample(2, 2);
@@ -69,6 +71,7 @@ namespace StorageTest {
           removeSample(2);
           removeMaster(2);
           removeMaster(1);
+          //showStructure()
         } finally {
           DL.DisposeData();
         }
@@ -126,15 +129,34 @@ namespace StorageTest {
       var sampleText = "Sample" + sampleKey;
       Sample sample;
       if (masterKey is null) {
-        sample = new Sample(sampleText, sampleKey, sampleKey, DateTime.Now.Date.AddDays(-sampleKey), null, null, isStoring: false);
+        sample = new Sample(
+          text: sampleText,
+          flag: false,
+          number: sampleKey,
+          amount: sampleKey,
+          preciseDecimal: sampleKey/1000000m,
+          sampleState: SampleStateEnum.None,
+          dateOnly: DateTime.Now.Date.AddDays(-sampleKey),
+          timeOnly: TimeSpan.FromHours(sampleKey),
+          dateAndTime: DateTime.Now.Date.AddDays(-sampleKey) + TimeSpan.FromHours(sampleKey),
+          oneMaster: null,
+          otherMaster: null,
+          optional: null,
+          isStoring: false); ;
       } else {
         var master =
         sample = new Sample(
-          sampleText, 
-          sampleKey, 
-          sampleKey, 
-          DateTime.Now.Date.AddDays(-sampleKey), 
-          DL.Data!.SampleMasters[masterKey.Value], 
+          text: sampleText,
+          flag: true,
+          number: sampleKey,
+          amount: sampleKey,
+          preciseDecimal: sampleKey/1000000m,
+          sampleState: SampleStateEnum.Some,
+          dateOnly: DateTime.Now.Date.AddDays(-sampleKey),
+          timeOnly: TimeSpan.FromHours(sampleKey),
+          dateAndTime: DateTime.Now.Date.AddDays(-sampleKey) + TimeSpan.FromHours(sampleKey),
+          oneMaster: DL.Data!.SampleMasters[masterKey.Value], 
+          otherMaster: DL.Data!.SampleMasters[masterKey.Value + 1],
           "option" + sampleKey,
           isStoring: false);
       }
@@ -147,7 +169,19 @@ namespace StorageTest {
     private void updateSample(int sampleKey, string text, SampleMaster? newSampleMaster) {
       var sampleText = "Sample" + sampleKey + text;
       Sample sample = DL.Data!.Samples[sampleKey];
-      sample.Update(sampleText, sample.Number, sample.Amount, sample.Date, newSampleMaster, sample.Optional);
+      sample.Update(
+        text: sampleText,
+        flag: sample.Flag,
+        number: sample.Number,
+        amount: sample.Amount,
+        preciseDecimal: sample.PreciseDecimal,
+        sampleState: sample.SampleState,
+        dateOnly: sample.DateOnly,
+        timeOnly: sample.TimeOnly,
+        dateAndTime: sample.DateAndTime,
+        oneMaster: newSampleMaster,
+        otherMaster: newSampleMaster,
+        optional: sample.Optional);
       expectedData!.Samples.Remove(sampleKey);
       expectedData!.Samples.Add(sampleKey, sample.ToString());
       assertData();
@@ -217,30 +251,8 @@ namespace StorageTest {
       foreach (var sample in expectedData!.Samples) {
         var dlSample = DL.Data!.Samples[sample.Key];
         Assert.AreEqual(sample.Value, dlSample.ToString());
-        if (dlSample.SampleMaster is null) {
-          var isFound = false;
-          foreach (var master1 in DL.Data!.SampleMasters) {
-            foreach (var sample1 in master1.Samples) {
-              if (sample1.Key==dlSample.Key) {
-                isFound = true;
-                break;
-              }
-            }
-            if (isFound) {
-              break;
-            }
-          }
-          Assert.IsFalse(isFound);
-        } else {
-          var isFound = false;
-          foreach (var sample1 in dlSample.SampleMaster.Samples) {
-            if (sample1.Key==dlSample.Key) {
-              isFound = true;
-              break;
-            }
-          }
-          Assert.IsTrue(isFound);
-        }
+        //assertMaster(dlSample.OneMaster, dlSample);
+        //assertMaster(dlSample.OtherMaster, dlSample);
       }
 
       Assert.AreEqual(expectedData!.Details.Count, DL.Data!.SampleDetails.Count);
@@ -256,6 +268,82 @@ namespace StorageTest {
         }
         Assert.IsTrue(isFound);
       }
+
+      var mastersFromSamples = new Dictionary<int, HashSet<Sample>>();
+      foreach (var sample in DL.Data!.Samples.Values) {
+        addSampleToMaster(sample, sample.OneMaster, mastersFromSamples);
+        addSampleToMaster(sample, sample.OtherMaster, mastersFromSamples);
+      }
+      foreach (var master in DL.Data!.SampleMasters.Values) {
+        if (mastersFromSamples.TryGetValue(master.Key, out var samplesHashSet)) {
+          Assert.AreEqual(samplesHashSet.Count, master.Samples.Count);
+          foreach (var sample in samplesHashSet) {
+            Assert.IsTrue(master.Samples.Contains(sample));
+          }
+        } else {
+          Assert.AreEqual(0, master.Samples.Count);
+          //showStructure();
+        }
+
+      }
     }
+
+
+    private string showStructure() {
+      var sb = new StringBuilder();
+      sb.AppendLine("Samples");
+      foreach (var sample in DL.Data!.Samples.Values) {
+        sb.AppendLine($"{sample.Key}: {sample.OneMaster?.Key} {sample.OtherMaster?.Key}");
+      }
+      sb.AppendLine();
+      sb.AppendLine("Masters");
+      foreach (var master in DL.Data!.SampleMasters.Values) {
+        sb.Append(master.Key + ":");
+        foreach (var sample in master.Samples) {
+          sb.Append(" " + sample.Key);
+        }
+        sb.AppendLine();
+      }
+      return sb.ToString();
+    }
+
+
+    private void addSampleToMaster(Sample sample, SampleMaster? master, Dictionary<int, HashSet<Sample>> mastersFromSamples) {
+      if (master is null) return;
+
+      if (!mastersFromSamples.TryGetValue(master.Key, out var samplesHashSet)) {
+        samplesHashSet = new HashSet<Sample>();
+        mastersFromSamples.Add(master.Key, samplesHashSet);
+      }
+      samplesHashSet.Add(sample);
+    }
+
+
+    //private void assertMaster(SampleMaster? master, Sample dlSample) {
+    //  if (master is null) {
+    //    var isFound = false;
+    //    foreach (var master1 in DL.Data!.SampleMasters) {
+    //      foreach (var sample1 in master1.Samples) {
+    //        if (sample1.Key==dlSample.Key) {
+    //          isFound = true;
+    //          break;
+    //        }
+    //      }
+    //      if (isFound) {
+    //        break;
+    //      }
+    //    }
+    //    Assert.IsFalse(isFound);
+    //  } else {
+    //    var isFound = false;
+    //    foreach (var sample1 in master.Samples) {
+    //      if (sample1.Key==dlSample.Key) {
+    //        isFound = true;
+    //        break;
+    //      }
+    //    }
+    //    Assert.IsTrue(isFound);
+    //  }
+    //}
   }
 }

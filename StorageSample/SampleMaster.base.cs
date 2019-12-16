@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Storage;
 
 
-namespace StorageSample {
+namespace StorageModel  {
 
 
   /// <summary>
@@ -31,8 +31,8 @@ namespace StorageSample {
     /// <summary>
     /// Some Samples comment
     /// </summary>
-    public IReadOnlyList<Sample> Samples { get { return samples; } }
-    readonly List<Sample> samples;
+    public IReadOnlyCollection<Sample> Samples { get { return samples; } }
+    readonly HashSet<Sample> samples;
 
 
     /// <summary>
@@ -67,11 +67,14 @@ namespace StorageSample {
     public SampleMaster(string text, bool isStoring = true) {
       Key = Storage.Storage.NoKey;
       Text = text;
-      samples = new List<Sample>();
+      samples = new HashSet<Sample>();
+      onCreate();
+
       if (isStoring) {
         Store();
       }
     }
+    partial void onCreate();
 
 
     /// <summary>
@@ -80,7 +83,7 @@ namespace StorageSample {
     private SampleMaster(int key, CsvReader csvReader, DL _) {
       Key = key;
       Text = csvReader.ReadString()!;
-      samples = new List<Sample>();
+      samples = new HashSet<Sample>();
     }
 
 
@@ -103,8 +106,10 @@ namespace StorageSample {
       if (Key>=0) {
         throw new Exception($"SampleMaster 'Class SampleMaster' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
+      onStore();
       DL.Data!.SampleMasters.Add(this);
     }
+    partial void onStore();
 
 
     /// <summary>
@@ -130,8 +135,12 @@ namespace StorageSample {
         Text = text;
         isChangeDetected = true;
       }
-      if (isChangeDetected) HasChanged?.Invoke(this);
+      if (isChangeDetected) {
+        onUpdate();
+        HasChanged?.Invoke(this);
+      }
     }
+    partial void onUpdate();
 
 
     /// <summary>
@@ -154,7 +163,12 @@ namespace StorageSample {
     /// Removes sample from Samples.
     /// </summary>
     internal void RemoveFromSamples(Sample sample) {
+      var countLinks = 0;
+      if (sample.OneMaster==this ) countLinks++;
+      if (sample.OtherMaster==this) countLinks++;
+      if (countLinks>1) return;
 #if DEBUG
+      if (countLinks==0) throw new Exception();
       if (!samples.Remove(sample)) throw new Exception();
 #else
         samples.Remove(sample));
@@ -163,22 +177,25 @@ namespace StorageSample {
 
 
     /// <summary>
-    /// Removes SampleMaster from DL.Data.SampleMasters and disconnects all Samples.
+    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
     /// </summary>
     public void Remove() {
       if (Key<0) {
         throw new Exception($"SampleMaster.Remove(): SampleMaster 'Class SampleMaster' is not stored in DL.Data, key is {Key}.");
       }
+      onRemove();
       DL.Data!.SampleMasters.Remove(Key);
     }
+    partial void onRemove();
 
 
     /// <summary>
-    /// Disconnects all Samples.
+    /// Disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
     /// </summary>
     internal static void Disconnect(SampleMaster sampleMaster) {
       foreach (var sample in sampleMaster.Samples) {
-        sample.RemoveSampleMaster(sampleMaster);
+        sample.RemoveOneMaster(sampleMaster);
+        sample.RemoveOtherMaster(sampleMaster);
       }
     }
 
@@ -187,21 +204,27 @@ namespace StorageSample {
     /// Returns property values
     /// </summary>
     public string ToShortString() {
-      return
+      var returnString =
         $"{Key.ToKeyString()}," +
         $" {Text}";
+      onToShortString(ref returnString);
+      return returnString;
     }
+    partial void onToShortString(ref string returnString);
 
 
     /// <summary>
     /// Returns all property names and values
     /// </summary>
     public override string ToString() {
-      return
+      var returnString =
         $"Key: {Key}," +
-        $" {Text}," +
+        $" Text: {Text}," +
         $" Samples: {Samples.Count};";
+      onToString(ref returnString);
+      return returnString;
     }
+    partial void onToString(ref string returnString);
     #endregion
   }
 }

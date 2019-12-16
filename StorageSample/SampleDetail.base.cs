@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Storage;
 
 
-namespace StorageSample  {
+namespace StorageModel  {
 
 
   /// <summary>
@@ -67,10 +67,13 @@ namespace StorageSample  {
       Key = Storage.Storage.NoKey;
       Text = text;
       Sample = sample;
+      onCreate();
+
       if (isStoring) {
         Store();
       }
     }
+    partial void onCreate();
 
 
     /// <summary>
@@ -97,10 +100,11 @@ namespace StorageSample  {
 
 
     /// <summary>
-    /// Verify that sampleDetail.Sample exists
+    /// Verify that sampleDetail.Sample exists.
     /// </summary>
     internal static bool Verify(SampleDetail sampleDetail) {
-      return sampleDetail.Sample!=Sample.NoSample;
+      if (sampleDetail.Sample==Sample.NoSample) return false;
+      return true;
     }
     #endregion
 
@@ -115,9 +119,11 @@ namespace StorageSample  {
       if (Key>=0) {
         throw new Exception($"SampleDetail 'Class SampleDetail' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
+      onStore();
       DL.Data!.SampleDetails.Add(this);
       Sample.AddToSampleDetails(this);
     }
+    partial void onStore();
 
 
     /// <summary>
@@ -152,8 +158,12 @@ namespace StorageSample  {
         Sample.AddToSampleDetails(this);
         isChangeDetected = true;
       }
-      if (isChangeDetected) HasChanged?.Invoke(this);
+      if (isChangeDetected) {
+        onUpdate();
+        HasChanged?.Invoke(this);
+      }
     }
+    partial void onUpdate();
 
 
     /// <summary>
@@ -181,8 +191,10 @@ namespace StorageSample  {
       if (Key<0) {
         throw new Exception($"SampleDetail.Remove(): SampleDetail 'Class SampleDetail' is not stored in DL.Data, key is {Key}.");
       }
+      onRemove();
       DL.Data!.SampleDetails.Remove(Key);
     }
+    partial void onRemove();
 
 
     /// <summary>
@@ -199,22 +211,28 @@ namespace StorageSample  {
     /// Returns property values
     /// </summary>
     public string ToShortString() {
-      return
+      var returnString =
         $"{Key.ToKeyString()}," +
         $" {Text}," +
         $" {Sample.ToShortString()}";
+      onToShortString(ref returnString);
+      return returnString;
     }
+    partial void onToShortString(ref string returnString);
 
 
     /// <summary>
     /// Returns all property names and values
     /// </summary>
     public override string ToString() {
-      return
+      var returnString =
         $"Key: {Key}," +
-        $" {Text}," +
-        $" {Sample.ToShortString()};";
+        $" Text: {Text}," +
+        $" Sample: {Sample.ToShortString()};";
+      onToString(ref returnString);
+      return returnString;
     }
+    partial void onToString(ref string returnString);
     #endregion
   }
 }

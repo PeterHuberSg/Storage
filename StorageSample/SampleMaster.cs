@@ -7,9 +7,10 @@ namespace StorageModel  {
 
 
   /// <summary>
-  /// Some comment for Sample
+  /// Some comment for SampleMaster.
+  /// With an additional line.
   /// </summary>
-  public partial class Sample: IStorage<Sample> {
+  public partial class SampleMaster: IStorage<SampleMaster> {
 
 
     #region Properties

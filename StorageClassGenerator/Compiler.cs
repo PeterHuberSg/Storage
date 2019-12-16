@@ -13,10 +13,14 @@ namespace Storage {
 
     readonly Dictionary<string, ClassInfo> classes;
     readonly List<ClassInfo> parentChildTree;
+    readonly Dictionary<string, EnumInfo> enums;
+    public IReadOnlyDictionary<string, EnumInfo> Enums { get { return enums; } }
+
 
     public Compiler() {
       classes = new Dictionary<string, ClassInfo>();
       parentChildTree = new List<ClassInfo>();
+      enums = new Dictionary<string, EnumInfo>();
     }
 
 
@@ -26,14 +30,21 @@ namespace Storage {
 
 
     public void Parse(NamespaceDeclarationSyntax namespaceDeclaration, string fileName) {
-      nameSpaceString = namespaceDeclaration.Name.GetText().ToString();
-      //if (namespaceDeclaration.Members.Count!=1) {
-      //  throw new GeneratorException($"{fileName} contains more than 1 xxx in namespace '{nameSpaceString}'.");
-      //}
+      var newNameSpaceString = namespaceDeclaration.Name.GetText().ToString();
+      if (nameSpaceString is null) {
+        nameSpaceString = newNameSpaceString;
+      } else if (nameSpaceString!=newNameSpaceString) {
+        throw new GeneratorException($"{fileName} defines a different namespace 'newNameSpaceString' than the already defined one 'nameSpaceString'.");
+      }
       foreach (var namespaceMember in namespaceDeclaration.Members) {
         var classDeclaration = namespaceMember as ClassDeclarationSyntax;
         if (classDeclaration is null) {
-          throw new GeneratorException($"{fileName} contains not only class declarations in namespace '{nameSpaceString}'.");
+          var enumDeclarationSyntax = namespaceMember as EnumDeclarationSyntax;
+          if (enumDeclarationSyntax is null) {
+            throw new GeneratorException($"{fileName} contains not only class and enum declarations in namespace '{nameSpaceString}'.");
+          }
+          parseEnum(enumDeclarationSyntax);
+          continue;
         }
         var className = classDeclaration.Identifier.Text;
         string? classComment = getComment(classDeclaration.GetLeadingTrivia());
@@ -98,6 +109,11 @@ namespace Storage {
     }
 
 
+    private void parseEnum(EnumDeclarationSyntax enumDeclaration) {
+      enums.Add(enumDeclaration.Identifier.Text, new EnumInfo(enumDeclaration.Identifier.Text, enumDeclaration.ToFullString()));
+    }
+
+
     private string? getComment(SyntaxTriviaList syntaxTriviaList) {
       string? comment = null;
       var leadingTrivia = syntaxTriviaList.ToString();
@@ -114,22 +130,36 @@ namespace Storage {
 
 
     public void AnalyzeDependencies() {
-      var topClasses = classes.Values.ToDictionary(c=>c.Name);
+      var topClasses = classes.Values.ToDictionary(c=>c.ClassName);
       foreach (var classInfo in classes.Values) {
         foreach (var memberInfo in classInfo.Members.Values) {
           if (memberInfo.MemberType==MemberTypeEnum.Parent) {
-            if (!classes.TryGetValue(memberInfo.Name!, out memberInfo.LinkedClassInfo))
-              throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class {memberInfo.Name}.");
-            classInfo.Parents.Add(memberInfo.LinkedClassInfo);
-            memberInfo.LinkedClassInfo.Children.Add(classInfo);
-            topClasses.Remove(classInfo.Name);
+            if (classes.TryGetValue(memberInfo.ParentType!, out memberInfo.ParentClassInfo)) {
+              classInfo.Parents.Add(memberInfo.ParentClassInfo);
+              memberInfo.ParentClassInfo.Children.Add(classInfo);
+              topClasses.Remove(classInfo.ClassName);
+            } else {
+              if (enums.TryGetValue(memberInfo.ParentType!, out memberInfo.EnumInfo)) {
+                memberInfo.MemberType = MemberTypeEnum.Enum;
+                memberInfo.ToStringFunc = "";
+              } else {
+                throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class {memberInfo.MemberName}.");
+              }
+            }
           } else if (memberInfo.MemberType==MemberTypeEnum.List) {
-            if (!classes.TryGetValue(memberInfo.ChildTypeName!, out memberInfo.LinkedClassInfo))
+            if (!classes.TryGetValue(memberInfo.ChildTypeName!, out memberInfo.ChildClassInfo))
               throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class {memberInfo.ChildTypeName}.");
-            if (!memberInfo.LinkedClassInfo.Members.ContainsKey(classInfo.Name)) {
+
+            bool isFound = false;
+            foreach (var childMI in memberInfo.ChildClassInfo.Members.Values) {
+              if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==classInfo.ClassName) {
+                isFound = true;
+              }
+            }
+            if (!isFound) {
               //guarantee that there is a property linking to the parent for each child class.
               throw new GeneratorException($"{classInfo} '{memberInfo}': has a List<{memberInfo.ChildTypeName}>. The corresponding " +
-                $"property {classInfo.Name} is missing in the class {memberInfo.ChildTypeName}.");
+                $"property with type {classInfo.ClassName} is missing in the class {memberInfo.ChildTypeName}.");
             }
           }
         }
@@ -177,24 +207,24 @@ namespace Storage {
     }
 
 
-    public void WriteCodeFiles(DirectoryInfo targetDirectory, string context) {
+    public void WriteClassFiles(DirectoryInfo targetDirectory, string context) {
       foreach (var classInfo in classes.Values) {
-        var baseFileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.Name + ".base.cs";
+        var baseFileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.ClassName + ".base.cs";
         try {
           File.Delete(baseFileNameAndPath);
         } catch {
           throw new GeneratorException($"Cannot delete file {baseFileNameAndPath}.");
         }
         using (var streamWriter = new StreamWriter(baseFileNameAndPath)) {
-          Console.WriteLine(classInfo.Name + ".base.cs");
-          classInfo.WriteBaseCodeFile(streamWriter, nameSpaceString!, context);
+          Console.WriteLine(classInfo.ClassName + ".base.cs");
+          classInfo.WriteBaseClassFile(streamWriter, nameSpaceString!, context);
         }
 
-        var fileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.Name + ".cs";
+        var fileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.ClassName + ".cs";
         if (!new FileInfo(fileNameAndPath).Exists) {
           using var streamWriter = new StreamWriter(fileNameAndPath);
-          Console.WriteLine(classInfo.Name + ".cs");
-          classInfo.WriteCodeFile(streamWriter, nameSpaceString!);
+          Console.WriteLine(classInfo.ClassName + ".cs");
+          classInfo.WriteClassFile(streamWriter, nameSpaceString!);
         }
       }
     }
@@ -258,12 +288,12 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine("    #region Properties");
       streamWriter.WriteLine("    //      ----------");
-      foreach (var classInfo in classes.Values.OrderBy(ci => ci.Name)) {
+      foreach (var classInfo in classes.Values.OrderBy(ci => ci.ClassName)) {
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Directory of all {classInfo.Name}s");
+        streamWriter.WriteLine($"    /// Directory of all {classInfo.ClassName}s");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public StorageDictionary<{classInfo.Name}, {context}> {classInfo.Name}s {{ get; private set; }}");
+        streamWriter.WriteLine($"    public StorageDictionary<{classInfo.ClassName}, {context}> {classInfo.ClassName}s {{ get; private set; }}");
       }
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
@@ -285,30 +315,30 @@ namespace Storage {
       streamWriter.WriteLine($"    public {context}(CsvConfig? csvConfig) {{");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
-        streamWriter.WriteLine($"        {classInfo.Name}s = new StorageDictionary<{classInfo.Name}, {context}>(");
+        streamWriter.WriteLine($"        {classInfo.ClassName}s = new StorageDictionary<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
-        streamWriter.WriteLine($"          {classInfo.Name}.SetKey,");
-        streamWriter.WriteLine($"          {classInfo.Name}.Disconnect,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
         streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable},");
         streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable});");
       }
       streamWriter.WriteLine("      } else {");
       foreach (var classInfo in parentChildTree) {
-        streamWriter.WriteLine($"        {classInfo.Name}s = new StorageDictionaryCSV<{classInfo.Name}, {context}>(");
+        streamWriter.WriteLine($"        {classInfo.ClassName}s = new StorageDictionaryCSV<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine("          csvConfig!,");
-        streamWriter.WriteLine($"          {classInfo.Name}.MaxLineLength,");
-        streamWriter.WriteLine($"          {classInfo.Name}.Headers,");
-        streamWriter.WriteLine($"          {classInfo.Name}.SetKey,");
-        streamWriter.WriteLine($"          {classInfo.Name}.Create,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.MaxLineLength,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.Headers,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.Create,");
         if (classInfo.Parents.Count>0) {
-          streamWriter.WriteLine($"          {classInfo.Name}.Verify,");
+          streamWriter.WriteLine($"          {classInfo.ClassName}.Verify,");
         } else {
           streamWriter.WriteLine("          null,");
         }
-        streamWriter.WriteLine($"          {classInfo.Name}.Update,");
-        streamWriter.WriteLine($"          {classInfo.Name}.Write,");
-        streamWriter.WriteLine($"          {classInfo.Name}.Disconnect,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.Update,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.Write,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
         streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable},");
         streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable},");
         streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose});");
@@ -356,6 +386,27 @@ namespace Storage {
       streamWriter.WriteLine("  }");
       streamWriter.WriteLine("}");
       streamWriter.WriteLine();
+    }
+
+
+    internal void WriteEnumsFile(DirectoryInfo targetDirectory) {
+      var baseFileNameAndPath = targetDirectory!.FullName + '\\' + "Enums.cs";
+      try {
+        File.Delete(baseFileNameAndPath);
+      } catch {
+        throw new GeneratorException($"Cannot delete file {baseFileNameAndPath}.");
+      }
+      using var streamWriter = new StreamWriter(baseFileNameAndPath);
+      streamWriter.WriteLine("using System;");
+      streamWriter.WriteLine("using System.Collections.Generic;");
+      streamWriter.WriteLine("using Storage;");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("namespace " + nameSpaceString + " {");
+      foreach (var enumInfo in enums.Values) {
+        streamWriter.Write(enumInfo.CodeLines);
+      }
+      streamWriter.WriteLine("}");
     }
   }
 }

@@ -47,7 +47,7 @@ namespace Storage {
     /// <param name="targetDirectoryString">Target directory where the new .cs files get written.</param>
     /// <param name="context">Name of Context class, which gives static access to all data stored.</param>
     public StorageClassGenerator(string sourceDirectoryString, string targetDirectoryString, string context) {
-      try {
+      //try {
         Console.WriteLine("Storage Class Generator");
         Console.WriteLine("**********************");
         Console.WriteLine();
@@ -68,30 +68,36 @@ namespace Storage {
         compiler.AnalyzeDependencies();
         Console.WriteLine();
 
-        Console.WriteLine("write code files");
-        compiler.WriteCodeFiles(targetDirectory, context);
+        Console.WriteLine("write class files");
+        compiler.WriteClassFiles(targetDirectory, context);
         Console.WriteLine("");
+
+        if (compiler.Enums.Count>0) {
+          Console.WriteLine("write Enums.cs");
+          compiler.WriteEnumsFile(targetDirectory);
+          Console.WriteLine("");
+        }
 
         Console.WriteLine($"write {context}.cs");
         compiler.WriteContextFile(targetDirectory, context);
         Console.WriteLine("");
-      } catch (GeneratorException gex) {
-        var oldForegroundColor = Console.ForegroundColor;
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine();
-        Console.WriteLine("Error: " + gex.Message);
-        Console.WriteLine();
-        Console.ForegroundColor = oldForegroundColor;
+      //} catch (GeneratorException gex) {
+      //  var oldForegroundColor = Console.ForegroundColor;
+      //  Console.ForegroundColor = ConsoleColor.Yellow;
+      //  Console.WriteLine();
+      //  Console.WriteLine("Error: " + gex.Message);
+      //  Console.WriteLine();
+      //  Console.ForegroundColor = oldForegroundColor;
 
-      } catch (Exception ex) {
-        var oldForegroundColor = Console.ForegroundColor;
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine();
-        Console.WriteLine("Exception");
-        Console.WriteLine(ex.ToString());
-        Console.WriteLine();
-        Console.ForegroundColor = oldForegroundColor;
-      }
+      //} catch (Exception ex) {
+      //  var oldForegroundColor = Console.ForegroundColor;
+      //  Console.ForegroundColor = ConsoleColor.Red;
+      //  Console.WriteLine();
+      //  Console.WriteLine("Exception");
+      //  Console.WriteLine(ex.ToString());
+      //  Console.WriteLine();
+      //  Console.ForegroundColor = oldForegroundColor;
+      //}
     }
 
 
@@ -132,14 +138,18 @@ namespace Storage {
       foreach (var member in namespaceDeclaration.Members) {
         var classDeclaration = member as ClassDeclarationSyntax;
         if (classDeclaration is null) {
-          Console.WriteLine($"{file.Name} skipped, namespace does not contain just class declarations.");
-          return false;
-        }
-        foreach (var classMember in classDeclaration.Members) {
-          var methodDeclaration = classMember as MethodDeclarationSyntax;
-          if (methodDeclaration!=null) {
-            Console.WriteLine($"{file.Name} skipped, it has a method {methodDeclaration.Identifier.Text}.");
+          var enumDeclaration = member as EnumDeclarationSyntax;
+          if (enumDeclaration is null) {
+            Console.WriteLine($"{file.Name} skipped, namespace does not contain just class and enum declarations.");
             return false;
+          }
+        } else {
+          foreach (var classMember in classDeclaration.Members) {
+            var methodDeclaration = classMember as MethodDeclarationSyntax;
+            if (methodDeclaration!=null) {
+              Console.WriteLine($"{file.Name} skipped, it has a method {methodDeclaration.Identifier.Text}.");
+              return false;
+            }
           }
         }
       }

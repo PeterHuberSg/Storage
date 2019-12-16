@@ -163,7 +163,15 @@ namespace StorageModel  {
     /// Removes sample from Samples.
     /// </summary>
     internal void RemoveFromSamples(Sample sample) {
+      //Execute remove only when exactly one property in the child still links to this parent. If
+      //no property links here (Count=0), the child should not be in the children collection. If
+      //If more than 1 child property links here, it cannot yet be removed from the children collection.
+      var countLinks = 0;
+      if (sample.OneMaster==this ) countLinks++;
+      if (sample.OtherMaster==this ) countLinks++;
+      if (countLinks>1) return;
 #if DEBUG
+      if (countLinks==0) throw new Exception();
       if (!samples.Remove(sample)) throw new Exception();
 #else
         samples.Remove(sample));
@@ -172,7 +180,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes SampleMaster from DL.Data.SampleMasters and disconnects all Samples.
+    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -185,11 +193,12 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects all Samples.
+    /// Disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
     /// </summary>
     internal static void Disconnect(SampleMaster sampleMaster) {
       foreach (var sample in sampleMaster.Samples) {
-        sample.RemoveSampleMaster(sampleMaster);
+        sample.RemoveOneMaster(sampleMaster);
+        sample.RemoveOtherMaster(sampleMaster);
       }
     }
 

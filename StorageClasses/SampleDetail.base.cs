@@ -100,10 +100,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Verify that sampleDetail.Sample exists
+    /// Verify that sampleDetail.Sample exists.
     /// </summary>
     internal static bool Verify(SampleDetail sampleDetail) {
-      return sampleDetail.Sample!=Sample.NoSample;
+      if (sampleDetail.Sample==Sample.NoSample) return false;
+      return true;
     }
     #endregion
 

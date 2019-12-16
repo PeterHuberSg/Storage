@@ -7,9 +7,9 @@ namespace StorageModel  {
 
 
   /// <summary>
-  /// Some comment for Sample
+  /// Some comment for SampleDetail
   /// </summary>
-  public partial class Sample: IStorage<Sample> {
+  public partial class SampleDetail: IStorage<SampleDetail> {
 
 
     #region Properties

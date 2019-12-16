@@ -9,6 +9,7 @@ namespace StorageModel  {
   /// <summary>
   /// Some comment for Sample
   /// </summary>
+  /// 
   public partial class Sample: IStorage<Sample> {
 
     #region Properties
@@ -28,29 +29,68 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some Number comment
+    /// Some Flag comment
+    /// </summary>
+    public bool Flag { get; private set; }
+
+
+    /// <summary>
+    /// Some Amount comment
     /// </summary>
     public int Number { get; private set; }
 
 
     /// <summary>
-    /// Some Amount comment
-    /// Stores date and time with maximum precission.
+    /// Amount with 2 digits after comma comment
+    /// Stores decimal with 2 digits after comma.
     /// </summary>
     public decimal Amount { get; private set; }
 
 
     /// <summary>
-    /// Some Date comment
-    /// Stores date and time with tick precission.
+    /// PreciseDecimal with about 20 digits precission, takes a lot of storage space
+    /// Stores date and time with maximum precission.
     /// </summary>
-    public DateTime Date { get; private set; }
+    public decimal PreciseDecimal { get; private set; }
 
 
     /// <summary>
-    /// Some SampleMaster comment
+    /// Some SampleState comment
     /// </summary>
-    public SampleMaster? SampleMaster { get; private set; }
+    public SampleStateEnum SampleState { get; private set; }
+
+
+    /// <summary>
+    /// Stores dates but not times
+    /// Stores only dates but no times.
+    /// </summary>
+    public DateTime DateOnly { get; private set; }
+
+
+    /// <summary>
+    /// Stores times (24 hour timespan) but not date
+    /// Stores less than 24 hours with second precission.
+    /// </summary>
+    public TimeSpan TimeOnly { get; private set; }
+
+
+    /// <summary>
+    /// Stores date and time precisely to a tick
+    /// Stores date and time with tick precission.
+    /// </summary>
+    public DateTime DateAndTime { get; private set; }
+
+
+    /// <summary>
+    /// Some OneMaster comment
+    /// </summary>
+    public SampleMaster? OneMaster { get; private set; }
+
+
+    /// <summary>
+    /// Some OtherMaster comment
+    /// </summary>
+    public SampleMaster? OtherMaster { get; private set; }
 
 
     /// <summary>
@@ -72,10 +112,16 @@ namespace StorageModel  {
     internal static readonly string[] Headers = {
       "Key", 
       "Text", 
+      "Flag", 
       "Number", 
       "Amount", 
-      "Date", 
-      "SampleMaster", 
+      "PreciseDecimal", 
+      "SampleState", 
+      "DateOnly", 
+      "TimeOnly", 
+      "DateAndTime", 
+      "OneMaster", 
+      "OtherMaster", 
       "Optional"
     };
 
@@ -83,7 +129,7 @@ namespace StorageModel  {
     /// <summary>
     /// None existing Sample
     /// </summary>
-    internal static Sample NoSample = new Sample("NoText", int.MinValue, Decimal.MinValue, DateTime.MinValue, null, null, isStoring: false);
+    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, null, null, null, isStoring: false);
     #endregion
 
 
@@ -101,24 +147,37 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// Sample Constructor. If isStoring is true, adds Sample to DL.Data.Samples
+    /// Sample Constructor. If isStoring is true, adds Sample to DL.Data.Samples, 
+    /// if there is a sampleMaster adds Sample to sampleMaster.Samples
     /// and if there is a sampleMaster adds Sample to sampleMaster.Samples.
     /// </summary>
     public Sample(
       string text, 
+      bool flag, 
       int number, 
       decimal amount, 
-      DateTime date, 
-      SampleMaster? sampleMaster, 
+      decimal preciseDecimal, 
+      SampleStateEnum sampleState, 
+      DateTime dateOnly, 
+      TimeSpan timeOnly, 
+      DateTime dateAndTime, 
+      SampleMaster? oneMaster, 
+      SampleMaster? otherMaster, 
       string? optional, 
       bool isStoring = true)
     {
       Key = Storage.Storage.NoKey;
       Text = text;
+      Flag = flag;
       Number = number;
       Amount = amount;
-      Date = date;
-      SampleMaster = sampleMaster;
+      PreciseDecimal = preciseDecimal;
+      SampleState = sampleState;
+      DateOnly = dateOnly;
+      TimeOnly = timeOnly;
+      DateAndTime = dateAndTime;
+      OneMaster = oneMaster;
+      OtherMaster = otherMaster;
       Optional = optional;
       sampleDetails = new List<SampleDetail>();
       onCreate();
@@ -136,16 +195,30 @@ namespace StorageModel  {
     private Sample(int key, CsvReader csvReader, DL context) {
       Key = key;
       Text = csvReader.ReadString()!;
+      Flag = csvReader.ReadBool();
       Number = csvReader.ReadInt();
       Amount = csvReader.ReadDecimal();
-      Date = csvReader.ReadDateTime();
-      var sampleMasterKey = csvReader.ReadIntNull();
-      if (sampleMasterKey.HasValue) {
-        if (context.SampleMasters.TryGetValue(sampleMasterKey.Value, out var sampleMaster)) {
-          SampleMaster = sampleMaster;
-          SampleMaster.AddToSamples(this);
+      PreciseDecimal = csvReader.ReadDecimal();
+      SampleState = (SampleStateEnum)csvReader.ReadInt();
+      DateOnly = csvReader.ReadDate();
+      TimeOnly = csvReader.ReadTime();
+      DateAndTime = csvReader.ReadDateTime();
+      var oneMasterKey = csvReader.ReadIntNull();
+      if (oneMasterKey.HasValue) {
+        if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
+          OneMaster = oneMaster;
+          OneMaster.AddToSamples(this);
         } else {
-          SampleMaster = SampleMaster.NoSampleMaster;
+          OneMaster = SampleMaster.NoSampleMaster;
+        }
+      }
+      var otherMasterKey = csvReader.ReadIntNull();
+      if (otherMasterKey.HasValue) {
+        if (context.SampleMasters.TryGetValue(otherMasterKey.Value, out var otherMaster)) {
+          OtherMaster = otherMaster;
+          OtherMaster.AddToSamples(this);
+        } else {
+          OtherMaster = SampleMaster.NoSampleMaster;
         }
       }
       Optional = csvReader.ReadString()!;
@@ -162,10 +235,13 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Verify that sample.SampleMaster exists
+    /// Verify that sample.OneMaster exists.
+    /// Verify that sample.OtherMaster exists.
     /// </summary>
     internal static bool Verify(Sample sample) {
-      return sample.SampleMaster!=SampleMaster.NoSampleMaster;
+      if (sample.OneMaster==SampleMaster.NoSampleMaster) return false;
+      if (sample.OtherMaster==SampleMaster.NoSampleMaster) return false;
+      return true;
     }
     #endregion
 
@@ -182,9 +258,8 @@ namespace StorageModel  {
       }
       onStore();
       DL.Data!.Samples.Add(this);
-      if (SampleMaster!=null) {
-        SampleMaster.AddToSamples(this);
-      }
+      OneMaster?.AddToSamples(this);
+      OtherMaster?.AddToSamples(this);
     }
     partial void onStore();
 
@@ -200,15 +275,27 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(Sample sample, CsvWriter csvWriter) {
       csvWriter.Write(sample.Text);
+      csvWriter.Write(sample.Flag);
       csvWriter.Write(sample.Number);
-      csvWriter.Write(sample.Amount);
-      csvWriter.WriteDateTime(sample.Date);
-      if (sample.SampleMaster is null) {
+      csvWriter.WriteDecimal2(sample.Amount);
+      csvWriter.Write(sample.PreciseDecimal);
+      csvWriter.Write((int)sample.SampleState);
+      csvWriter.WriteDate(sample.DateOnly);
+      csvWriter.WriteTime(sample.TimeOnly);
+      csvWriter.WriteDateTime(sample.DateAndTime);
+      if (sample.OneMaster is null) {
         csvWriter.Write("");
       } else {
-        if (sample.SampleMaster.Key<0) throw new Exception($"Cannot write sample '{sample}' to CSV File, because SampleMaster is not stored in DL.Data.SampleMasters.");
+        if (sample.OneMaster.Key<0) throw new Exception($"Cannot write sample '{sample}' to CSV File, because OneMaster is not stored in DL.Data.SampleMasters.");
 
-        csvWriter.Write(sample.SampleMaster.Key.ToString());
+        csvWriter.Write(sample.OneMaster.Key.ToString());
+      }
+      if (sample.OtherMaster is null) {
+        csvWriter.Write("");
+      } else {
+        if (sample.OtherMaster.Key<0) throw new Exception($"Cannot write sample '{sample}' to CSV File, because OtherMaster is not stored in DL.Data.SampleMasters.");
+
+        csvWriter.Write(sample.OtherMaster.Key.ToString());
       }
       csvWriter.Write(sample.Optional);
     }
@@ -219,15 +306,25 @@ namespace StorageModel  {
     /// </summary>
     public void Update(
       string text, 
+      bool flag, 
       int number, 
       decimal amount, 
-      DateTime date, 
-      SampleMaster? sampleMaster, 
+      decimal preciseDecimal, 
+      SampleStateEnum sampleState, 
+      DateTime dateOnly, 
+      TimeSpan timeOnly, 
+      DateTime dateAndTime, 
+      SampleMaster? oneMaster, 
+      SampleMaster? otherMaster, 
       string? optional)
     {
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
+        isChangeDetected = true;
+      }
+      if (Flag!=flag) {
+        Flag = flag;
         isChangeDetected = true;
       }
       if (Number!=number) {
@@ -238,28 +335,66 @@ namespace StorageModel  {
         Amount = amount;
         isChangeDetected = true;
       }
-      if (Date!=date) {
-        Date = date;
+      if (PreciseDecimal!=preciseDecimal) {
+        PreciseDecimal = preciseDecimal;
         isChangeDetected = true;
       }
-      if (SampleMaster is null) {
-        if (sampleMaster is null) {
+      if (SampleState!=sampleState) {
+        SampleState = sampleState;
+        isChangeDetected = true;
+      }
+      if (DateOnly!=dateOnly) {
+        DateOnly = dateOnly;
+        isChangeDetected = true;
+      }
+      if (TimeOnly!=timeOnly) {
+        TimeOnly = timeOnly;
+        isChangeDetected = true;
+      }
+      if (DateAndTime!=dateAndTime) {
+        DateAndTime = dateAndTime;
+        isChangeDetected = true;
+      }
+      if (OneMaster is null) {
+        if (oneMaster is null) {
           //nothing to do
         } else {
-          SampleMaster = sampleMaster;
-          SampleMaster.AddToSamples(this);
+          OneMaster = oneMaster;
+          OneMaster.AddToSamples(this);
           isChangeDetected = true;
         }
       } else {
-        if (sampleMaster is null) {
-          SampleMaster.RemoveFromSamples(this);
-          SampleMaster = null;
+        if (oneMaster is null) {
+          OneMaster.RemoveFromSamples(this);
+          OneMaster = null;
           isChangeDetected = true;
         } else {
-          if (SampleMaster!=sampleMaster) {
-            SampleMaster.RemoveFromSamples(this);
-            SampleMaster = sampleMaster;
-            SampleMaster.AddToSamples(this);
+          if (OneMaster!=oneMaster) {
+            OneMaster.RemoveFromSamples(this);
+            OneMaster = oneMaster;
+            OneMaster.AddToSamples(this);
+            isChangeDetected = true;
+          }
+        }
+      }
+      if (OtherMaster is null) {
+        if (otherMaster is null) {
+          //nothing to do
+        } else {
+          OtherMaster = otherMaster;
+          OtherMaster.AddToSamples(this);
+          isChangeDetected = true;
+        }
+      } else {
+        if (otherMaster is null) {
+          OtherMaster.RemoveFromSamples(this);
+          OtherMaster = null;
+          isChangeDetected = true;
+        } else {
+          if (OtherMaster!=otherMaster) {
+            OtherMaster.RemoveFromSamples(this);
+            OtherMaster = otherMaster;
+            OtherMaster.AddToSamples(this);
             isChangeDetected = true;
           }
         }
@@ -281,37 +416,72 @@ namespace StorageModel  {
     /// </summary>
     internal static void Update(Sample sample, CsvReader csvReader, DL context) {
       sample.Text = csvReader.ReadString()!;
+      sample.Flag = csvReader.ReadBool();
       sample.Number = csvReader.ReadInt();
       sample.Amount = csvReader.ReadDecimal();
-      sample.Date = csvReader.ReadDateTime();
-      var sampleMasterKey = csvReader.ReadIntNull();
-      SampleMaster? sampleMaster;
-      if (sampleMasterKey is null) {
-        sampleMaster = null;
+      sample.PreciseDecimal = csvReader.ReadDecimal();
+      sample.SampleState = (SampleStateEnum)csvReader.ReadInt();
+      sample.DateOnly = csvReader.ReadDate();
+      sample.TimeOnly = csvReader.ReadTime();
+      sample.DateAndTime = csvReader.ReadDateTime();
+      var oneMasterKey = csvReader.ReadIntNull();
+      SampleMaster? oneMaster;
+      if (oneMasterKey is null) {
+        oneMaster = null;
       } else {
-        if (!context.SampleMasters.TryGetValue(sampleMasterKey.Value, out sampleMaster)) {
-          sampleMaster = SampleMaster.NoSampleMaster;
+        if (!context.SampleMasters.TryGetValue(oneMasterKey.Value, out oneMaster)) {
+          oneMaster = SampleMaster.NoSampleMaster;
         }
       }
-      if (sample.SampleMaster is null) {
-        if (sampleMaster is null) {
+      if (sample.OneMaster is null) {
+        if (oneMaster is null) {
           //nothing to do
         } else {
-          sample.SampleMaster = sampleMaster;
-          sample.SampleMaster.AddToSamples(sample);
+          sample.OneMaster = oneMaster;
+          sample.OneMaster.AddToSamples(sample);
         }
       } else {
-        if (sampleMaster is null) {
-          if (sample.SampleMaster!=SampleMaster.NoSampleMaster) {
-            sample.SampleMaster.RemoveFromSamples(sample);
+        if (oneMaster is null) {
+          if (sample.OneMaster!=SampleMaster.NoSampleMaster) {
+            sample.OneMaster.RemoveFromSamples(sample);
           }
-          sample.SampleMaster = null;
+          sample.OneMaster = null;
         } else {
-          if (sample.SampleMaster!=SampleMaster.NoSampleMaster) {
-            sample.SampleMaster.RemoveFromSamples(sample);
+          if (sample.OneMaster!=SampleMaster.NoSampleMaster) {
+            sample.OneMaster.RemoveFromSamples(sample);
           }
-          sample.SampleMaster = sampleMaster;
-          sample.SampleMaster.AddToSamples(sample);
+          sample.OneMaster = oneMaster;
+          sample.OneMaster.AddToSamples(sample);
+        }
+      }
+      var otherMasterKey = csvReader.ReadIntNull();
+      SampleMaster? otherMaster;
+      if (otherMasterKey is null) {
+        otherMaster = null;
+      } else {
+        if (!context.SampleMasters.TryGetValue(otherMasterKey.Value, out otherMaster)) {
+          otherMaster = SampleMaster.NoSampleMaster;
+        }
+      }
+      if (sample.OtherMaster is null) {
+        if (otherMaster is null) {
+          //nothing to do
+        } else {
+          sample.OtherMaster = otherMaster;
+          sample.OtherMaster.AddToSamples(sample);
+        }
+      } else {
+        if (otherMaster is null) {
+          if (sample.OtherMaster!=SampleMaster.NoSampleMaster) {
+            sample.OtherMaster.RemoveFromSamples(sample);
+          }
+          sample.OtherMaster = null;
+        } else {
+          if (sample.OtherMaster!=SampleMaster.NoSampleMaster) {
+            sample.OtherMaster.RemoveFromSamples(sample);
+          }
+          sample.OtherMaster = otherMaster;
+          sample.OtherMaster.AddToSamples(sample);
         }
       }
       sample.Optional = csvReader.ReadString()!;
@@ -339,7 +509,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes Sample from DL.Data.Samples, deletes all SampleDetails and disconnects Sample from SampleMaster.
+    /// Removes Sample from DL.Data.Samples, disconnects Sample from SampleMaster, disconnects Sample from SampleMaster and deletes all SampleDetail where Sample links to this Sample.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -352,26 +522,39 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Deletes all SampleDetails and disconnects Sample from SampleMaster.
+    /// Disconnects Sample from SampleMaster, disconnects Sample from SampleMaster and deletes all SampleDetail where Sample links to this Sample.
     /// </summary>
     internal static void Disconnect(Sample sample) {
+      if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {
+        sample.OneMaster.RemoveFromSamples(sample);
+      }
+      if (sample.OtherMaster!=null && sample.OtherMaster!=SampleMaster.NoSampleMaster) {
+        sample.OtherMaster.RemoveFromSamples(sample);
+      }
       foreach (var sampleDetail in sample.SampleDetails) {
          if (sampleDetail.Key>=0) {
            sampleDetail.Remove();
          }
       }
-      if (sample.SampleMaster!=null && sample.SampleMaster!=SampleMaster.NoSampleMaster) {
-        sample.SampleMaster.RemoveFromSamples(sample);
-      }
     }
 
 
     /// <summary>
-    /// Removes sampleMaster from SampleMaster
+    /// Removes sampleMaster from OneMaster
     /// </summary>
-    internal void RemoveSampleMaster(SampleMaster sampleMaster) {
-      if (sampleMaster!=SampleMaster) throw new Exception();
-      SampleMaster = null;
+    internal void RemoveOneMaster(SampleMaster sampleMaster) {
+      if (sampleMaster!=OneMaster) throw new Exception();
+      OneMaster = null;
+      HasChanged?.Invoke(this);
+    }
+
+
+    /// <summary>
+    /// Removes sampleMaster from OtherMaster
+    /// </summary>
+    internal void RemoveOtherMaster(SampleMaster sampleMaster) {
+      if (sampleMaster!=OtherMaster) throw new Exception();
+      OtherMaster = null;
       HasChanged?.Invoke(this);
     }
 
@@ -383,10 +566,16 @@ namespace StorageModel  {
       var returnString =
         $"{Key.ToKeyString()}," +
         $" {Text}," +
+        $" {Flag}," +
         $" {Number}," +
         $" {Amount}," +
-        $" {Date}," +
-        $" {SampleMaster?.ToShortString()}," +
+        $" {PreciseDecimal}," +
+        $" {SampleState}," +
+        $" {DateOnly.ToShortDateString()}," +
+        $" {TimeOnly}," +
+        $" {DateAndTime}," +
+        $" {OneMaster?.ToShortString()}," +
+        $" {OtherMaster?.ToShortString()}," +
         $" {Optional}";
       onToShortString(ref returnString);
       return returnString;
@@ -401,10 +590,16 @@ namespace StorageModel  {
       var returnString =
         $"Key: {Key}," +
         $" Text: {Text}," +
+        $" Flag: {Flag}," +
         $" Number: {Number}," +
         $" Amount: {Amount}," +
-        $" Date: {Date}," +
-        $" SampleMaster: {SampleMaster?.ToShortString()}," +
+        $" PreciseDecimal: {PreciseDecimal}," +
+        $" SampleState: {SampleState}," +
+        $" DateOnly: {DateOnly.ToShortDateString()}," +
+        $" TimeOnly: {TimeOnly}," +
+        $" DateAndTime: {DateAndTime}," +
+        $" OneMaster: {OneMaster?.ToShortString()}," +
+        $" OtherMaster: {OtherMaster?.ToShortString()}," +
         $" Optional: {Optional}," +
         $" SampleDetails: {SampleDetails.Count};";
       onToString(ref returnString);
