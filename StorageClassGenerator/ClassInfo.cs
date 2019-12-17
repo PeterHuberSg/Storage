@@ -47,31 +47,31 @@ namespace Storage {
     }
 
 
-    public void AddMember(string name, string memberTypeString, string? propertyComment) {
+    public void AddMember(string name, string memberTypeString, string? propertyComment, string ? defaultValue) {
       var isNullable = memberTypeString[^1]=='?';
       if (isNullable) {
         memberTypeString = memberTypeString[..^1];
       }
       switch (memberTypeString.ToLowerInvariant()) {
-      case "date": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Date, this, isNullable, propertyComment)); break;
-      case "time": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Time, this, isNullable, propertyComment)); break;
-      case "datetime": Members.Add(name, new MemberInfo(name, MemberTypeEnum.DateTime, this, isNullable, propertyComment)); break;
-      case "decimal": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Decimal, this, isNullable, propertyComment)); break;
-      case "decimal2": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Decimal2, this, isNullable, propertyComment)); break;
-      case "bool": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Bool, this, isNullable, propertyComment)); break;
-      case "int": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Int, this, isNullable, propertyComment)); break;
-      case "string": Members.Add(name, new MemberInfo(name, MemberTypeEnum.String, this, isNullable, propertyComment)); break;
+      case "date": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Date, this, isNullable, propertyComment, defaultValue)); break;
+      case "time": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Time, this, isNullable, propertyComment, defaultValue)); break;
+      case "datetime": Members.Add(name, new MemberInfo(name, MemberTypeEnum.DateTime, this, isNullable, propertyComment, defaultValue)); break;
+      case "decimal": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Decimal, this, isNullable, propertyComment, defaultValue)); break;
+      case "decimal2": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Decimal2, this, isNullable, propertyComment, defaultValue)); break;
+      case "bool": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Bool, this, isNullable, propertyComment, defaultValue)); break;
+      case "int": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Int, this, isNullable, propertyComment, defaultValue)); break;
+      case "string": Members.Add(name, new MemberInfo(name, MemberTypeEnum.String, this, isNullable, propertyComment, defaultValue)); break;
       default:
         if (memberTypeString.Contains("<")) {
           if (memberTypeString.StartsWith("List<") && memberTypeString.EndsWith(">")) {
             if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} cannot be nullable.");
 
-            Members.Add/*List*/(name, new MemberInfo(name, this, memberTypeString, memberTypeString[5..^1], propertyComment));
+            Members.Add/*List*/(name, new MemberInfo(name, this, memberTypeString, memberTypeString[5..^1], propertyComment, defaultValue));
             break;
           }
           throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} not support. Should it be a List<> ?");
         }
-        Members.Add/*Parent*/(name, new MemberInfo(name, this, memberTypeString, isNullable, propertyComment));
+        Members.Add/*Parent*/(name, new MemberInfo(name, this, memberTypeString, isNullable, propertyComment, defaultValue));
         break;
       }
     }
@@ -140,7 +140,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called once the constructor has filled all the properties");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onCreate() {");
+      streamWriter.WriteLine("    //partial void onConstruct() {");
       streamWriter.WriteLine("    //}");
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
@@ -330,7 +330,7 @@ namespace Storage {
       streamWriter.WriteLine(".");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write($"    public {ClassName}(");
-      writeParameters(streamWriter, isWriteIsStoring: true);
+      writeParameters(streamWriter, isConstructor: true);
       streamWriter.WriteLine("      Key = Storage.Storage.NoKey;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
@@ -339,13 +339,13 @@ namespace Storage {
           streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName};");
         }
       }
-      streamWriter.WriteLine("      onCreate();");
+      streamWriter.WriteLine("      onConstruct();");
       streamWriter.WriteLine();
       streamWriter.WriteLine("      if (isStoring) {");
       streamWriter.WriteLine("        Store();");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onCreate();");
+      streamWriter.WriteLine("    partial void onConstruct();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion
@@ -531,7 +531,7 @@ namespace Storage {
       streamWriter.WriteLine($"    /// Updates {ClassName} with the provided values");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write("    public void Update(");
-      writeParameters(streamWriter, isWriteIsStoring: false);
+      writeParameters(streamWriter, isConstructor: false);
       streamWriter.WriteLine("      var isChangeDetected = false;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType!=MemberTypeEnum.List) {
@@ -855,14 +855,18 @@ namespace Storage {
     }
 
 
-    private void writeParameters(StreamWriter streamWriter, bool isWriteIsStoring) {
+    private void writeParameters(StreamWriter streamWriter, bool isConstructor) {
       var parts = new List<string>();
       foreach (var mi in Members.Values) {
         if (mi.MemberType!=MemberTypeEnum.List) {
-          parts.Add($"{mi.TypeString} {mi.LowerMemberName}");
+          var part = $"{mi.TypeString} {mi.LowerMemberName}";
+          if (isConstructor && mi.DefaultValue!=null) {
+            part += $" = {mi.DefaultValue}";
+          }
+          parts.Add(part);
         }
       }
-      if (isWriteIsStoring) {
+      if (isConstructor) {
         parts.Add("bool isStoring = true");
       }
       var isNewLines = parts.Count>4;

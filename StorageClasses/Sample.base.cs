@@ -180,13 +180,13 @@ namespace StorageModel  {
       OtherMaster = otherMaster;
       Optional = optional;
       sampleDetails = new List<SampleDetail>();
-      onCreate();
+      onConstruct();
 
       if (isStoring) {
         Store();
       }
     }
-    partial void onCreate();
+    partial void onConstruct();
 
 
     /// <summary>

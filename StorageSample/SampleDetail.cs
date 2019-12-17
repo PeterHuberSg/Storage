@@ -30,7 +30,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the constructor has filled all the properties
     /// </summary>
-    //partial void onCreate() {
+    //partial void onConstruct() {
     //}
     #endregion
 

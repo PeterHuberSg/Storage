@@ -9,6 +9,7 @@ namespace StorageModel  {
   /// <summary>
   /// Some comment for Sample
   /// </summary>
+  /// 
   public partial class Sample: IStorage<Sample> {
 
 
@@ -30,7 +31,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the constructor has filled all the properties
     /// </summary>
-    //partial void onCreate() {
+    //partial void onConstruct() {
     //}
     #endregion
 

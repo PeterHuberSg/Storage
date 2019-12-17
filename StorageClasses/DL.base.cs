@@ -144,7 +144,13 @@ namespace StorageModel  {
           areItemsDeletable: true,
           isCompactDuringDispose: false);
       }
+      onConstruct();
     }
+
+    /// <summary>}
+    /// Called at end of constructor
+    /// </summary>}
+    partial void onConstruct();
     #endregion
 
 
@@ -165,11 +171,17 @@ namespace StorageModel  {
       if (wasDisposed==1) return; // already disposed
 
       if (disposing) {
+        onDispose();
         SampleDetails.Dispose();
         SampleX.Dispose();
         SampleMasters.Dispose();
       }
     }
+
+    /// <summary>}
+    /// Called before storageDirectories get disposed.
+    /// </summary>}
+    partial void onDispose();
 
 
     public void Dispose() {

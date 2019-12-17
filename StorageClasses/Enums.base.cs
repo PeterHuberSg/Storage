@@ -11,7 +11,7 @@ namespace StorageModel  {
   /// </summary>
   public enum SampleStateEnum {
     /// <summary>
-    /// Recommendation for creating your own enums: use value 0 as undefined
+    /// Recommendation while creating your own enums: use value 0 as undefined
     /// </summary>
     None,
     Some

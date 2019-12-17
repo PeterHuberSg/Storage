@@ -12,7 +12,7 @@ namespace StorageModel {
   /// </summary>
   public enum SampleStateEnum {
     /// <summary>
-    /// Recommendation for creating your own enums: use value 0 as undefined
+    /// Recommendation while creating your own enums: use value 0 as undefined
     /// </summary>
     None,
     Some
@@ -30,18 +30,18 @@ namespace StorageModel {
     /// Some Text comment
     /// </summary>
     public string Text;
-
+    
     /// <summary>
     /// Some Samples comment
     /// </summary>
     public List<Sample> SampleX;
 
-    //the following confirguration constants define the storage behaviour of
-    //SampleMaster's StorageDirectory. They will not be included in SampleMaster. 
-    //public const int MaxLineLenght = 50;
-    //public const bool AreItemsUpdatable = true;
-    //public const bool AreItemsDeletable = false;
-    //public const bool IsCompactDuringDispose = false;
+
+    /// <summary>
+    /// Integer property with int.MinValue as default
+    /// </summary>
+    [StorageProperty(defaultValue: "int.MinValue")]
+    public int NumberWithDefault;
   }
 
 

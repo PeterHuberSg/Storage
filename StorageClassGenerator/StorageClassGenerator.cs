@@ -73,7 +73,7 @@ namespace Storage {
         Console.WriteLine("");
 
         if (compiler.Enums.Count>0) {
-          Console.WriteLine("write Enums.cs");
+          Console.WriteLine("write Enums.base.cs");
           compiler.WriteEnumsFile(targetDirectory);
           Console.WriteLine("");
         }

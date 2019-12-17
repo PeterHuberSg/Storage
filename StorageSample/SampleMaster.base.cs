@@ -31,20 +31,26 @@ namespace StorageModel  {
     /// <summary>
     /// Some Samples comment
     /// </summary>
-    public IReadOnlyCollection<Sample> Samples { get { return samples; } }
-    readonly HashSet<Sample> samples;
+    public IReadOnlyList<Sample> SampleX { get { return sampleX; } }
+    readonly List<Sample> sampleX;
+
+
+    /// <summary>
+    /// Integer property with int.MinValue as default
+    /// </summary>
+    public int NumberWithDefault { get; private set; }
 
 
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "Text"};
+    internal static readonly string[] Headers = {"Key", "Text", "NumberWithDefault"};
 
 
     /// <summary>
     /// None existing SampleMaster
     /// </summary>
-    internal static SampleMaster NoSampleMaster = new SampleMaster("NoText", isStoring: false);
+    internal static SampleMaster NoSampleMaster = new SampleMaster("NoText", int.MinValue, isStoring: false);
     #endregion
 
 
@@ -64,17 +70,18 @@ namespace StorageModel  {
     /// <summary>
     /// SampleMaster Constructor. If isStoring is true, adds SampleMaster to DL.Data.SampleMasters.
     /// </summary>
-    public SampleMaster(string text, bool isStoring = true) {
+    public SampleMaster(string text, int numberWithDefault = int.MinValue, bool isStoring = true) {
       Key = Storage.Storage.NoKey;
       Text = text;
-      samples = new HashSet<Sample>();
-      onCreate();
+      sampleX = new List<Sample>();
+      NumberWithDefault = numberWithDefault;
+      onConstruct();
 
       if (isStoring) {
         Store();
       }
     }
-    partial void onCreate();
+    partial void onConstruct();
 
 
     /// <summary>
@@ -83,7 +90,8 @@ namespace StorageModel  {
     private SampleMaster(int key, CsvReader csvReader, DL _) {
       Key = key;
       Text = csvReader.ReadString()!;
-      samples = new HashSet<Sample>();
+      sampleX = new List<Sample>();
+      NumberWithDefault = csvReader.ReadInt();
     }
 
 
@@ -123,16 +131,21 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(SampleMaster sampleMaster, CsvWriter csvWriter) {
       csvWriter.Write(sampleMaster.Text);
+      csvWriter.Write(sampleMaster.NumberWithDefault);
     }
 
 
     /// <summary>
     /// Updates SampleMaster with the provided values
     /// </summary>
-    public void Update(string text) {
+    public void Update(string text, int numberWithDefault) {
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
+        isChangeDetected = true;
+      }
+      if (NumberWithDefault!=numberWithDefault) {
+        NumberWithDefault = numberWithDefault;
         isChangeDetected = true;
       }
       if (isChangeDetected) {
@@ -148,36 +161,40 @@ namespace StorageModel  {
     /// </summary>
     internal static void Update(SampleMaster sampleMaster, CsvReader csvReader, DL _) {
       sampleMaster.Text = csvReader.ReadString()!;
+      sampleMaster.NumberWithDefault = csvReader.ReadInt();
     }
 
 
     /// <summary>
-    /// Add sample to Samples.
+    /// Add sample to SampleX.
     /// </summary>
-    internal void AddToSamples(Sample sample) {
-      samples.Add(sample);
+    internal void AddToSampleX(Sample sample) {
+      sampleX.Add(sample);
     }
 
 
     /// <summary>
-    /// Removes sample from Samples.
+    /// Removes sample from SampleX.
     /// </summary>
-    internal void RemoveFromSamples(Sample sample) {
+    internal void RemoveFromSampleX(Sample sample) {
+      //Execute Remove() only when exactly one property in the child still links to this parent. If
+      //no property links here (Count=0), the child should not be in the children collection. If
+      //more than 1 child property links here, it cannot yet be removed from the children collection.
       var countLinks = 0;
       if (sample.OneMaster==this ) countLinks++;
-      if (sample.OtherMaster==this) countLinks++;
+      if (sample.OtherMaster==this ) countLinks++;
       if (countLinks>1) return;
 #if DEBUG
       if (countLinks==0) throw new Exception();
-      if (!samples.Remove(sample)) throw new Exception();
+      if (!sampleX.Remove(sample)) throw new Exception();
 #else
-        samples.Remove(sample));
+        sampleX.Remove(sample));
 #endif
     }
 
 
     /// <summary>
-    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
+    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from SampleX and disconnects Sample.OtherMaster from SampleX.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -190,10 +207,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
+    /// Disconnects Sample.OneMaster from SampleX and disconnects Sample.OtherMaster from SampleX.
     /// </summary>
     internal static void Disconnect(SampleMaster sampleMaster) {
-      foreach (var sample in sampleMaster.Samples) {
+      foreach (var sample in sampleMaster.SampleX) {
         sample.RemoveOneMaster(sampleMaster);
         sample.RemoveOtherMaster(sampleMaster);
       }
@@ -206,7 +223,8 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {Text}";
+        $" {Text}," +
+        $" {NumberWithDefault}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -220,7 +238,8 @@ namespace StorageModel  {
       var returnString =
         $"Key: {Key}," +
         $" Text: {Text}," +
-        $" Samples: {Samples.Count};";
+        $" SampleX: {SampleX.Count}," +
+        $" NumberWithDefault: {NumberWithDefault};";
       onToString(ref returnString);
       return returnString;
     }

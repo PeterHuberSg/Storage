@@ -104,8 +104,8 @@ namespace StorageTest {
       expectedData!.Masters.Remove(masterKey);
       expectedData!.Masters.Add(masterKey, masterText);
       var master = DL.Data!.SampleMasters[masterKey];
-      master.Update(masterText);
-      foreach (var sample in master.Samples) {
+      master.Update(masterText, 1);
+      foreach (var sample in master.SampleX) {
         expectedData!.Samples.Remove(sample.Key);
         expectedData!.Samples.Add(sample.Key, sample.ToString());
       }
@@ -117,7 +117,7 @@ namespace StorageTest {
       expectedData!.Masters.Remove(masterKey);
       var master = DL.Data!.SampleMasters[masterKey];
       master.Remove();
-      foreach (var sample in master.Samples) {
+      foreach (var sample in master.SampleX) {
         expectedData!.Samples.Remove(sample.Key);
         expectedData!.Samples.Add(sample.Key, sample.ToString());
       }
@@ -168,7 +168,7 @@ namespace StorageTest {
 
     private void updateSample(int sampleKey, string text, SampleMaster? newSampleMaster) {
       var sampleText = "Sample" + sampleKey + text;
-      Sample sample = DL.Data!.Samples[sampleKey];
+      Sample sample = DL.Data!.SampleX[sampleKey];
       sample.Update(
         text: sampleText,
         flag: sample.Flag,
@@ -190,7 +190,7 @@ namespace StorageTest {
 
     private void removeSample(int sampleKey) {
       expectedData!.Samples.Remove(sampleKey);
-      var sample = DL.Data!.Samples[sampleKey];
+      var sample = DL.Data!.SampleX[sampleKey];
       sample.Remove();
       assertData();
     }
@@ -199,7 +199,7 @@ namespace StorageTest {
     private void addDetail(int detailKey, int sampleKey) {
       var detailText = "Detail" + sampleKey + '.' + detailKey;
       expectedData!.Details.Add(detailKey, detailText);
-      var sample = DL.Data!.Samples[sampleKey];
+      var sample = DL.Data!.SampleX[sampleKey];
       var detail = new SampleDetail(detailText, sample, false);
       detail.Store();
       expectedData!.Samples.Remove(sampleKey);
@@ -247,9 +247,9 @@ namespace StorageTest {
         Assert.AreEqual(master.Value, dlMaster.Text);
       }
 
-      Assert.AreEqual(expectedData!.Samples.Count, DL.Data!.Samples.Count);
+      Assert.AreEqual(expectedData!.Samples.Count, DL.Data!.SampleX.Count);
       foreach (var sample in expectedData!.Samples) {
-        var dlSample = DL.Data!.Samples[sample.Key];
+        var dlSample = DL.Data!.SampleX[sample.Key];
         Assert.AreEqual(sample.Value, dlSample.ToString());
         //assertMaster(dlSample.OneMaster, dlSample);
         //assertMaster(dlSample.OtherMaster, dlSample);
@@ -270,18 +270,18 @@ namespace StorageTest {
       }
 
       var mastersFromSamples = new Dictionary<int, HashSet<Sample>>();
-      foreach (var sample in DL.Data!.Samples.Values) {
+      foreach (var sample in DL.Data!.SampleX.Values) {
         addSampleToMaster(sample, sample.OneMaster, mastersFromSamples);
         addSampleToMaster(sample, sample.OtherMaster, mastersFromSamples);
       }
       foreach (var master in DL.Data!.SampleMasters.Values) {
         if (mastersFromSamples.TryGetValue(master.Key, out var samplesHashSet)) {
-          Assert.AreEqual(samplesHashSet.Count, master.Samples.Count);
+          Assert.AreEqual(samplesHashSet.Count, master.SampleX.Count);
           foreach (var sample in samplesHashSet) {
-            Assert.IsTrue(master.Samples.Contains(sample));
+            Assert.IsTrue(master.SampleX.Contains(sample));
           }
         } else {
-          Assert.AreEqual(0, master.Samples.Count);
+          Assert.AreEqual(0, master.SampleX.Count);
           //showStructure();
         }
 
@@ -292,14 +292,14 @@ namespace StorageTest {
     private string showStructure() {
       var sb = new StringBuilder();
       sb.AppendLine("Samples");
-      foreach (var sample in DL.Data!.Samples.Values) {
+      foreach (var sample in DL.Data!.SampleX.Values) {
         sb.AppendLine($"{sample.Key}: {sample.OneMaster?.Key} {sample.OtherMaster?.Key}");
       }
       sb.AppendLine();
       sb.AppendLine("Masters");
       foreach (var master in DL.Data!.SampleMasters.Values) {
         sb.Append(master.Key + ":");
-        foreach (var sample in master.Samples) {
+        foreach (var sample in master.SampleX) {
           sb.Append(" " + sample.Key);
         }
         sb.AppendLine();

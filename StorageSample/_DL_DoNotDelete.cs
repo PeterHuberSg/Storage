@@ -29,7 +29,7 @@ namespace StorageModel {
           SampleMaster.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true);
-        Samples = new StorageDictionary<Sample, DL>(
+        SampleX = new StorageDictionary<Sample, DL>(
           this,
           Sample.SetKey,
           Sample.Disconnect,
@@ -56,7 +56,7 @@ namespace StorageModel {
           areItemsUpdatable: true,
           areItemsDeletable: true,
           isCompactDuringDispose: isCompactDuringDispose);
-        Samples = new StorageDictionaryCSV<Sample, DL>(
+        SampleX = new StorageDictionaryCSV<Sample, DL>(
           this,
           csvConfig!,
           Sample.MaxLineLength,

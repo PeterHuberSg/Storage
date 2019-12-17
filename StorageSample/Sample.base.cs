@@ -147,9 +147,9 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// Sample Constructor. If isStoring is true, adds Sample to DL.Data.Samples, 
-    /// if there is a sampleMaster adds Sample to sampleMaster.Samples
-    /// and if there is a sampleMaster adds Sample to sampleMaster.Samples.
+    /// Sample Constructor. If isStoring is true, adds Sample to DL.Data.SampleX, 
+    /// if there is a sampleMaster adds Sample to sampleMaster.SampleX
+    /// and if there is a sampleMaster adds Sample to sampleMaster.SampleX.
     /// </summary>
     public Sample(
       string text, 
@@ -180,13 +180,13 @@ namespace StorageModel  {
       OtherMaster = otherMaster;
       Optional = optional;
       sampleDetails = new List<SampleDetail>();
-      onCreate();
+      onConstruct();
 
       if (isStoring) {
         Store();
       }
     }
-    partial void onCreate();
+    partial void onConstruct();
 
 
     /// <summary>
@@ -207,7 +207,7 @@ namespace StorageModel  {
       if (oneMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
           OneMaster = oneMaster;
-          OneMaster.AddToSamples(this);
+          OneMaster.AddToSampleX(this);
         } else {
           OneMaster = SampleMaster.NoSampleMaster;
         }
@@ -216,7 +216,7 @@ namespace StorageModel  {
       if (otherMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(otherMasterKey.Value, out var otherMaster)) {
           OtherMaster = otherMaster;
-          OtherMaster.AddToSamples(this);
+          OtherMaster.AddToSampleX(this);
         } else {
           OtherMaster = SampleMaster.NoSampleMaster;
         }
@@ -250,16 +250,16 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds Sample to DL.Data.Samples and SampleMaster.Samples. 
+    /// Adds Sample to DL.Data.SampleX and SampleMaster.SampleX. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
         throw new Exception($"Sample 'Class Sample' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
       onStore();
-      DL.Data!.Samples.Add(this);
-      OneMaster?.AddToSamples(this);
-      OtherMaster?.AddToSamples(this);
+      DL.Data!.SampleX.Add(this);
+      OneMaster?.AddToSampleX(this);
+      OtherMaster?.AddToSampleX(this);
     }
     partial void onStore();
 
@@ -360,19 +360,19 @@ namespace StorageModel  {
           //nothing to do
         } else {
           OneMaster = oneMaster;
-          OneMaster.AddToSamples(this);
+          OneMaster.AddToSampleX(this);
           isChangeDetected = true;
         }
       } else {
         if (oneMaster is null) {
-          OneMaster.RemoveFromSamples(this);
+          OneMaster.RemoveFromSampleX(this);
           OneMaster = null;
           isChangeDetected = true;
         } else {
           if (OneMaster!=oneMaster) {
-            OneMaster.RemoveFromSamples(this);
+            OneMaster.RemoveFromSampleX(this);
             OneMaster = oneMaster;
-            OneMaster.AddToSamples(this);
+            OneMaster.AddToSampleX(this);
             isChangeDetected = true;
           }
         }
@@ -382,19 +382,19 @@ namespace StorageModel  {
           //nothing to do
         } else {
           OtherMaster = otherMaster;
-          OtherMaster.AddToSamples(this);
+          OtherMaster.AddToSampleX(this);
           isChangeDetected = true;
         }
       } else {
         if (otherMaster is null) {
-          OtherMaster.RemoveFromSamples(this);
+          OtherMaster.RemoveFromSampleX(this);
           OtherMaster = null;
           isChangeDetected = true;
         } else {
           if (OtherMaster!=otherMaster) {
-            OtherMaster.RemoveFromSamples(this);
+            OtherMaster.RemoveFromSampleX(this);
             OtherMaster = otherMaster;
-            OtherMaster.AddToSamples(this);
+            OtherMaster.AddToSampleX(this);
             isChangeDetected = true;
           }
         }
@@ -438,20 +438,20 @@ namespace StorageModel  {
           //nothing to do
         } else {
           sample.OneMaster = oneMaster;
-          sample.OneMaster.AddToSamples(sample);
+          sample.OneMaster.AddToSampleX(sample);
         }
       } else {
         if (oneMaster is null) {
           if (sample.OneMaster!=SampleMaster.NoSampleMaster) {
-            sample.OneMaster.RemoveFromSamples(sample);
+            sample.OneMaster.RemoveFromSampleX(sample);
           }
           sample.OneMaster = null;
         } else {
           if (sample.OneMaster!=SampleMaster.NoSampleMaster) {
-            sample.OneMaster.RemoveFromSamples(sample);
+            sample.OneMaster.RemoveFromSampleX(sample);
           }
           sample.OneMaster = oneMaster;
-          sample.OneMaster.AddToSamples(sample);
+          sample.OneMaster.AddToSampleX(sample);
         }
       }
       var otherMasterKey = csvReader.ReadIntNull();
@@ -468,20 +468,20 @@ namespace StorageModel  {
           //nothing to do
         } else {
           sample.OtherMaster = otherMaster;
-          sample.OtherMaster.AddToSamples(sample);
+          sample.OtherMaster.AddToSampleX(sample);
         }
       } else {
         if (otherMaster is null) {
           if (sample.OtherMaster!=SampleMaster.NoSampleMaster) {
-            sample.OtherMaster.RemoveFromSamples(sample);
+            sample.OtherMaster.RemoveFromSampleX(sample);
           }
           sample.OtherMaster = null;
         } else {
           if (sample.OtherMaster!=SampleMaster.NoSampleMaster) {
-            sample.OtherMaster.RemoveFromSamples(sample);
+            sample.OtherMaster.RemoveFromSampleX(sample);
           }
           sample.OtherMaster = otherMaster;
-          sample.OtherMaster.AddToSamples(sample);
+          sample.OtherMaster.AddToSampleX(sample);
         }
       }
       sample.Optional = csvReader.ReadString()!;
@@ -509,14 +509,14 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes Sample from DL.Data.Samples, disconnects Sample from SampleMaster, disconnects Sample from SampleMaster and deletes all SampleDetail where Sample links to this Sample.
+    /// Removes Sample from DL.Data.SampleX, disconnects Sample from SampleMaster, disconnects Sample from SampleMaster and deletes all SampleDetail where Sample links to this Sample.
     /// </summary>
     public void Remove() {
       if (Key<0) {
         throw new Exception($"Sample.Remove(): Sample 'Class Sample' is not stored in DL.Data, key is {Key}.");
       }
       onRemove();
-      DL.Data!.Samples.Remove(Key);
+      DL.Data!.SampleX.Remove(Key);
     }
     partial void onRemove();
 
@@ -526,10 +526,10 @@ namespace StorageModel  {
     /// </summary>
     internal static void Disconnect(Sample sample) {
       if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {
-        sample.OneMaster.RemoveFromSamples(sample);
+        sample.OneMaster.RemoveFromSampleX(sample);
       }
       if (sample.OtherMaster!=null && sample.OtherMaster!=SampleMaster.NoSampleMaster) {
-        sample.OtherMaster.RemoveFromSamples(sample);
+        sample.OtherMaster.RemoveFromSampleX(sample);
       }
       foreach (var sampleDetail in sample.SampleDetails) {
          if (sampleDetail.Key>=0) {

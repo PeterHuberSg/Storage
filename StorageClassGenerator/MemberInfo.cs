@@ -31,6 +31,7 @@ namespace Storage {
     public readonly bool IsNullable;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
+    public readonly string? DefaultValue;
     public readonly string? ChildTypeName;
     public readonly string? LowerChildTypeName;
     public readonly string TypeString;
@@ -46,7 +47,7 @@ namespace Storage {
     public EnumInfo? EnumInfo;
 
 
-    public MemberInfo(string name, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment) {
+    public MemberInfo(string name, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment, string? defaultValue) {
       if (memberType==MemberTypeEnum.List) throw new Exception();
 
       MemberName = name;
@@ -55,6 +56,7 @@ namespace Storage {
       ClassInfo = classInfo;
       IsNullable = isNullable;
       Comment = comment;
+      DefaultValue = defaultValue;
       switch (memberType) {
       case MemberTypeEnum.Date:
         TypeString = "DateTime";
@@ -135,7 +137,7 @@ namespace Storage {
     /// <summary>
     /// constructor for List
     /// </summary>
-    public MemberInfo(string name, ClassInfo classInfo, string listType, string childType, string? comment) {
+    public MemberInfo(string name, ClassInfo classInfo, string listType, string childType, string? comment, string? defaultValue) {
       MemberType = MemberTypeEnum.List;
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -147,13 +149,14 @@ namespace Storage {
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
+      DefaultValue = defaultValue;
     }
 
 
     /// <summary>
     /// constructor for Parent
     /// </summary>
-    public MemberInfo(string name, ClassInfo classInfo, string memberTypeString, bool isNullable, string? comment) {
+    public MemberInfo(string name, ClassInfo classInfo, string memberTypeString, bool isNullable, string? comment, string? defaultValue) {
       MemberType = MemberTypeEnum.Parent;
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -174,6 +177,7 @@ namespace Storage {
         ToStringFunc = ".ToShortString()";
       }
       Comment = comment;
+      DefaultValue = defaultValue;
     }
 
 

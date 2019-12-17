@@ -56,15 +56,18 @@ namespace Storage {
         if (classDeclaration.AttributeLists.Count==0) {
           //use the default values
         } else if (classDeclaration.AttributeLists.Count>1) {
-          throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClassAttribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{classDeclaration.AttributeLists}'");
+          throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{classDeclaration.AttributeLists}'");
 
         } else {
           var attributes = classDeclaration.AttributeLists[0].Attributes;
-          if (attributes.Count!=1) throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClassAttribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{attributes}'");
+          if (attributes.Count!=1) throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{attributes}'");
 
           var attribute = attributes[0];
-          var arguments = attribute.ArgumentList;
-          foreach (var argument in arguments!.Arguments) {
+          var attributeName = attribute.Name as IdentifierNameSyntax;
+          if (attributeName==null || attributeName.Identifier.Text!="StorageClass") {
+            throw new GeneratorException($"Class {className} schould contain only a StorageClass attribute, but has: '{classDeclaration.AttributeLists}'");
+          }
+          foreach (var argument in attribute.ArgumentList!.Arguments) {
             if (argument.NameColon is null) throw new GeneratorException($"Class {className} Attribute{attribute}: the argument name is missing, like 'areItemsUpdatable: true'.");
 
             var name = argument.NameColon.Name.Identifier.Text;
@@ -86,18 +89,19 @@ namespace Storage {
         }
         var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areItemsUpdatable, areItemsDeletable, isCompactDuringDispose);
         classes.Add(className, classInfo);
+        var isPropertyWithDefaultValueFound = false;
         foreach (var classMember in classDeclaration.Members) {
-          var field = classMember as FieldDeclarationSyntax;
+          var field = classMember as FieldDeclarationSyntax; //each field has only 1 property
           if (field is null) {
             throw new GeneratorException($"Class {className} schould contain only properties, but has '{classMember}'.");
           }
 
           string? propertyComment = getComment(field.GetLeadingTrivia());
 
-          var isConst = false;
+          //var isConst = false;
           foreach (var modifierToken in field.Modifiers) {
             if (modifierToken.Text=="const") {
-              isConst = true;
+              //isConst = true;
               //break;
               throw new GeneratorException($"Class {className} schould contain only properties, but has const '{classMember}'.");
             }
@@ -137,10 +141,48 @@ namespace Storage {
           //    throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{classMember}'.");
           //  }
           //} else {
-            foreach (var property in variableDeclaration.Variables) {
-              classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment);
+          foreach (var property in variableDeclaration.Variables) {
+            //////////////////////////////////
+            string? defaultValue = null;
+            if (field.AttributeLists.Count==0) {
+              if (isPropertyWithDefaultValueFound) {
+                throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould have a " +
+                  "StorageProperty(defaultValue: \"xxx\") attribute, because the previous one had one too. Once a " +
+                  "property has a deault value, all following properties need to have one too.");
+              }
+              //use the default values
+            } else if (field.AttributeLists.Count>1) {
+              throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{field.AttributeLists}'");
+
+            } else {
+              var attributes = field.AttributeLists[0].Attributes;
+              if (attributes.Count!=1) throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{attributes}'");
+
+              var attribute = attributes[0];
+              var attributeName = attribute.Name as IdentifierNameSyntax;
+              if (attributeName==null || attributeName.Identifier.Text!="StorageProperty") {
+                throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain only a StorageProperty attribute, but has: '{classDeclaration.AttributeLists}'");
+              }
+              foreach (var argument in attribute.ArgumentList!.Arguments) {
+                if (argument.NameColon is null) throw new GeneratorException($"Property {className}.{property.Identifier.Text} Attribute{attribute}: the argument name is missing, like 'defaultValue: null'.");
+
+                var name = argument.NameColon.Name.Identifier.Text;
+                try {
+                  var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
+                  switch (name) {
+                  case "defaultValue": defaultValue = value[1..^1]; break;
+                  default: throw new Exception();
+                  }
+                } catch {
+                  new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
+                }
+              }
+              isPropertyWithDefaultValueFound = true;
+              ///////////////////////////////////
             }
-          //}
+            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue);
+            //}
+          }
         }
       }
     }
@@ -394,7 +436,13 @@ namespace Storage {
         streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      }");
+      streamWriter.WriteLine("      onConstruct();");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>}");
+      streamWriter.WriteLine("    /// Called at end of constructor");
+      streamWriter.WriteLine("    /// </summary>}");
+      streamWriter.WriteLine("    partial void onConstruct();");
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
@@ -415,11 +463,17 @@ namespace Storage {
       streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
       streamWriter.WriteLine();
       streamWriter.WriteLine("      if (disposing) {");
+      streamWriter.WriteLine("        onDispose();");
       foreach (var classInfo in ((IEnumerable<ClassInfo>)parentChildTree).Reverse()) {
         streamWriter.WriteLine($"        {classInfo.PluralName}.Dispose();");
       }
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>}");
+      streamWriter.WriteLine("    /// Called before storageDirectories get disposed.");
+      streamWriter.WriteLine("    /// </summary>}");
+      streamWriter.WriteLine("    partial void onDispose();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    public void Dispose() {");
@@ -440,7 +494,7 @@ namespace Storage {
 
 
     internal void WriteEnumsFile(DirectoryInfo targetDirectory) {
-      var baseFileNameAndPath = targetDirectory!.FullName + '\\' + "Enums.cs";
+      var baseFileNameAndPath = targetDirectory!.FullName + '\\' + "Enums.base.cs";
       try {
         File.Delete(baseFileNameAndPath);
       } catch {

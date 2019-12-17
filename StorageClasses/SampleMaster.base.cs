@@ -36,15 +36,21 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Integer property with int.MinValue as default
+    /// </summary>
+    public int NumberWithDefault { get; private set; }
+
+
+    /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "Text"};
+    internal static readonly string[] Headers = {"Key", "Text", "NumberWithDefault"};
 
 
     /// <summary>
     /// None existing SampleMaster
     /// </summary>
-    internal static SampleMaster NoSampleMaster = new SampleMaster("NoText", isStoring: false);
+    internal static SampleMaster NoSampleMaster = new SampleMaster("NoText", int.MinValue, isStoring: false);
     #endregion
 
 
@@ -64,17 +70,18 @@ namespace StorageModel  {
     /// <summary>
     /// SampleMaster Constructor. If isStoring is true, adds SampleMaster to DL.Data.SampleMasters.
     /// </summary>
-    public SampleMaster(string text, bool isStoring = true) {
+    public SampleMaster(string text, int numberWithDefault = int.MinValue, bool isStoring = true) {
       Key = Storage.Storage.NoKey;
       Text = text;
       sampleX = new List<Sample>();
-      onCreate();
+      NumberWithDefault = numberWithDefault;
+      onConstruct();
 
       if (isStoring) {
         Store();
       }
     }
-    partial void onCreate();
+    partial void onConstruct();
 
 
     /// <summary>
@@ -84,6 +91,7 @@ namespace StorageModel  {
       Key = key;
       Text = csvReader.ReadString()!;
       sampleX = new List<Sample>();
+      NumberWithDefault = csvReader.ReadInt();
     }
 
 
@@ -123,16 +131,21 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(SampleMaster sampleMaster, CsvWriter csvWriter) {
       csvWriter.Write(sampleMaster.Text);
+      csvWriter.Write(sampleMaster.NumberWithDefault);
     }
 
 
     /// <summary>
     /// Updates SampleMaster with the provided values
     /// </summary>
-    public void Update(string text) {
+    public void Update(string text, int numberWithDefault) {
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
+        isChangeDetected = true;
+      }
+      if (NumberWithDefault!=numberWithDefault) {
+        NumberWithDefault = numberWithDefault;
         isChangeDetected = true;
       }
       if (isChangeDetected) {
@@ -148,6 +161,7 @@ namespace StorageModel  {
     /// </summary>
     internal static void Update(SampleMaster sampleMaster, CsvReader csvReader, DL _) {
       sampleMaster.Text = csvReader.ReadString()!;
+      sampleMaster.NumberWithDefault = csvReader.ReadInt();
     }
 
 
@@ -209,7 +223,8 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {Text}";
+        $" {Text}," +
+        $" {NumberWithDefault}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -223,7 +238,8 @@ namespace StorageModel  {
       var returnString =
         $"Key: {Key}," +
         $" Text: {Text}," +
-        $" SampleX: {SampleX.Count};";
+        $" SampleX: {SampleX.Count}," +
+        $" NumberWithDefault: {NumberWithDefault};";
       onToString(ref returnString);
       return returnString;
     }

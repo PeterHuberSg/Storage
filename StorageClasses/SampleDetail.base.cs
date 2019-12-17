@@ -67,13 +67,13 @@ namespace StorageModel  {
       Key = Storage.Storage.NoKey;
       Text = text;
       Sample = sample;
-      onCreate();
+      onConstruct();
 
       if (isStoring) {
         Store();
       }
     }
-    partial void onCreate();
+    partial void onConstruct();
 
 
     /// <summary>
