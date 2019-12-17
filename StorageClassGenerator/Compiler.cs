@@ -48,12 +48,48 @@ namespace Storage {
         }
         var className = classDeclaration.Identifier.Text;
         string? classComment = getComment(classDeclaration.GetLeadingTrivia());
-        var classInfo = new ClassInfo(className, classComment);
+        int maxLineLength = 0;
+        string? pluralName = className + 's';
+        bool areItemsUpdatable = true;
+        bool areItemsDeletable = true;
+        bool isCompactDuringDispose = true;
+        if (classDeclaration.AttributeLists.Count==0) {
+          //use the default values
+        } else if (classDeclaration.AttributeLists.Count>1) {
+          throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClassAttribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{classDeclaration.AttributeLists}'");
+
+        } else {
+          var attributes = classDeclaration.AttributeLists[0].Attributes;
+          if (attributes.Count!=1) throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClassAttribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{attributes}'");
+
+          var attribute = attributes[0];
+          var arguments = attribute.ArgumentList;
+          foreach (var argument in arguments!.Arguments) {
+            if (argument.NameColon is null) throw new GeneratorException($"Class {className} Attribute{attribute}: the argument name is missing, like 'areItemsUpdatable: true'.");
+
+            var name = argument.NameColon.Name.Identifier.Text;
+            try {
+              var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
+              switch (name) {
+              case "maxLineLength": maxLineLength = int.Parse(value); break;
+              case "pluralName": pluralName = value[1..^1]; break;
+              case "areItemsUpdatable": areItemsUpdatable = value=="true"; break;
+              case "areItemsDeletable": areItemsDeletable = value=="true"; break;
+              case "isCompactDuringDispose": isCompactDuringDispose = value=="true"; break;
+              default: throw new Exception();
+              }
+            } catch {
+              new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
+            }
+          }
+
+        }
+        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areItemsUpdatable, areItemsDeletable, isCompactDuringDispose);
         classes.Add(className, classInfo);
         foreach (var classMember in classDeclaration.Members) {
           var field = classMember as FieldDeclarationSyntax;
           if (field is null) {
-            throw new GeneratorException($"Class {className} schould contain only properties and configuration constants, but has '{classMember}'.");
+            throw new GeneratorException($"Class {className} schould contain only properties, but has '{classMember}'.");
           }
 
           string? propertyComment = getComment(field.GetLeadingTrivia());
@@ -62,7 +98,8 @@ namespace Storage {
           foreach (var modifierToken in field.Modifiers) {
             if (modifierToken.Text=="const") {
               isConst = true;
-              break;
+              //break;
+              throw new GeneratorException($"Class {className} schould contain only properties, but has const '{classMember}'.");
             }
           }
 
@@ -71,39 +108,39 @@ namespace Storage {
             throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{field.Declaration}'.");
           }
           var propertyType = variableDeclaration.Type.ToString();
-          if (isConst) {
-            foreach (var variableDeclarator in variableDeclaration.Variables) {
-              var constValue = variableDeclarator.Initializer?.Value as LiteralExpressionSyntax;
-              if (constValue!=null) {
-                if (variableDeclarator.Identifier.Text=="MaxLineLenght") {
-                  if (constValue!=null) {
-                    classInfo.SetMaxLineLength(int.Parse(constValue.Token.Text));
-                    continue;
-                  }
-                } else if (variableDeclarator.Identifier.Text=="AreItemsUpdatable") {
-                  if (constValue!=null) {
-                    classInfo.SetAreItemsUpdatable(bool.Parse(constValue.Token.Text));
-                    continue;
-                  }
-                } else if (variableDeclarator.Identifier.Text=="AreItemsDeletable") {
-                  if (constValue!=null) {
-                    classInfo.SetAreItemsDeletable(bool.Parse(constValue.Token.Text));
-                    continue;
-                  }
-                } else if (variableDeclarator.Identifier.Text=="IsCompactDuringDispose") {
-                  if (constValue!=null) {
-                    classInfo.SetIsCompactDuringDispose(bool.Parse(constValue.Token.Text));
-                    continue;
-                  }
-                }
-              }
-              throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{classMember}'.");
-            }
-          } else {
+          //if (isConst) {
+          //  foreach (var variableDeclarator in variableDeclaration.Variables) {
+          //    var constValue = variableDeclarator.Initializer?.Value as LiteralExpressionSyntax;
+          //    if (constValue!=null) {
+          //      if (variableDeclarator.Identifier.Text=="MaxLineLenght") {
+          //        if (constValue!=null) {
+          //          classInfo.SetMaxLineLength(int.Parse(constValue.Token.Text));
+          //          continue;
+          //        }
+          //      } else if (variableDeclarator.Identifier.Text=="AreItemsUpdatable") {
+          //        if (constValue!=null) {
+          //          classInfo.SetAreItemsUpdatable(bool.Parse(constValue.Token.Text));
+          //          continue;
+          //        }
+          //      } else if (variableDeclarator.Identifier.Text=="AreItemsDeletable") {
+          //        if (constValue!=null) {
+          //          classInfo.SetAreItemsDeletable(bool.Parse(constValue.Token.Text));
+          //          continue;
+          //        }
+          //      } else if (variableDeclarator.Identifier.Text=="IsCompactDuringDispose") {
+          //        if (constValue!=null) {
+          //          classInfo.SetIsCompactDuringDispose(bool.Parse(constValue.Token.Text));
+          //          continue;
+          //        }
+          //      }
+          //    }
+          //    throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{classMember}'.");
+          //  }
+          //} else {
             foreach (var property in variableDeclaration.Variables) {
               classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment);
             }
-          }
+          //}
         }
       }
     }
@@ -138,12 +175,22 @@ namespace Storage {
               classInfo.Parents.Add(memberInfo.ParentClassInfo);
               memberInfo.ParentClassInfo.Children.Add(classInfo);
               topClasses.Remove(classInfo.ClassName);
+              var isfound = false;
+              foreach (var parentMember in memberInfo.ParentClassInfo.Members.Values) {
+                if (parentMember.MemberName==classInfo.PluralName) {
+                  isfound = true;
+                  break;
+                }
+              }
+              if (!isfound) {
+                throw new GeneratorException($"Class {memberInfo.ParentClassInfo.ClassName}: property 'List<{classInfo.ClassName}> {classInfo.PluralName}' is missing.");
+              }
             } else {
               if (enums.TryGetValue(memberInfo.ParentType!, out memberInfo.EnumInfo)) {
                 memberInfo.MemberType = MemberTypeEnum.Enum;
                 memberInfo.ToStringFunc = "";
               } else {
-                throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class {memberInfo.MemberName}.");
+                throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class or enum {memberInfo.MemberName}.");
               }
             }
           } else if (memberInfo.MemberType==MemberTypeEnum.List) {
@@ -154,6 +201,9 @@ namespace Storage {
             foreach (var childMI in memberInfo.ChildClassInfo.Members.Values) {
               if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==classInfo.ClassName) {
                 isFound = true;
+                if (memberInfo.MemberName!=childMI.ClassInfo.PluralName) {
+                  throw new GeneratorException($"{classInfo} '{memberInfo}': name {memberInfo.MemberName} should be {childMI.ClassInfo.PluralName}.");
+                }
               }
             }
             if (!isFound) {
@@ -291,9 +341,9 @@ namespace Storage {
       foreach (var classInfo in classes.Values.OrderBy(ci => ci.ClassName)) {
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Directory of all {classInfo.ClassName}s");
+        streamWriter.WriteLine($"    /// Directory of all {classInfo.PluralName}");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public StorageDictionary<{classInfo.ClassName}, {context}> {classInfo.ClassName}s {{ get; private set; }}");
+        streamWriter.WriteLine($"    public StorageDictionary<{classInfo.ClassName}, {context}> {classInfo.PluralName} {{ get; private set; }}");
       }
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
@@ -315,16 +365,16 @@ namespace Storage {
       streamWriter.WriteLine($"    public {context}(CsvConfig? csvConfig) {{");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
-        streamWriter.WriteLine($"        {classInfo.ClassName}s = new StorageDictionary<{classInfo.ClassName}, {context}>(");
+        streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionary<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
-        streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable},");
-        streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable});");
+        streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable.ToString().ToLowerInvariant()},");
+        streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      } else {");
       foreach (var classInfo in parentChildTree) {
-        streamWriter.WriteLine($"        {classInfo.ClassName}s = new StorageDictionaryCSV<{classInfo.ClassName}, {context}>(");
+        streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionaryCSV<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine("          csvConfig!,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.MaxLineLength,");
@@ -339,9 +389,9 @@ namespace Storage {
         streamWriter.WriteLine($"          {classInfo.ClassName}.Update,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Write,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
-        streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable},");
-        streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable},");
-        streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose});");
+        streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable.ToString().ToLowerInvariant()},");
+        streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable.ToString().ToLowerInvariant()},");
+        streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
@@ -365,9 +415,9 @@ namespace Storage {
       streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
       streamWriter.WriteLine();
       streamWriter.WriteLine("      if (disposing) {");
-      streamWriter.WriteLine("        SampleDetails.Dispose();");
-      streamWriter.WriteLine("        Samples.Dispose();");
-      streamWriter.WriteLine("        SampleMasters.Dispose();");
+      foreach (var classInfo in ((IEnumerable<ClassInfo>)parentChildTree).Reverse()) {
+        streamWriter.WriteLine($"        {classInfo.PluralName}.Dispose();");
+      }
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine();

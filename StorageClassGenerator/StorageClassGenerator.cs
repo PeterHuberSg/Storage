@@ -47,7 +47,7 @@ namespace Storage {
     /// <param name="targetDirectoryString">Target directory where the new .cs files get written.</param>
     /// <param name="context">Name of Context class, which gives static access to all data stored.</param>
     public StorageClassGenerator(string sourceDirectoryString, string targetDirectoryString, string context) {
-      //try {
+      try {
         Console.WriteLine("Storage Class Generator");
         Console.WriteLine("**********************");
         Console.WriteLine();
@@ -81,23 +81,23 @@ namespace Storage {
         Console.WriteLine($"write {context}.cs");
         compiler.WriteContextFile(targetDirectory, context);
         Console.WriteLine("");
-      //} catch (GeneratorException gex) {
-      //  var oldForegroundColor = Console.ForegroundColor;
-      //  Console.ForegroundColor = ConsoleColor.Yellow;
-      //  Console.WriteLine();
-      //  Console.WriteLine("Error: " + gex.Message);
-      //  Console.WriteLine();
-      //  Console.ForegroundColor = oldForegroundColor;
+      } catch (GeneratorException gex) {
+        var oldForegroundColor = Console.ForegroundColor;
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine();
+        Console.WriteLine("Error: " + gex.Message);
+        Console.WriteLine();
+        Console.ForegroundColor = oldForegroundColor;
 
-      //} catch (Exception ex) {
-      //  var oldForegroundColor = Console.ForegroundColor;
-      //  Console.ForegroundColor = ConsoleColor.Red;
-      //  Console.WriteLine();
-      //  Console.WriteLine("Exception");
-      //  Console.WriteLine(ex.ToString());
-      //  Console.WriteLine();
-      //  Console.ForegroundColor = oldForegroundColor;
-      //}
+      } catch (Exception ex) {
+        var oldForegroundColor = Console.ForegroundColor;
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine();
+        Console.WriteLine("Exception");
+        Console.WriteLine(ex.ToString());
+        Console.WriteLine();
+        Console.ForegroundColor = oldForegroundColor;
+      }
     }
 
 

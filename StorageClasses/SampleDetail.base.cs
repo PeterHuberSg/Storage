@@ -82,7 +82,7 @@ namespace StorageModel  {
     private SampleDetail(int key, CsvReader csvReader, DL context) {
       Key = key;
       Text = csvReader.ReadString()!;
-      if (context.Samples.TryGetValue(csvReader.ReadInt(), out var sample)) {
+      if (context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
         Sample = sample;
         Sample.AddToSampleDetails(this);
       } else {
@@ -137,7 +137,7 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(SampleDetail sampleDetail, CsvWriter csvWriter) {
       csvWriter.Write(sampleDetail.Text);
-      if (sampleDetail.Sample.Key<0) throw new Exception($"Cannot write sampleDetail '{sampleDetail}' to CSV File, because Sample is not stored in DL.Data.Samples.");
+      if (sampleDetail.Sample.Key<0) throw new Exception($"Cannot write sampleDetail '{sampleDetail}' to CSV File, because Sample is not stored in DL.Data.SampleX.");
 
       csvWriter.Write(sampleDetail.Sample.Key.ToString());
     }
@@ -171,7 +171,7 @@ namespace StorageModel  {
     /// </summary>
     internal static void Update(SampleDetail sampleDetail, CsvReader csvReader, DL context) {
       sampleDetail.Text = csvReader.ReadString()!;
-      if (!context.Samples.TryGetValue(csvReader.ReadInt(), out var sample)) {
+      if (!context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
         sample = Sample.NoSample;
       }
       if (sampleDetail.Sample!=sample) {

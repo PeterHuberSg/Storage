@@ -18,4 +18,17 @@ namespace Storage {
   /// Stores only 2 digits after comma
   /// </summary>
   public class Decimal2 { }
+
+
+  /// <summary>
+  /// Gives a class a plural name which is different from just appending an s per default. Example: Activity => Activities
+  /// </summary>
+  public class StorageClassAttribute: Attribute {
+    public StorageClassAttribute(
+      int maxLineLength = 0, 
+      string? pluralName = null, 
+      bool areItemsUpdatable = true, 
+      bool areItemsDeletable = true, 
+      bool isCompactDuringDispose = true){}
+  }
 }

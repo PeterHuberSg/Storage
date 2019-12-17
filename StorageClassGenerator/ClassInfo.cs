@@ -8,22 +8,38 @@ namespace Storage {
   public class ClassInfo {
     public readonly string ClassName;
     public readonly string LowerClassName;
-    public string? ClassComment;
-    public int? MaxLineLength;
+    public readonly string? ClassComment;
+    public readonly int? MaxLineLength;
+    public readonly string PluralName;
+    public readonly string LowerPluralName;
+    public readonly bool AreItemsUpdatable;
+    public readonly bool AreItemsDeletable;
+    public readonly bool IsCompactDuringDispose;
     public readonly Dictionary<string, MemberInfo> Members;
     public readonly HashSet<ClassInfo> Parents;
     public readonly List<ClassInfo> Children;
 
     public bool IsAddedToParentChildTree;
-    public string AreItemsUpdatable = "true";
-    public string AreItemsDeletable = "true";
-    public string IsCompactDuringDispose = "true";
 
 
-    public ClassInfo(string name, string? classComment) {
+    public ClassInfo(
+      string name, 
+      string? classComment, 
+      int maxLineLength, 
+      string pluralName, 
+      bool areItemsUpdatable, 
+      bool areItemsDeletable, 
+      bool isCompactDuringDispose)
+    {
       ClassName = name;
       LowerClassName = name[0..1].ToLowerInvariant() + name[1..];
       ClassComment = classComment;
+      MaxLineLength = maxLineLength;
+      PluralName = pluralName;
+      LowerPluralName = pluralName[0..1].ToLowerInvariant() + pluralName[1..];
+      AreItemsUpdatable = areItemsUpdatable;
+      AreItemsDeletable = areItemsDeletable;
+      IsCompactDuringDispose = isCompactDuringDispose;
       Members = new Dictionary<string, MemberInfo>();
       Parents = new HashSet<ClassInfo>();
       Children = new List<ClassInfo>();
@@ -50,35 +66,35 @@ namespace Storage {
           if (memberTypeString.StartsWith("List<") && memberTypeString.EndsWith(">")) {
             if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} cannot be nullable.");
 
-            Members.Add(name, new MemberInfo(name, this, memberTypeString, memberTypeString[5..^1], propertyComment));
+            Members.Add/*List*/(name, new MemberInfo(name, this, memberTypeString, memberTypeString[5..^1], propertyComment));
             break;
           }
           throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} not support. Should it be a List<> ?");
         }
-        Members.Add(name, new MemberInfo(name, this, memberTypeString, isNullable, propertyComment));
+        Members.Add/*Parent*/(name, new MemberInfo(name, this, memberTypeString, isNullable, propertyComment));
         break;
       }
     }
 
 
-    internal void SetMaxLineLength(int maxLineLength) {
-      MaxLineLength = maxLineLength;
-    }
+    //internal void SetMaxLineLength(int maxLineLength) {
+    //  MaxLineLength = maxLineLength;
+    //}
 
 
-    internal void SetAreItemsUpdatable(bool areItemsUpdatable) {
-      AreItemsUpdatable = areItemsUpdatable.ToString().ToLowerInvariant();
-    }
+    //internal void SetAreItemsUpdatable(bool areItemsUpdatable) {
+    //  AreItemsUpdatable = areItemsUpdatable.ToString().ToLowerInvariant();
+    //}
 
 
-    internal void SetAreItemsDeletable(bool areItemsDeletable) {
-      AreItemsDeletable  = areItemsDeletable.ToString().ToLowerInvariant();
-    }
+    //internal void SetAreItemsDeletable(bool areItemsDeletable) {
+    //  AreItemsDeletable  = areItemsDeletable.ToString().ToLowerInvariant();
+    //}
 
 
-    internal void SetIsCompactDuringDispose(bool isCompactDuringDispose) {
-      IsCompactDuringDispose = isCompactDuringDispose.ToString().ToLowerInvariant();
-    }
+    //internal void SetIsCompactDuringDispose(bool isCompactDuringDispose) {
+    //  IsCompactDuringDispose = isCompactDuringDispose.ToString().ToLowerInvariant();
+    //}
 
 
     public override string ToString() {
@@ -288,14 +304,14 @@ namespace Storage {
 
       #region Public constructor
       streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// {ClassName} Constructor. If isStoring is true, adds {ClassName} to {context}.Data.{ClassName}s");
+      streamWriter.Write($"    /// {ClassName} Constructor. If isStoring is true, adds {ClassName} to {context}.Data.{PluralName}");
       lines.Clear();
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
-            lines.Add($"if there is a {mi.LowerParentType} adds {ClassName} to {mi.LowerParentType}.{ClassName}s");
+            lines.Add($"if there is a {mi.LowerParentType} adds {ClassName} to {mi.LowerParentType}.{PluralName}");
           } else {
-            lines.Add($"adds {ClassName} to {mi.LowerParentType}.{ClassName}s");
+            lines.Add($"adds {ClassName} to {mi.LowerParentType}.{PluralName}");
           }
         }
       }
@@ -353,18 +369,18 @@ namespace Storage {
           if (mi.IsNullable) {
             streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
             streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key.HasValue) {{");
-            streamWriter.WriteLine($"        if (context.{mi.ParentType}s.TryGetValue({mi.LowerMemberName}Key.Value, " + 
+            streamWriter.WriteLine($"        if (context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, " + 
               $"out var {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"          {mi.MemberName}.AddTo{ClassName}s(this);");
+            streamWriter.WriteLine($"          {mi.MemberName}.AddTo{PluralName}(this);");
             streamWriter.WriteLine("        } else {");
             streamWriter.WriteLine($"          {mi.MemberName} = {mi.ParentType}.No{mi.ParentType};");
             streamWriter.WriteLine("        }");
             streamWriter.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      if (context.{mi.ParentType}s.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+            streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"        {mi.MemberName}.AddTo{ClassName}s(this);");
+            streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
             streamWriter.WriteLine("      } else {");
             streamWriter.WriteLine($"        {mi.MemberName} = {mi.ParentType}.No{mi.ParentType};");
             streamWriter.WriteLine("      }");
@@ -429,10 +445,10 @@ namespace Storage {
 
       #region Store()
       streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// Adds {ClassName} to {context}.Data.{ClassName}s");
+      streamWriter.Write($"    /// Adds {ClassName} to {context}.Data.{PluralName}");
       var parts = new List<string>();
       foreach (var parent in Parents) {
-        parts.Add($"{parent.ClassName}.{ClassName}s");
+        parts.Add($"{parent.ClassName}.{PluralName}");
       }
       if (parts.Count>0) {
         for (int partIndex = 0; partIndex < parts.Count; partIndex++) {
@@ -452,15 +468,15 @@ namespace Storage {
         $"key is {{Key}} greater equal 0.\");");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onStore();");
-      streamWriter.WriteLine($"      {context}.Data!.{ClassName}s.Add(this);");
+      streamWriter.WriteLine($"      {context}.Data!.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
             //streamWriter.WriteLine($"      if ({mi.Name}!=null) {{");
-            streamWriter.WriteLine($"      {mi.MemberName}?.AddTo{ClassName}s(this);");
+            streamWriter.WriteLine($"      {mi.MemberName}?.AddTo{PluralName}(this);");
             //streamWriter.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      {mi.MemberName}.AddTo{ClassName}s(this);");
+            streamWriter.WriteLine($"      {mi.MemberName}.AddTo{PluralName}(this);");
           }
         }
       }
@@ -489,13 +505,13 @@ namespace Storage {
             streamWriter.WriteLine("        csvWriter.Write(\"\");");
             streamWriter.WriteLine("      } else {");
             streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write" +
-              $" {LowerClassName} '{{{LowerClassName}}}' to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentType}s.\");");
+              $" {LowerClassName} '{{{LowerClassName}}}' to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
             streamWriter.WriteLine();
             streamWriter.WriteLine($"        csvWriter.Write({LowerClassName}.{mi.MemberName}.Key.ToString());");
             streamWriter.WriteLine("      }");
           } else {
             streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write {LowerClassName} '{{{LowerClassName}}}'" +
-              $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentType}s.\");");
+              $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
             streamWriter.WriteLine();
             streamWriter.WriteLine($"      csvWriter.Write({LowerClassName}.{mi.MemberName}.Key.ToString());");
           }
@@ -526,28 +542,28 @@ namespace Storage {
               streamWriter.WriteLine("          //nothing to do");
               streamWriter.WriteLine("        } else {");
               streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"          {mi.MemberName}.AddTo{ClassName}s(this);");
+              streamWriter.WriteLine($"          {mi.MemberName}.AddTo{PluralName}(this);");
               streamWriter.WriteLine("          isChangeDetected = true;");
               streamWriter.WriteLine("        }");
               streamWriter.WriteLine("      } else {");
               streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-              streamWriter.WriteLine($"          {mi.MemberName}.RemoveFrom{ClassName}s(this);");
+              streamWriter.WriteLine($"          {mi.MemberName}.RemoveFrom{PluralName}(this);");
               streamWriter.WriteLine($"          {mi.MemberName} = null;");
               streamWriter.WriteLine("          isChangeDetected = true;");
               streamWriter.WriteLine("        } else {");
               streamWriter.WriteLine($"          if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-              streamWriter.WriteLine($"            {mi.MemberName}.RemoveFrom{ClassName}s(this);");
+              streamWriter.WriteLine($"            {mi.MemberName}.RemoveFrom{PluralName}(this);");
               streamWriter.WriteLine($"            {mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"            {mi.MemberName}.AddTo{ClassName}s(this);");
+              streamWriter.WriteLine($"            {mi.MemberName}.AddTo{PluralName}(this);");
               streamWriter.WriteLine("            isChangeDetected = true;");
               streamWriter.WriteLine("          }");
               streamWriter.WriteLine("        }");
               streamWriter.WriteLine("      }");
             } else {
               streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-              streamWriter.WriteLine($"        {mi.MemberName}.RemoveFrom{ClassName}s(this);");
+              streamWriter.WriteLine($"        {mi.MemberName}.RemoveFrom{PluralName}(this);");
               streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"        {mi.MemberName}.AddTo{ClassName}s(this);");
+              streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
               streamWriter.WriteLine("        isChangeDetected = true;");
               streamWriter.WriteLine("      }");
             }
@@ -588,7 +604,7 @@ namespace Storage {
             streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
             streamWriter.WriteLine($"        {mi.LowerMemberName} = null;");
             streamWriter.WriteLine("      } else {");
-            streamWriter.WriteLine($"        if (!context.{mi.ParentType}s.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
+            streamWriter.WriteLine($"        if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"          {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
             streamWriter.WriteLine("        }");
             streamWriter.WriteLine("      }");
@@ -597,32 +613,32 @@ namespace Storage {
             streamWriter.WriteLine("          //nothing to do");
             streamWriter.WriteLine("        } else {");
             streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
             streamWriter.WriteLine("        }");
             streamWriter.WriteLine("      } else {");
             streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
             streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
             streamWriter.WriteLine("          }");
             streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
             streamWriter.WriteLine("        } else {");
             streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
             streamWriter.WriteLine("          }");
             streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
             streamWriter.WriteLine("        }");
             streamWriter.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      if (!context.{mi.ParentType}s.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+            streamWriter.WriteLine($"      if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"        {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
             streamWriter.WriteLine("      }");
             streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
             streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
             streamWriter.WriteLine("        }");
             streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
             streamWriter.WriteLine("      }");
           }
         } else if (mi.MemberType==MemberTypeEnum.Enum) {
@@ -640,17 +656,17 @@ namespace Storage {
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
           streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.ChildTypeName}s.");
+          streamWriter.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.ChildClassInfo!.PluralName}.");
           streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    internal void AddTo{mi.ChildTypeName}s({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
-          streamWriter.WriteLine($"      {mi.LowerChildTypeName}s.Add({mi.LowerChildTypeName});");
+          streamWriter.WriteLine($"    internal void AddTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+          streamWriter.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName});");
           streamWriter.WriteLine("    }");
           streamWriter.WriteLine();
           streamWriter.WriteLine();
           streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// Removes {mi.LowerChildTypeName} from {mi.ChildTypeName}s.");
+          streamWriter.WriteLine($"    /// Removes {mi.LowerChildTypeName} from {mi.ChildClassInfo!.PluralName}.");
           streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    internal void RemoveFrom{mi.ChildTypeName}s({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+          streamWriter.WriteLine($"    internal void RemoveFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
 
           var linksLines = new List<string>();
           foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
@@ -662,12 +678,12 @@ namespace Storage {
 
           if (linksLines.Count==1) {
             streamWriter.WriteLine("#if DEBUG");
-            streamWriter.WriteLine($"      if (!{mi.LowerChildTypeName}s.Remove({mi.LowerChildTypeName})) throw new Exception();");
+            streamWriter.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
             streamWriter.WriteLine("#else");
-            streamWriter.WriteLine($"        {mi.LowerChildTypeName}s.Remove({mi.LowerChildTypeName}));");
+            streamWriter.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}));");
             streamWriter.WriteLine("#endif");
           } else {
-            streamWriter.WriteLine("      //Execute remove only when exactly one property in the child still links to this parent. If");
+            streamWriter.WriteLine("      //Execute Remove() only when exactly one property in the child still links to this parent. If");
             streamWriter.WriteLine("      //no property links here (Count=0), the child should not be in the children collection. If");
             streamWriter.WriteLine("      //more than 1 child property links here, it cannot yet be removed from the children collection.");
             streamWriter.WriteLine("      var countLinks = 0;");
@@ -677,9 +693,9 @@ namespace Storage {
             streamWriter.WriteLine("      if (countLinks>1) return;");
             streamWriter.WriteLine("#if DEBUG");
             streamWriter.WriteLine("      if (countLinks==0) throw new Exception();");
-            streamWriter.WriteLine($"      if (!{mi.LowerChildTypeName}s.Remove({mi.LowerChildTypeName})) throw new Exception();");
+            streamWriter.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
             streamWriter.WriteLine("#else");
-            streamWriter.WriteLine($"        {mi.LowerChildTypeName}s.Remove({mi.LowerChildTypeName}));");
+            streamWriter.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}));");
             streamWriter.WriteLine("#endif");
           }
           streamWriter.WriteLine("    }");
@@ -691,7 +707,7 @@ namespace Storage {
 
       #region Remove()
       streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{ClassName}s");
+      streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
       writeRemoveComent(streamWriter, isCapitaliseFirstLetter: false);
       streamWriter.WriteLine(".");
       streamWriter.WriteLine("    /// </summary>");
@@ -700,7 +716,7 @@ namespace Storage {
       streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Remove(): {ClassName} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onRemove();");
-      streamWriter.WriteLine($"      {context}.Data!.{ClassName}s.Remove(Key);");
+      streamWriter.WriteLine($"      {context}.Data!.{PluralName}.Remove(Key);");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine("    partial void onRemove();");
       streamWriter.WriteLine();
@@ -716,7 +732,7 @@ namespace Storage {
       streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
-          streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildTypeName}s) {{");
+          streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}) {{");
 
           //var childClassMember = mi.ChildClassInfo!.Members[Name];
           //if (childClassMember.IsNullable) {
@@ -742,11 +758,11 @@ namespace Storage {
         } else if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
             streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
             streamWriter.WriteLine("      }");
           } else {
             streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{ClassName}s({LowerClassName});");
+            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
             streamWriter.WriteLine("      }");
           }
         }
@@ -878,7 +894,7 @@ namespace Storage {
           foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
             if (childMI.MemberType==MemberTypeEnum.Parent && (childMI.ParentType!)==ClassName) {
               if (childMI.IsNullable) {
-                lineParts.Add($"disconnects {childMI.ClassInfo.ClassName}.{childMI.MemberName} from {mi.ChildTypeName}s");
+                lineParts.Add($"disconnects {childMI.ClassInfo.ClassName}.{childMI.MemberName} from {mi.ChildClassInfo!.PluralName}");
               } else {
                 lineParts.Add($"deletes all {childMI.ClassInfo.ClassName} where {childMI.MemberName} links to this {ClassName}");
               }

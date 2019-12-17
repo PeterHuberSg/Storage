@@ -19,10 +19,11 @@ namespace StorageModel {
   }
 
 
-    /// <summary>
-    /// Some comment for SampleMaster.
-    /// With an additional line.
-    /// </summary>
+  /// <summary>
+  /// Some comment for SampleMaster.
+  /// With an additional line.
+  /// </summary>
+  [StorageClass(maxLineLength: 50, areItemsDeletable: false, isCompactDuringDispose: false)]
   public class SampleMaster {
 
     /// <summary>
@@ -33,11 +34,11 @@ namespace StorageModel {
     /// <summary>
     /// Some Samples comment
     /// </summary>
-    public List<Sample> Samples;
+    public List<Sample> SampleX;
 
     //the following confirguration constants define the storage behaviour of
     //SampleMaster's StorageDirectory. They will not be included in SampleMaster. 
-    public const int MaxLineLenght = 50;
+    //public const int MaxLineLenght = 50;
     //public const bool AreItemsUpdatable = true;
     //public const bool AreItemsDeletable = false;
     //public const bool IsCompactDuringDispose = false;
@@ -48,6 +49,7 @@ namespace StorageModel {
   /// Some comment for Sample
   /// </summary>
   /// 
+  [StorageClass(maxLineLength: 200, pluralName: "SampleX", isCompactDuringDispose: false)]
   public class Sample {
     /// <summary>
     /// Some Text comment
@@ -113,16 +115,18 @@ namespace StorageModel {
     /// Some SampleDetails comment
     /// </summary>
     public List<SampleDetail> SampleDetails;
-    public const int MaxLineLenght = 200;
-    public const bool AreItemsUpdatable = false;
-    public const bool AreItemsDeletable = true;
-    public const bool IsCompactDuringDispose = false;
+
+    //public const int MaxLineLenght = 200;
+    //public const bool AreItemsUpdatable = false;
+    //public const bool AreItemsDeletable = true;
+    //public const bool IsCompactDuringDispose = false;
   }
 
 
   /// <summary>
   /// Some comment for SampleDetail
   /// </summary>
+  [StorageClass(maxLineLength: 50, isCompactDuringDispose: false)]
   public class SampleDetail {
     /// <summary>
     /// Some Text comment
@@ -133,7 +137,5 @@ namespace StorageModel {
     /// Link to parent Sample
     /// </summary>
     public Sample Sample;
-
-    public const int MaxLineLenght = 50;
   }
 }

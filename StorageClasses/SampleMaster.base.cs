@@ -31,8 +31,8 @@ namespace StorageModel  {
     /// <summary>
     /// Some Samples comment
     /// </summary>
-    public IReadOnlyList<Sample> Samples { get { return samples; } }
-    readonly List<Sample> samples;
+    public IReadOnlyList<Sample> SampleX { get { return sampleX; } }
+    readonly List<Sample> sampleX;
 
 
     /// <summary>
@@ -67,7 +67,7 @@ namespace StorageModel  {
     public SampleMaster(string text, bool isStoring = true) {
       Key = Storage.Storage.NoKey;
       Text = text;
-      samples = new List<Sample>();
+      sampleX = new List<Sample>();
       onCreate();
 
       if (isStoring) {
@@ -83,7 +83,7 @@ namespace StorageModel  {
     private SampleMaster(int key, CsvReader csvReader, DL _) {
       Key = key;
       Text = csvReader.ReadString()!;
-      samples = new List<Sample>();
+      sampleX = new List<Sample>();
     }
 
 
@@ -152,35 +152,35 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Add sample to Samples.
+    /// Add sample to SampleX.
     /// </summary>
-    internal void AddToSamples(Sample sample) {
-      samples.Add(sample);
+    internal void AddToSampleX(Sample sample) {
+      sampleX.Add(sample);
     }
 
 
     /// <summary>
-    /// Removes sample from Samples.
+    /// Removes sample from SampleX.
     /// </summary>
-    internal void RemoveFromSamples(Sample sample) {
-      //Execute remove only when exactly one property in the child still links to this parent. If
+    internal void RemoveFromSampleX(Sample sample) {
+      //Execute Remove() only when exactly one property in the child still links to this parent. If
       //no property links here (Count=0), the child should not be in the children collection. If
-      //If more than 1 child property links here, it cannot yet be removed from the children collection.
+      //more than 1 child property links here, it cannot yet be removed from the children collection.
       var countLinks = 0;
       if (sample.OneMaster==this ) countLinks++;
       if (sample.OtherMaster==this ) countLinks++;
       if (countLinks>1) return;
 #if DEBUG
       if (countLinks==0) throw new Exception();
-      if (!samples.Remove(sample)) throw new Exception();
+      if (!sampleX.Remove(sample)) throw new Exception();
 #else
-        samples.Remove(sample));
+        sampleX.Remove(sample));
 #endif
     }
 
 
     /// <summary>
-    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
+    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from SampleX and disconnects Sample.OtherMaster from SampleX.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -193,10 +193,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects Sample.OneMaster from Samples and disconnects Sample.OtherMaster from Samples.
+    /// Disconnects Sample.OneMaster from SampleX and disconnects Sample.OtherMaster from SampleX.
     /// </summary>
     internal static void Disconnect(SampleMaster sampleMaster) {
-      foreach (var sample in sampleMaster.Samples) {
+      foreach (var sample in sampleMaster.SampleX) {
         sample.RemoveOneMaster(sampleMaster);
         sample.RemoveOtherMaster(sampleMaster);
       }
@@ -223,7 +223,7 @@ namespace StorageModel  {
       var returnString =
         $"Key: {Key}," +
         $" Text: {Text}," +
-        $" Samples: {Samples.Count};";
+        $" SampleX: {SampleX.Count};";
       onToString(ref returnString);
       return returnString;
     }

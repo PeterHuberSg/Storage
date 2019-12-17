@@ -50,9 +50,9 @@ namespace StorageModel  {
     //      ----------
 
     /// <summary>
-    /// Directory of all Samples
+    /// Directory of all SampleX
     /// </summary>
-    public StorageDictionary<Sample, DL> Samples { get; private set; }
+    public StorageDictionary<Sample, DL> SampleX { get; private set; }
 
     /// <summary>
     /// Directory of all SampleDetails
@@ -87,12 +87,12 @@ namespace StorageModel  {
           SampleMaster.SetKey,
           SampleMaster.Disconnect,
           areItemsUpdatable: true,
-          areItemsDeletable: true);
-        Samples = new StorageDictionary<Sample, DL>(
+          areItemsDeletable: false);
+        SampleX = new StorageDictionary<Sample, DL>(
           this,
           Sample.SetKey,
           Sample.Disconnect,
-          areItemsUpdatable: false,
+          areItemsUpdatable: true,
           areItemsDeletable: true);
         SampleDetails = new StorageDictionary<SampleDetail, DL>(
           this,
@@ -113,9 +113,9 @@ namespace StorageModel  {
           SampleMaster.Write,
           SampleMaster.Disconnect,
           areItemsUpdatable: true,
-          areItemsDeletable: true,
-          isCompactDuringDispose: true);
-        Samples = new StorageDictionaryCSV<Sample, DL>(
+          areItemsDeletable: false,
+          isCompactDuringDispose: false);
+        SampleX = new StorageDictionaryCSV<Sample, DL>(
           this,
           csvConfig!,
           Sample.MaxLineLength,
@@ -126,7 +126,7 @@ namespace StorageModel  {
           Sample.Update,
           Sample.Write,
           Sample.Disconnect,
-          areItemsUpdatable: false,
+          areItemsUpdatable: true,
           areItemsDeletable: true,
           isCompactDuringDispose: false);
         SampleDetails = new StorageDictionaryCSV<SampleDetail, DL>(
@@ -142,7 +142,7 @@ namespace StorageModel  {
           SampleDetail.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true,
-          isCompactDuringDispose: true);
+          isCompactDuringDispose: false);
       }
     }
     #endregion
@@ -166,7 +166,7 @@ namespace StorageModel  {
 
       if (disposing) {
         SampleDetails.Dispose();
-        Samples.Dispose();
+        SampleX.Dispose();
         SampleMasters.Dispose();
       }
     }
