@@ -102,7 +102,7 @@ namespace StorageModel  {
     /// <summary>
     /// Some SampleDetails comment
     /// </summary>
-    public IReadOnlyList<SampleDetail> SampleDetails { get { return sampleDetails; } }
+    public IReadOnlyList<SampleDetail> SampleDetails => sampleDetails;
     readonly List<SampleDetail> sampleDetails;
 
 
@@ -493,7 +493,9 @@ namespace StorageModel  {
     /// </summary>
     internal void AddToSampleDetails(SampleDetail sampleDetail) {
       sampleDetails.Add(sampleDetail);
+      OnAddedToSampleDetails(sampleDetail);
     }
+    partial void OnAddedToSampleDetails(SampleDetail sampleDetail);
 
 
     /// <summary>
@@ -505,7 +507,9 @@ namespace StorageModel  {
 #else
         sampleDetails.Remove(sampleDetail));
 #endif
+      OnRemovedFromSampleDetails(sampleDetail);
     }
+    partial void OnRemovedFromSampleDetails(SampleDetail sampleDetail);
 
 
     /// <summary>

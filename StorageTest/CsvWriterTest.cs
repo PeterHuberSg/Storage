@@ -85,6 +85,32 @@ namespace StorageTest {
           csvWriter.WriteEndOfLine();
 
           csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+          csvWriter.Write((decimal?)null, 0);
+          csvWriter.Write((decimal?)decimal.MaxValue, 0);
+          csvWriter.Write((decimal?)decimal.MaxValue);
+          csvWriter.Write((decimal?)1234567890.12345678m, 8);
+          csvWriter.Write((decimal?)1.1m, 1);
+          csvWriter.Write((decimal?)1.1m, 0);
+          csvWriter.Write((decimal?)1m, 1);
+          csvWriter.Write((decimal?)decimal.One);
+          csvWriter.Write((decimal?)0.9m, 1);
+          csvWriter.Write((decimal?)0.9m, 0);
+          csvWriter.Write((decimal?)0.4m, 0);
+          csvWriter.Write((decimal?)decimal.Zero);
+          csvWriter.Write((decimal?)-0.4m, 0);
+          csvWriter.Write((decimal?)-0.9m, 0);
+          csvWriter.Write((decimal?)-0.9m, 3);
+          csvWriter.Write((decimal?)decimal.MinusOne);
+          csvWriter.Write((decimal?)-1m, 1);
+          csvWriter.Write((decimal?)-1.1m, 0);
+          csvWriter.Write((decimal?)-1.1m, 1);
+          csvWriter.Write((decimal?)-1234567890.12345678m, 8);
+          csvWriter.Write((decimal?)decimal.MinValue);
+          csvWriter.Write((decimal?)decimal.MinValue, 0);
+          csvWriter.Write((decimal?)Math.PI);
+          csvWriter.WriteEndOfLine();
+
+          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
           csvWriter.Write('a');// 
           csvWriter.Write('Ä');// 
           csvWriter.Write('☹');// Smiley with white frowning face
@@ -225,6 +251,57 @@ namespace StorageTest {
         Assert.AreEqual(decimal.MinValue, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write((decimal)Math.PI);
         Assert.AreEqual((decimal)Math.PI, decimal.Parse(fieldStrings[fieldIndex++]));
+
+        line = streamReader.ReadLine();
+        Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
+        fieldStrings = line![1..].Split(csvConfig.Delimiter);
+        fieldIndex = 0;
+        //csvWriter.Write((decimal?)null, 0);
+        Assert.AreEqual(0, fieldStrings[fieldIndex++].Length);
+        //csvWriter.Write((decimal?)decimal.MaxValue, 0);
+        Assert.AreEqual(decimal.MaxValue, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)decimal.MaxValue);
+        Assert.AreEqual(decimal.MaxValue, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)1234567890.12345678m, 8);
+        Assert.AreEqual(1234567890.12345678m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)1.1m, 1);
+        Assert.AreEqual(1.1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)1.1m, 0);
+        Assert.AreEqual(1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)1m, 1);
+        Assert.AreEqual(1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)decimal.One);
+        Assert.AreEqual(1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)0.9m, 1);
+        Assert.AreEqual(0.9m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)0.9m, 0);
+        Assert.AreEqual(1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)0.4m, 0);
+        Assert.AreEqual(0m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)decimal.Zero);
+        Assert.AreEqual(0m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-0.4m, 0);
+        Assert.AreEqual(0m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-0.9m, 0);
+        Assert.AreEqual(-1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-0.9m, 3);
+        Assert.AreEqual(-0.9m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)decimal.MinusOne);
+        Assert.AreEqual(-1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-1m, 1);
+        Assert.AreEqual(-1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-1.1m, 0);
+        Assert.AreEqual(-1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-1.1m, 1);
+        Assert.AreEqual(-1.1m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)-1234567890.12345678m, 8);
+        Assert.AreEqual(-1234567890.12345678m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)decimal.MinValue);
+        Assert.AreEqual(decimal.MinValue, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)decimal.MinValue, 1);
+        Assert.AreEqual(decimal.MinValue, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)Math.PI);
+        Assert.AreEqual((decimal?)Math.PI, decimal.Parse(fieldStrings[fieldIndex++]));
 
         line = streamReader.ReadLine();
         Assert.AreEqual(csvConfig.LineCharAdd, line![0]);

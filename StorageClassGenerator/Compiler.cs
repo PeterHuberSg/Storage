@@ -145,7 +145,7 @@ namespace Storage {
             //////////////////////////////////
             string? defaultValue = null;
             if (field.AttributeLists.Count==0) {
-              if (isPropertyWithDefaultValueFound) {
+              if (isPropertyWithDefaultValueFound && !propertyType.StartsWith("List<")) {
                 throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould have a " +
                   "StorageProperty(defaultValue: \"xxx\") attribute, because the previous one had one too. Once a " +
                   "property has a deault value, all following properties need to have one too.");
@@ -221,6 +221,7 @@ namespace Storage {
               foreach (var parentMember in memberInfo.ParentClassInfo.Members.Values) {
                 if (parentMember.MemberName==classInfo.PluralName) {
                   isfound = true;
+                  parentMember.ChildCount++;
                   break;
                 }
               }

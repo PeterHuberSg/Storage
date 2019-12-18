@@ -342,7 +342,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// writes at most 2 digits after comma, if they are not zero. Trailing zeros get trancated.
+    /// Writes at most 2 digits after comma, if they are not zero. Trailing zeros get truncated.
     /// </summary>
     public void WriteDecimal2(decimal d) {
       Write(d, 2);
@@ -350,7 +350,15 @@ namespace Storage {
 
 
     /// <summary>
-    /// writes at most number of digitsAfterComma, if they are not zero. Trailing zeros get trancated.
+    /// Writes at most 2 digits after comma, if they are not zero. Trailing zeros get truncated.
+    /// </summary>
+    public void WriteDecimal2(decimal? d) {
+      Write(d, 2);
+    }
+
+
+    /// <summary>
+    /// Writes at most number of digitsAfterComma, if they are not zero. Trailing zeros get truncated.
     /// </summary>
     public void Write(decimal d, int digitsAfterComma = int.MaxValue) {
       //if (isNotLocked) {
@@ -363,6 +371,61 @@ namespace Storage {
         if (!d.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
       } else {
         if (!d.TryFormat(tempChars, out charsWritten)) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
+      }
+
+      //deal with zero here, this simplifies the code for removing trailing 0. Any other single digit value
+      //can also be handled here.
+      if (charsWritten==0) {
+        //code like csvWriter.Write(0.4m, 0) results in charsWritten==0
+        byteArray[writePos++] = (byte)'0';
+        byteArray[writePos++] = delimiter;
+        return;
+      } else if (charsWritten==1) {
+        byteArray[writePos++] = (byte)tempChars[0];
+        byteArray[writePos++] = delimiter;
+        return;
+      }
+
+      //remove trailing '0' and '.'
+      var charIndex = charsWritten - 1;
+      while (true) {
+        var tempChar = tempChars[charIndex--];
+        if (tempChar>='1' && tempChar<='9') {
+          charIndex++;
+          break;
+        }
+        if (tempChar=='0') continue;
+
+        if (tempChar=='.') break;
+        throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
+      }
+
+      for (int copyIndex = 0; copyIndex <= charIndex; copyIndex++) {
+        byteArray[writePos++] = (byte)tempChars[copyIndex];
+      }
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    /// <summary>
+    /// Writes at most number of digitsAfterComma, if they are not zero. Trailing zeros get truncated.
+    /// </summary>
+    public void Write(decimal? d, int digitsAfterComma = int.MaxValue) {
+      //if (isNotLocked) {
+      //  Monitor.Enter(byteArray);
+      //  isNotLocked = false;
+      //}
+
+      if (d is null) {
+        byteArray[writePos++] = delimiter;
+        return;
+      }
+
+      int charsWritten;
+      if (digitsAfterComma<=8) {
+        if (!d.Value.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
+      } else {
+        if (!d.Value.TryFormat(tempChars, out charsWritten)) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
       }
 
       //deal with zero here, this simplifies the code for removing trailing 0. Any other single digit value

@@ -31,8 +31,8 @@ namespace StorageModel  {
     /// <summary>
     /// Some Samples comment
     /// </summary>
-    public IReadOnlyList<Sample> SampleX { get { return sampleX; } }
-    readonly List<Sample> sampleX;
+    public ICollection<Sample> SampleX => sampleX;
+    readonly HashSet<Sample> sampleX;
 
 
     /// <summary>
@@ -73,7 +73,7 @@ namespace StorageModel  {
     public SampleMaster(string text, int numberWithDefault = int.MinValue, bool isStoring = true) {
       Key = Storage.Storage.NoKey;
       Text = text;
-      sampleX = new List<Sample>();
+      sampleX = new HashSet<Sample>();
       NumberWithDefault = numberWithDefault;
       onConstruct();
 
@@ -90,7 +90,7 @@ namespace StorageModel  {
     private SampleMaster(int key, CsvReader csvReader, DL _) {
       Key = key;
       Text = csvReader.ReadString()!;
-      sampleX = new List<Sample>();
+      sampleX = new HashSet<Sample>();
       NumberWithDefault = csvReader.ReadInt();
     }
 
@@ -170,7 +170,9 @@ namespace StorageModel  {
     /// </summary>
     internal void AddToSampleX(Sample sample) {
       sampleX.Add(sample);
+      OnAddedToSampleX(sample);
     }
+    partial void OnAddedToSampleX(Sample sample);
 
 
     /// <summary>
@@ -190,7 +192,9 @@ namespace StorageModel  {
 #else
         sampleX.Remove(sample));
 #endif
+      OnRemovedFromSampleX(sample);
     }
+    partial void OnRemovedFromSampleX(Sample sample);
 
 
     /// <summary>

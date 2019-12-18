@@ -45,6 +45,7 @@ namespace Storage {
     public ClassInfo? ChildClassInfo;
     public ClassInfo? ParentClassInfo; //not really used
     public EnumInfo? EnumInfo;
+    public int ChildCount = 0;
 
 
     public MemberInfo(string name, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment, string? defaultValue) {
@@ -84,16 +85,26 @@ namespace Storage {
         break;
       case MemberTypeEnum.Decimal: 
         TypeString = "decimal";
-        CsvReaderRead = "ReadDecimal()";
-        CsvWriterWrite = "Write";
+        if (isNullable) {
+          CsvReaderRead = "ReadDecimalNull()";
+          CsvWriterWrite = "Write";
+        } else {
+          CsvReaderRead = "ReadDecimal()";
+          CsvWriterWrite = "Write";
+        }
         NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with maximum precission.";
         break;
       case MemberTypeEnum.Decimal2:
         TypeString = "decimal";
-        CsvReaderRead = "ReadDecimal()";
-        CsvWriterWrite = "WriteDecimal2";
+        if (isNullable) {
+          CsvReaderRead = "ReadDecimalNull()";
+          CsvWriterWrite = "WriteDecimal2";
+        } else {
+          CsvReaderRead = "ReadDecimal()";
+          CsvWriterWrite = "WriteDecimal2";
+        }
         NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 2 digits after comma.";
@@ -215,8 +226,15 @@ namespace Storage {
         streamWriter.WriteLine("    ///  </summary>");
       }
       if (MemberType==MemberTypeEnum.List) {
-        streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} {{ get {{ return {LowerMemberName}; }} }}");
-        streamWriter.WriteLine($"    readonly List<{ChildTypeName}> {LowerMemberName};");
+        if (ChildCount<1) {
+          throw new Exception();
+        } else if (ChildCount==1) {
+          streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} => {LowerMemberName};");
+          streamWriter.WriteLine($"    readonly List<{ChildTypeName}> {LowerMemberName};");
+        } else { 
+          streamWriter.WriteLine($"    public ICollection<{ChildTypeName}> {MemberName} => {LowerMemberName};");
+          streamWriter.WriteLine($"    readonly HashSet<{ChildTypeName}> {LowerMemberName};");
+        }
       } else {
         streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
       }

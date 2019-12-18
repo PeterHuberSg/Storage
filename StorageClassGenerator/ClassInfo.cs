@@ -334,7 +334,11 @@ namespace Storage {
       streamWriter.WriteLine("      Key = Storage.Storage.NoKey;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
-          streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
+          if (mi.ChildCount>1) {
+            streamWriter.WriteLine($"      {mi.LowerMemberName} = new HashSet<{mi.ChildTypeName}>();");
+          } else {
+            streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
+          }
         } else {
           streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName};");
         }
@@ -364,7 +368,11 @@ namespace Storage {
       streamWriter.WriteLine("      Key = key;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
-          streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
+          if (mi.ChildCount>1) {
+            streamWriter.WriteLine($"      {mi.LowerMemberName} = new HashSet<{mi.ChildTypeName}>();");
+          } else {
+            streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
+          }
         } else if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
             streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
@@ -660,7 +668,9 @@ namespace Storage {
           streamWriter.WriteLine("    /// </summary>");
           streamWriter.WriteLine($"    internal void AddTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
           streamWriter.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName});");
+          streamWriter.WriteLine($"      OnAddedTo{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
           streamWriter.WriteLine("    }");
+          streamWriter.WriteLine($"    partial void OnAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
           streamWriter.WriteLine();
           streamWriter.WriteLine();
           streamWriter.WriteLine("    /// <summary>");
@@ -698,7 +708,9 @@ namespace Storage {
             streamWriter.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}));");
             streamWriter.WriteLine("#endif");
           }
+          streamWriter.WriteLine($"      OnRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
           streamWriter.WriteLine("    }");
+          streamWriter.WriteLine($"    partial void OnRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
           streamWriter.WriteLine();
           streamWriter.WriteLine();
         }

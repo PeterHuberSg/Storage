@@ -701,14 +701,9 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read long from UTF8 filestream including delimiter.
+    /// Read decimal from UTF8 filestream including delimiter.
     /// </summary>
     public decimal ReadDecimal() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
       var tempCharsIndex = 0;
       while (true) {
         int readByteAsInt = (int)byteArray[readPos++];
@@ -718,6 +713,25 @@ namespace Storage {
           var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
           return Decimal.Parse(tempCharsSpan);
         }
+        tempChars[tempCharsIndex++] = (char)readByteAsInt;
+      }
+    }
+
+
+    /// <summary>
+    /// Read decimal or null from UTF8 filestream including delimiter.
+    /// </summary>
+    public decimal? ReadDecimalNull() {
+      var tempCharsIndex = 0;
+      while (true) {
+        int readByteAsInt = (int)byteArray[readPos++];
+        if (readByteAsInt==delimiter) {
+          if (tempCharsIndex==0) return null;
+          var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
+          return Decimal.Parse(tempCharsSpan);
+        }
+        if (readByteAsInt>=0x80) throw new Exception($"CsvReader.ReadDecimal() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
+
         tempChars[tempCharsIndex++] = (char)readByteAsInt;
       }
     }

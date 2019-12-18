@@ -30,7 +30,8 @@ namespace StorageTest {
         var expectedInts = new List<int>();
         var expectedNullInts = new List<int?>();
         var expectedLongs = new List<long>();
-        var expectedDecimals = new List<decimal>();
+        var expectedDecimals = new List<decimal?>();
+        var expectedDecimalNulls = new List<decimal?>();
         using (var fileStream = new FileStream(fileName, FileMode.Create)) {
           using var streamWriter = new StreamWriter(fileStream);
           streamWriter.Write(csvConfig.LineCharAdd);
@@ -79,6 +80,19 @@ namespace StorageTest {
           writeDecimal(streamWriter, -1234567890.12m, expectedDecimals, csvConfig.Delimiter);
           writeDecimal(streamWriter, -1234567890.1234567890m, expectedDecimals, csvConfig.Delimiter);
           writeDecimal(streamWriter, decimal.MinValue, expectedDecimals, csvConfig.Delimiter);
+          streamWriter.WriteLine();
+
+          streamWriter.Write(csvConfig.LineCharAdd);
+          writeDecimal(streamWriter, null, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.MaxValue, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, 1234567890.1234567890m, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, 1234567890.12m, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.One, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.Zero, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.MinusOne, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, -1234567890.12m, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, -1234567890.1234567890m, expectedDecimalNulls, csvConfig.Delimiter);
+          writeDecimal(streamWriter, decimal.MinValue, expectedDecimalNulls, csvConfig.Delimiter);
           streamWriter.WriteLine();
 
           streamWriter.Write(csvConfig.LineCharAdd);
@@ -183,6 +197,16 @@ namespace StorageTest {
           csvReader.ReadEndOfLine();
           Assert.IsFalse(csvReader.IsEof);
 
+          //decimal or null
+          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+          foreach (var expectedDecimal in expectedDecimalNulls) {
+            Assert.AreEqual(expectedDecimal, csvReader.ReadDecimalNull());
+            Assert.IsFalse(csvReader.IsEndOfFileReached());
+            Assert.IsFalse(csvReader.IsEof);
+          }
+          csvReader.ReadEndOfLine();
+          Assert.IsFalse(csvReader.IsEof);
+
           //char
           Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
           Assert.AreEqual('a', csvReader.ReadChar());
@@ -276,10 +300,12 @@ namespace StorageTest {
     }
 
 
-    private void writeDecimal(StreamWriter streamWriter, decimal d, List<decimal> expectedDecimalss, char delimiter) {
-      streamWriter.Write(d.ToString());
+    private void writeDecimal(StreamWriter streamWriter, decimal? d, List<decimal?> expectedDecimals, char delimiter) {
+      if (d!=null) {
+        streamWriter.Write(d.ToString());
+      }
       streamWriter.Write(delimiter);
-      expectedDecimalss.Add(d);
+      expectedDecimals.Add(d);
     }
 
 
