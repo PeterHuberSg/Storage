@@ -1010,6 +1010,33 @@ namespace Storage {
     }
 
 
+    public DateTime ReadDateSeconds() {
+      var day = (int)(byteArray[readPos++] - '0');
+      var readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar!='.') {
+        day = day*10 + (int)(readByteAsChar - '0');
+        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+      }
+
+      var month = (int)(byteArray[readPos++] - '0');
+      readByteAsChar = (char)byteArray[readPos++];
+      if (readByteAsChar!='.') {
+        month = month*10 + (int)(readByteAsChar - '0');
+        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+      }
+
+      var year = (int)(byteArray[readPos++] - '0');
+      year = 10*year + (int)(byteArray[readPos++] - '0');
+      year = 10*year + (int)(byteArray[readPos++] - '0');
+      year = 10*year + (int)(byteArray[readPos++] - '0');
+      if ((char)byteArray[readPos++]!=' ') throw new Exception($"CsvReader.ReadDateSeconds() '{FileName}': ' ' missing after date: " + Environment.NewLine + GetPresentContent());
+
+      var timeSpan = ReadTime();
+
+      return new DateTime(year, month, day) + timeSpan;
+    }
+
+
     // 0: 0: 0 => "0"
     // 0: 0: 1 => "0:0:1"
     // 0: 1: 1 => "0:1:1"
@@ -1056,7 +1083,7 @@ namespace Storage {
     }
 
 
-    public DateTime ReadDateTime() {
+    public DateTime ReadDateTimeTicks() {
       var ticks = ReadLong();
       return new DateTime(ticks);
     }

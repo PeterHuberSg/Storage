@@ -10,6 +10,8 @@ namespace Storage {
     Undefined = 0,
     Date,
     Time,
+    DateMinutes,
+    DateSeconds,
     DateTime,
     Decimal,
     Decimal2,
@@ -75,10 +77,30 @@ namespace Storage {
         ToStringFunc = "";
         PrecissionComment = "Stores less than 24 hours with second precission.";
         break;
+
+
+      case MemberTypeEnum.DateMinutes:
+        TypeString = "DateTime";
+        CsvReaderRead = "ReadDateSeconds()";//can also be used for minutes
+        CsvWriterWrite = "WriteDateMinutes";
+        NoValue = "DateTime.MinValue";
+        ToStringFunc = "";
+        PrecissionComment = "Stores date and time with minute precission.";
+        break;
+      case MemberTypeEnum.DateSeconds:
+        TypeString = "DateTime";
+        CsvReaderRead = "ReadDateSeconds()";
+        CsvWriterWrite = "WriteDateSeconds";
+        NoValue = "DateTime.MinValue";
+        ToStringFunc = "";
+        PrecissionComment = "Stores date and time with seconds precission.";
+        break;
+
+
       case MemberTypeEnum.DateTime: 
         TypeString = "DateTime";
-        CsvReaderRead = "ReadDateTime()";
-        CsvWriterWrite = "WriteDateTime";
+        CsvReaderRead = "ReadDateTimeTicks()";
+        CsvWriterWrite = "WriteDateTimeTicks";
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with tick precission.";

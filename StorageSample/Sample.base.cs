@@ -202,7 +202,7 @@ namespace StorageModel  {
       SampleState = (SampleStateEnum)csvReader.ReadInt();
       DateOnly = csvReader.ReadDate();
       TimeOnly = csvReader.ReadTime();
-      DateAndTime = csvReader.ReadDateTime();
+      DateAndTime = csvReader.ReadDateTimeTicks();
       var oneMasterKey = csvReader.ReadIntNull();
       if (oneMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
@@ -282,7 +282,7 @@ namespace StorageModel  {
       csvWriter.Write((int)sample.SampleState);
       csvWriter.WriteDate(sample.DateOnly);
       csvWriter.WriteTime(sample.TimeOnly);
-      csvWriter.WriteDateTime(sample.DateAndTime);
+      csvWriter.WriteDateTimeTicks(sample.DateAndTime);
       if (sample.OneMaster is null) {
         csvWriter.Write("");
       } else {
@@ -423,7 +423,7 @@ namespace StorageModel  {
       sample.SampleState = (SampleStateEnum)csvReader.ReadInt();
       sample.DateOnly = csvReader.ReadDate();
       sample.TimeOnly = csvReader.ReadTime();
-      sample.DateAndTime = csvReader.ReadDateTime();
+      sample.DateAndTime = csvReader.ReadDateTimeTicks();
       var oneMasterKey = csvReader.ReadIntNull();
       SampleMaster? oneMaster;
       if (oneMasterKey is null) {

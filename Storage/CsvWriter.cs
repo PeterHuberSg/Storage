@@ -526,6 +526,12 @@ namespace Storage {
     public void WriteDate(DateTime date) {
       if (date!=date.Date) throw new Exception($"CsvWriter.WriteDate() '{FileName}':does not support storing time '{date}'." + Environment.NewLine + GetPresentContent());
 
+      writeDate(date);
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    private void writeDate(DateTime date) {
       var day = date.Day;
       if (day>=30) {
         byteArray[writePos++] = (byte)'3';
@@ -556,7 +562,6 @@ namespace Storage {
       byteArray[writePos++] = (byte)(('0') + year / 10);
       year %= 10;
       byteArray[writePos++] = (byte)(('0') + year);
-      byteArray[writePos++] = delimiter;
     }
 
 
@@ -565,7 +570,12 @@ namespace Storage {
       var minutes = time.Minutes;
       var seconds = time.Seconds;
       if (hours>=24) throw new Exception($"CsvWriter.WriteTime() '{FileName}':does not support storing 24 hours or more." + Environment.NewLine + GetPresentContent());
+      write(hours, minutes, seconds);
+      byteArray[writePos++] = delimiter;
+    }
 
+
+    private void write(int hours, int minutes, int seconds) {
       if (hours>=20) {
         byteArray[writePos++] = (byte)'2';
         hours -= 20;
@@ -575,7 +585,6 @@ namespace Storage {
       }
       byteArray[writePos++] = (byte)('0' + hours);
       if (minutes==0 && seconds==0) {
-        byteArray[writePos++] = delimiter;
         return;
       }
 
@@ -587,7 +596,6 @@ namespace Storage {
       }
       byteArray[writePos++] = (byte)('0' + minutes);
       if (seconds==0) {
-        byteArray[writePos++] = delimiter;
         return;
       }
 
@@ -598,19 +606,34 @@ namespace Storage {
         seconds %= 10;
       }
       byteArray[writePos++] = (byte)('0' + seconds);
+    }
+
+
+    public void WriteDateMinutes(DateTime dateTime) {
+      writeDate(dateTime.Date);
+      byteArray[writePos++] = (byte)' ';
+      var hour = dateTime.Hour;
+      var minute = dateTime.Minute;
+      if (dateTime.Second>=30) minute++;
+      var second = 0;
+      write(hour, minute, second);
       byteArray[writePos++] = delimiter;
     }
 
 
-    public void WriteDateTime(DateTime dateTime) {
+    public void WriteDateSeconds(DateTime dateTime) {
+      writeDate(dateTime.Date);
+      byteArray[writePos++] = (byte)' ';
+      var hour = dateTime.Hour;
+      var minute = dateTime.Minute;
+      var second = dateTime.Second;
+      write(hour, minute, second);
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    public void WriteDateTimeTicks(DateTime dateTime) {
       Write(dateTime.Ticks);
-      //if (dateTime.TryFormat(tempChars, out var numberOfBytesWritten, "O")) {
-      //  for (int charIndex = 0; charIndex < numberOfBytesWritten; charIndex++) {
-      //    byteArray[writePos++] = (byte)tempChars[charIndex];
-      //  }
-      //  byteArray[writePos++] = delimiter;
-      //  return;
-      //}
     }
 
 

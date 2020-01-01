@@ -94,7 +94,17 @@ namespace StorageModel {
     /// <summary>
     /// Stores date and time precisely to a tick
     /// </summary>
-    public DateTime DateAndTime;
+    public DateTime DateTimeTicks;
+
+    /// <summary>
+    /// Stores date and time precisely to a minute
+    /// </summary>
+    public DateTime DateTimeMinute;
+
+    /// <summary>
+    /// Stores date and time precisely to a second
+    /// </summary>
+    public DateTime DateTimeSecond;
 
     /// <summary>
     /// Some OneMaster comment
