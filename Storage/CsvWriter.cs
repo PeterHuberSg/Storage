@@ -232,6 +232,21 @@ namespace Storage {
     }
 
 
+    /// <summary>
+    /// Write boolean? as '', 0 or 1 to UTF8 filestream including delimiter.
+    /// </summary>
+    public void Write(bool? b) {
+      if (b.HasValue) {
+        if (b.Value) {
+          byteArray[writePos++] = (byte)'1';
+        } else {
+          byteArray[writePos++] = (byte)'0';
+        }
+        byteArray[writePos++] = delimiter;
+      }
+    }
+
+
     const byte minusByte = (byte)'-';
 
 

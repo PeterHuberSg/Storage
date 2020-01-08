@@ -18,7 +18,7 @@ namespace StorageModel  {
     /// <summary>
     /// Provides static root access to the data context
     /// </summary>
-    public static DL? Data {
+    public static DL Data {
       get { return data; }
     }
     private static DL? data; //data is needed for Interlocked.Exchange(ref data, null) in DisposeData()

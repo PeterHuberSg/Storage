@@ -489,7 +489,7 @@ namespace Storage {
         $"key is {{Key}} greater equal 0.\");");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onStore();");
-      streamWriter.WriteLine($"      {context}.Data!.{PluralName}.Add(this);");
+      streamWriter.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
@@ -749,7 +749,7 @@ namespace Storage {
       streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Remove(): {ClassName} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onRemove();");
-      streamWriter.WriteLine($"      {context}.Data!.{PluralName}.Remove(Key);");
+      streamWriter.WriteLine($"      {context}.Data.{PluralName}.Remove(Key);");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine("    partial void onRemove();");
       streamWriter.WriteLine();

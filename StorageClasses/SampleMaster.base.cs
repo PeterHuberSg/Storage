@@ -121,7 +121,7 @@ namespace StorageModel  {
         throw new Exception($"SampleMaster 'Class SampleMaster' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
       onStore();
-      DL.Data!.SampleMasters.Add(this);
+      DL.Data.SampleMasters.Add(this);
     }
     partial void onStore();
 
@@ -211,7 +211,7 @@ namespace StorageModel  {
         throw new Exception($"SampleMaster.Remove(): SampleMaster 'Class SampleMaster' is not stored in DL.Data, key is {Key}.");
       }
       onRemove();
-      DL.Data!.SampleMasters.Remove(Key);
+      DL.Data.SampleMasters.Remove(Key);
     }
     partial void onRemove();
 

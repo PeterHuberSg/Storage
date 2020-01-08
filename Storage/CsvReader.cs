@@ -248,6 +248,30 @@ namespace Storage {
 
 
     /// <summary>
+    /// Read boolean? as '', 0 or 1 from UTF8 filestream including delimiter.
+    /// </summary>
+    public bool? ReadBoolNull() {
+      int readByteAsInt = (int)byteArray[readPos++];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        return null;
+      }
+      bool b;
+      if (readByteAsInt=='0') {
+        b = false;
+      } else if (readByteAsInt=='1') {
+        b = true;
+      } else {
+        throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
+      }
+      readByteAsInt = (int)byteArray[readPos++];
+      if (readByteAsInt!=CsvConfig.Delimiter) {
+        throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
+      }
+      return b;
+    }
+
+
+    /// <summary>
     /// Read integer from UTF8 filestream including delimiter.
     /// </summary>
     public int ReadInt() {

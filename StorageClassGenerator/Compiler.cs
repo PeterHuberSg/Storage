@@ -233,7 +233,7 @@ namespace Storage {
                 memberInfo.MemberType = MemberTypeEnum.Enum;
                 memberInfo.ToStringFunc = "";
               } else {
-                throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class or enum {memberInfo.MemberName}.");
+                throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class or enum '{memberInfo.MemberName}'.");
               }
             }
           } else if (memberInfo.MemberType==MemberTypeEnum.List) {
@@ -351,7 +351,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Provides static root access to the data context");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    public static {context}? Data {{");
+      streamWriter.WriteLine($"    public static {context} Data {{");
       streamWriter.WriteLine("      get { return data; }");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine($"    private static {context}? data; //data is needed for Interlocked.Exchange(ref data, null) in DisposeData()");

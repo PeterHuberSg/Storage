@@ -37,7 +37,7 @@ namespace Storage {
 
 
   /// <summary>
-  /// Sores only dates, but no time
+  /// Stores only dates, but no time
   /// </summary>
   public class Date {}
 
@@ -46,6 +46,18 @@ namespace Storage {
   /// Stores only times shorter than 24 hours and only with seconds precission
   /// </summary>
   public class Time {}
+
+
+  /// <summary>
+  /// Stores dates and time with a precission of seconds
+  /// </summary>
+  public class DateMinutes { }
+
+
+  /// <summary>
+  /// Stores dates and time with a precission of seconds
+  /// </summary>
+  public class DateSeconds { }
 
 
   /// <summary>

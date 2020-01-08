@@ -285,7 +285,7 @@ namespace StorageModel  {
         throw new Exception($"Sample 'Class Sample' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
       onStore();
-      DL.Data!.SampleX.Add(this);
+      DL.Data.SampleX.Add(this);
       OneMaster?.AddToSampleX(this);
       OtherMaster?.AddToSampleX(this);
     }
@@ -562,7 +562,7 @@ namespace StorageModel  {
         throw new Exception($"Sample.Remove(): Sample 'Class Sample' is not stored in DL.Data, key is {Key}.");
       }
       onRemove();
-      DL.Data!.SampleX.Remove(Key);
+      DL.Data.SampleX.Remove(Key);
     }
     partial void onRemove();
 

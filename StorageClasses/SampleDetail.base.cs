@@ -126,7 +126,7 @@ namespace StorageModel  {
         throw new Exception($"SampleDetail 'Class SampleDetail' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
       onStore();
-      DL.Data!.SampleDetails.Add(this);
+      DL.Data.SampleDetails.Add(this);
       Sample.AddToSampleDetails(this);
     }
     partial void onStore();
@@ -198,7 +198,7 @@ namespace StorageModel  {
         throw new Exception($"SampleDetail.Remove(): SampleDetail 'Class SampleDetail' is not stored in DL.Data, key is {Key}.");
       }
       onRemove();
-      DL.Data!.SampleDetails.Remove(Key);
+      DL.Data.SampleDetails.Remove(Key);
     }
     partial void onRemove();
 

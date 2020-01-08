@@ -77,8 +77,6 @@ namespace Storage {
         ToStringFunc = "";
         PrecissionComment = "Stores less than 24 hours with second precission.";
         break;
-
-
       case MemberTypeEnum.DateMinutes:
         TypeString = "DateTime";
         CsvReaderRead = "ReadDateSeconds()";//can also be used for minutes
@@ -95,8 +93,6 @@ namespace Storage {
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with seconds precission.";
         break;
-
-
       case MemberTypeEnum.DateTime: 
         TypeString = "DateTime";
         CsvReaderRead = "ReadDateTimeTicks()";
@@ -109,11 +105,10 @@ namespace Storage {
         TypeString = "decimal";
         if (isNullable) {
           CsvReaderRead = "ReadDecimalNull()";
-          CsvWriterWrite = "Write";
         } else {
           CsvReaderRead = "ReadDecimal()";
-          CsvWriterWrite = "Write";
         }
+        CsvWriterWrite = "Write";
         NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with maximum precission.";
@@ -122,18 +117,21 @@ namespace Storage {
         TypeString = "decimal";
         if (isNullable) {
           CsvReaderRead = "ReadDecimalNull()";
-          CsvWriterWrite = "WriteDecimal2";
         } else {
           CsvReaderRead = "ReadDecimal()";
-          CsvWriterWrite = "WriteDecimal2";
         }
+        CsvWriterWrite = "WriteDecimal2";
         NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 2 digits after comma.";
         break;
       case MemberTypeEnum.Bool:
         TypeString = "bool";
-        CsvReaderRead = "ReadBool()";
+        if (isNullable) {
+          CsvReaderRead = "ReadBoolNull()";
+        } else {
+          CsvReaderRead = "ReadBool()";
+        }
         CsvWriterWrite = "Write";
         NoValue = "false";
         ToStringFunc = "";
