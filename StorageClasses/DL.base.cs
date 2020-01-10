@@ -19,7 +19,7 @@ namespace StorageModel  {
     /// Provides static root access to the data context
     /// </summary>
     public static DL Data {
-      get { return data; }
+      get { return data!; }
     }
     private static DL? data; //data is needed for Interlocked.Exchange(ref data, null) in DisposeData()
 
@@ -29,7 +29,7 @@ namespace StorageModel  {
     /// </summary>
     /// <param name="csvConfig">null: no permanent data storage, not null: info where to store the data</param>
     public static void Init(CsvConfig? csvConfig) {
-      if (data!=null) throw new Exception();
+      if (data!=null) throw new Exception("Dispose old data first before initiating new ones.");
 
       data = new DL(csvConfig);
     }
@@ -175,6 +175,7 @@ namespace StorageModel  {
         SampleDetails.Dispose();
         SampleX.Dispose();
         SampleMasters.Dispose();
+        data = null;
       }
     }
 

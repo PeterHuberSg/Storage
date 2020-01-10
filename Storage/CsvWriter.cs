@@ -242,8 +242,8 @@ namespace Storage {
         } else {
           byteArray[writePos++] = (byte)'0';
         }
-        byteArray[writePos++] = delimiter;
       }
+      byteArray[writePos++] = delimiter;
     }
 
 

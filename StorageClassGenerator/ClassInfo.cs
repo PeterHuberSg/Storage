@@ -316,7 +316,7 @@ namespace Storage {
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
-            lines.Add($"if there is a {mi.LowerParentType} adds {ClassName} to {mi.LowerParentType}.{PluralName}");
+            lines.Add($"if there is a {mi.MemberName} adds {ClassName} to {mi.LowerParentType}.{PluralName}");
           } else {
             lines.Add($"adds {ClassName} to {mi.LowerParentType}.{PluralName}");
           }
@@ -346,14 +346,14 @@ namespace Storage {
           } else {
             streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
           }
-        } else if(mi.MemberType==MemberTypeEnum.Decimal2) {
-          if (mi.IsNullable) {
-            streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName} is null ? (decimal?)null : Math.Round({mi.LowerMemberName}.Value, 2);");
-          } else {
-            streamWriter.WriteLine($"        {mi.MemberName} = Math.Round({mi.LowerMemberName}, 2);");
-          }
+        //} else if(mi.MemberType==MemberTypeEnum.Decimal2) {
+        //  if (mi.IsNullable) {
+        //    streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName} is null ? (decimal?)null : Math.Round({mi.LowerMemberName}.Value, 2);");
+        //  } else {
+        //    streamWriter.WriteLine($"      {mi.MemberName} = Math.Round({mi.LowerMemberName}, 2);");
+        //  }
         } else {
-          streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName};");
+          streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName}{mi.Rounding};");
         }
       }
       streamWriter.WriteLine("      onConstruct();");
@@ -588,17 +588,15 @@ namespace Storage {
               streamWriter.WriteLine("        isChangeDetected = true;");
               streamWriter.WriteLine("      }");
             }
+          } else if (mi.Rounding!=null) {
+            streamWriter.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
+            streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
+            streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
+            streamWriter.WriteLine("        isChangeDetected = true;");
+            streamWriter.WriteLine("      }");
           } else {
             streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-            if (mi.MemberType==MemberTypeEnum.Decimal2) {
-              if (mi.IsNullable) {
-                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName} is null ? (decimal?)null : Math.Round({mi.LowerMemberName}.Value, 2);");
-              } else {
-                streamWriter.WriteLine($"        {mi.MemberName} = Math.Round({mi.LowerMemberName}, 2);");
-              }
-            } else {
-              streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-            }
+            streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
             streamWriter.WriteLine("        isChangeDetected = true;");
             streamWriter.WriteLine("      }");
           }
@@ -933,16 +931,17 @@ namespace Storage {
               if (childMI.IsNullable) {
                 lineParts.Add($"disconnects {childMI.ClassInfo.ClassName}.{childMI.MemberName} from {mi.ChildClassInfo!.PluralName}");
               } else {
-                lineParts.Add($"deletes all {childMI.ClassInfo.ClassName} where {childMI.MemberName} links to this {ClassName}");
+                lineParts.Add($"deletes all {childMI.ClassInfo.ClassName} where {childMI.ClassInfo.ClassName}.{childMI.MemberName} links to this {ClassName}");
               }
             }
           }
         } else if (mi.MemberType==MemberTypeEnum.Parent) {
-          lineParts.Add($"disconnects {ClassName} from {mi.ParentType}");
+          lineParts.Add($"disconnects {ClassName} from {mi.ParentType} because of {mi.MemberName}");
         }
       }
 
       if (lineParts.Count>0) {
+        //var partsCount = 0;
         if (isCapitaliseFirstLetter) {
           lineParts[0] = lineParts[0][0..1].ToUpperInvariant() + lineParts[0][1..];
         }
@@ -957,10 +956,14 @@ namespace Storage {
               streamWriter.Write(", ");
             }
           }
-          if (lineParts.Count>3) {
+          //partsCount++;
+          //if (partsCount>2) {
+          //  partsCount = 0;
+          if (linePartIndex>0 || !isCapitaliseFirstLetter) {
             streamWriter.WriteLine();
-            streamWriter.Write("        ");
+            streamWriter.Write("    /// ");
           }
+          //}
           streamWriter.Write(linePart);
         }
       } else {

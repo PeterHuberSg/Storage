@@ -33,6 +33,7 @@ namespace Storage {
     public readonly bool IsNullable;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
+    public readonly string? Rounding;
     public readonly string? DefaultValue;
     public readonly string? ChildTypeName;
     public readonly string? LowerChildTypeName;
@@ -68,6 +69,7 @@ namespace Storage {
         NoValue = "DateTime.MinValue.Date";
         ToStringFunc = ".ToShortDateString()";
         PrecissionComment = "Stores only dates but no times.";
+        Rounding = ".Floor(Rounding.Days)";
         break;
       case MemberTypeEnum.Time:
         TypeString = "TimeSpan";
@@ -76,6 +78,7 @@ namespace Storage {
         NoValue = "TimeSpan.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores less than 24 hours with second precission.";
+        Rounding = ".Round(Rounding.Seconds)";
         break;
       case MemberTypeEnum.DateMinutes:
         TypeString = "DateTime";
@@ -84,6 +87,7 @@ namespace Storage {
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with minute precission.";
+        Rounding = ".Round(Rounding.Minutes)";
         break;
       case MemberTypeEnum.DateSeconds:
         TypeString = "DateTime";
@@ -92,6 +96,7 @@ namespace Storage {
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with seconds precission.";
+        Rounding = ".Round(Rounding.Seconds)";
         break;
       case MemberTypeEnum.DateTime: 
         TypeString = "DateTime";
@@ -124,6 +129,7 @@ namespace Storage {
         NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 2 digits after comma.";
+        Rounding = ".Round(2)";
         break;
       case MemberTypeEnum.Bool:
         TypeString = "bool";
@@ -138,7 +144,11 @@ namespace Storage {
         break;
       case MemberTypeEnum.Int:
         TypeString = "int";
-        CsvReaderRead = "ReadInt()";
+        if (isNullable) {
+          CsvReaderRead = "ReadIntNull()";
+        } else {
+          CsvReaderRead = "ReadInt()";
+        }
         CsvWriterWrite = "Write";
         NoValue = "int.MinValue";
         ToStringFunc = "";

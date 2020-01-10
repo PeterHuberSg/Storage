@@ -204,7 +204,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes SampleMaster from DL.Data.SampleMasters, disconnects Sample.OneMaster from SampleX and disconnects Sample.OtherMaster from SampleX.
+    /// Removes SampleMaster from DL.Data.SampleMasters, 
+    /// disconnects Sample.OneMaster from SampleX and 
+    /// disconnects Sample.OtherMaster from SampleX.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -217,7 +219,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects Sample.OneMaster from SampleX and disconnects Sample.OtherMaster from SampleX.
+    /// Disconnects Sample.OneMaster from SampleX and 
+    /// disconnects Sample.OtherMaster from SampleX.
     /// </summary>
     internal static void Disconnect(SampleMaster sampleMaster) {
       foreach (var sample in sampleMaster.SampleX) {

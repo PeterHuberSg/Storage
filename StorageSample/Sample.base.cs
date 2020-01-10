@@ -170,8 +170,8 @@ namespace StorageModel  {
 
     /// <summary>
     /// Sample Constructor. If isStoring is true, adds Sample to DL.Data.SampleX, 
-    /// if there is a sampleMaster adds Sample to sampleMaster.SampleX
-    /// and if there is a sampleMaster adds Sample to sampleMaster.SampleX.
+    /// if there is a OneMaster adds Sample to sampleMaster.SampleX
+    /// and if there is a OtherMaster adds Sample to sampleMaster.SampleX.
     /// </summary>
     public Sample(
       string text, 
@@ -194,11 +194,11 @@ namespace StorageModel  {
       Text = text;
       Flag = flag;
       Number = number;
-        Amount = Math.Round(amount, 2);
+      Amount = amount.Round(2);
       PreciseDecimal = preciseDecimal;
       SampleState = sampleState;
-      DateOnly = dateOnly;
-      TimeOnly = timeOnly;
+      DateOnly = dateOnly.Floor(Rounding.Days);
+      TimeOnly = timeOnly.Round(Rounding.Seconds);
       DateTimeTicks = dateTimeTicks;
       DateTimeMinute = dateTimeMinute;
       DateTimeSecond = dateTimeSecond;
@@ -363,8 +363,9 @@ namespace StorageModel  {
         Number = number;
         isChangeDetected = true;
       }
-      if (Amount!=amount) {
-        Amount = Math.Round(amount, 2);
+      var amountRounded = amount.Round(2);
+      if (Amount!=amountRounded) {
+        Amount = amountRounded;
         isChangeDetected = true;
       }
       if (PreciseDecimal!=preciseDecimal) {
@@ -375,12 +376,14 @@ namespace StorageModel  {
         SampleState = sampleState;
         isChangeDetected = true;
       }
-      if (DateOnly!=dateOnly) {
-        DateOnly = dateOnly;
+      var dateOnlyRounded = dateOnly.Floor(Rounding.Days);
+      if (DateOnly!=dateOnlyRounded) {
+        DateOnly = dateOnlyRounded;
         isChangeDetected = true;
       }
-      if (TimeOnly!=timeOnly) {
-        TimeOnly = timeOnly;
+      var timeOnlyRounded = timeOnly.Round(Rounding.Seconds);
+      if (TimeOnly!=timeOnlyRounded) {
+        TimeOnly = timeOnlyRounded;
         isChangeDetected = true;
       }
       if (DateTimeTicks!=dateTimeTicks) {
@@ -555,7 +558,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes Sample from DL.Data.SampleX, disconnects Sample from SampleMaster, disconnects Sample from SampleMaster and deletes all SampleDetail where Sample links to this Sample.
+    /// Removes Sample from DL.Data.SampleX, 
+    /// disconnects Sample from SampleMaster because of OneMaster, 
+    /// disconnects Sample from SampleMaster because of OtherMaster and 
+    /// deletes all SampleDetail where SampleDetail.Sample links to this Sample.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -568,7 +574,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects Sample from SampleMaster, disconnects Sample from SampleMaster and deletes all SampleDetail where Sample links to this Sample.
+    /// Disconnects Sample from SampleMaster because of OneMaster, 
+    /// disconnects Sample from SampleMaster because of OtherMaster and 
+    /// deletes all SampleDetail where SampleDetail.Sample links to this Sample.
     /// </summary>
     internal static void Disconnect(Sample sample) {
       if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {

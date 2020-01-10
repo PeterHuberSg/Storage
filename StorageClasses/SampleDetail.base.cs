@@ -191,7 +191,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes SampleDetail from DL.Data.SampleDetails and disconnects SampleDetail from Sample.
+    /// Removes SampleDetail from DL.Data.SampleDetails and 
+    /// disconnects SampleDetail from Sample because of Sample.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -204,7 +205,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects SampleDetail from Sample.
+    /// Disconnects SampleDetail from Sample because of Sample.
     /// </summary>
     internal static void Disconnect(SampleDetail sampleDetail) {
       if (sampleDetail.Sample!=Sample.NoSample) {

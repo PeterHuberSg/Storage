@@ -352,7 +352,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// Provides static root access to the data context");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine($"    public static {context} Data {{");
-      streamWriter.WriteLine("      get { return data; }");
+      streamWriter.WriteLine("      get { return data!; }");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine($"    private static {context}? data; //data is needed for Interlocked.Exchange(ref data, null) in DisposeData()");
       streamWriter.WriteLine();
@@ -362,7 +362,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    /// <param name=\"csvConfig\">null: no permanent data storage, not null: info where to store the data</param>");
       streamWriter.WriteLine("    public static void Init(CsvConfig? csvConfig) {");
-      streamWriter.WriteLine("      if (data!=null) throw new Exception();");
+      streamWriter.WriteLine("      if (data!=null) throw new Exception(\"Dispose old data first before initiating new ones.\");");
       streamWriter.WriteLine();
       streamWriter.WriteLine($"      data = new {context}(csvConfig);");
       streamWriter.WriteLine("    }");
@@ -468,6 +468,7 @@ namespace Storage {
       foreach (var classInfo in ((IEnumerable<ClassInfo>)parentChildTree).Reverse()) {
         streamWriter.WriteLine($"        {classInfo.PluralName}.Dispose();");
       }
+      streamWriter.WriteLine("        data = null;");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine();
