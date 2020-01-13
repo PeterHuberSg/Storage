@@ -63,6 +63,7 @@ namespace StorageTest {
           csvWriter.Write(decimal.MaxValue, 0);
           csvWriter.Write(decimal.MaxValue);
           csvWriter.Write(1234567890.12345678m, 8);
+          csvWriter.Write(30m, 2);
           csvWriter.Write(1.1m, 1);
           csvWriter.Write(1.1m, 0);
           csvWriter.Write(1m, 1);
@@ -89,6 +90,7 @@ namespace StorageTest {
           csvWriter.Write((decimal?)decimal.MaxValue, 0);
           csvWriter.Write((decimal?)decimal.MaxValue);
           csvWriter.Write((decimal?)1234567890.12345678m, 8);
+          csvWriter.Write((decimal?)30m, 2);
           csvWriter.Write((decimal?)1.1m, 1);
           csvWriter.Write((decimal?)1.1m, 0);
           csvWriter.Write((decimal?)1m, 1);
@@ -171,8 +173,8 @@ namespace StorageTest {
           csvWriter.WriteEndOfLine();
 
           for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
-          csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
-            csvWriter.Write(i);
+            csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+            csvWriter.Write(i/1000m, 2);
             csvWriter.WriteEndOfLine();
           }
         }
@@ -226,6 +228,8 @@ namespace StorageTest {
         Assert.AreEqual(decimal.MaxValue, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write(1234567890.12345678m, 8);
         Assert.AreEqual(1234567890.12345678m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write(30m, 2);
+        Assert.AreEqual(30m, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write(1.1m, 1);
         Assert.AreEqual(1.1m, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write(1.1m, 0);
@@ -277,6 +281,8 @@ namespace StorageTest {
         Assert.AreEqual(decimal.MaxValue, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write((decimal?)1234567890.12345678m, 8);
         Assert.AreEqual(1234567890.12345678m, decimal.Parse(fieldStrings[fieldIndex++]));
+        //csvWriter.Write((decimal?)30m, 2);
+        Assert.AreEqual(30m, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write((decimal?)1.1m, 1);
         Assert.AreEqual(1.1m, decimal.Parse(fieldStrings[fieldIndex++]));
         //csvWriter.Write((decimal?)1.1m, 0);
@@ -383,11 +389,19 @@ namespace StorageTest {
         Assert.AreEqual("31.12.3009 23:59", fieldStrings[2]);
         Assert.AreEqual("31.12.4009 23", fieldStrings[3]);
 
-
         for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
           line = streamReader.ReadLine();
-          Assert.AreEqual(i.ToString() + '\t', line![1..]);
+          if (i>-5 && i<5) {
+            Assert.AreEqual("0\t", line![1..]);
+          } else {
+            Assert.AreEqual((i/1000m).ToString(".##") + '\t', line![1..]);
+          }
         }
+
+        //for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
+        //  line = streamReader.ReadLine();
+        //  Assert.AreEqual(i.ToString() + '\t', line![1..]);
+        //}
         Assert.IsTrue(fileStream.ReadByte()<0);
       } finally {
         directoryInfo.Delete(recursive: true);
