@@ -98,7 +98,6 @@ namespace StorageTest {
     }
 
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "ex is required by CsvConfig")]
     private void reportException(Exception ex) {
       Assert.Fail();
     }

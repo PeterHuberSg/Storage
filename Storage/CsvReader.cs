@@ -23,12 +23,19 @@ namespace Storage {
     public int MaxLineCharLenght { get; }
 
     /// <summary>
-    /// How many bytes can a line max contain ?
+    /// How many bytes can a line max contain ? (25% of CsvConfig.BufferSize)
     /// </summary>
     public int MaxLineByteLenght { get; }
 
-
+    /// <summary>
+    /// Is file completly read ?
+    /// </summary>
     public bool IsEof { get; private set; }
+
+    /// <summary>
+    /// Used to see read buffer content as string in debugger
+    /// </summary>
+    public string PresentContent { get { return this.GetPresentContent(); } }
     #endregion
 
 
@@ -39,14 +46,18 @@ namespace Storage {
 #pragma warning restore IDE0069 // Disposable fields should be disposed
     readonly bool isFileStreamOwner;
     readonly byte[] byteArray;
-    int readPos;
-    int endPos;
+    int readIndex;
+    int endIndex;
     readonly int delimiter;
-    readonly byte[] tempBytes;
     readonly char[] tempChars;
 
 
-    public CsvReader(string? fileName, CsvConfig csvConfig, int maxLineLenght, FileStream? existingFileStream = null) {
+    public CsvReader(
+      string? fileName, 
+      CsvConfig csvConfig, 
+      int maxLineCharLenght, 
+      FileStream? existingFileStream = null) 
+    {
       if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception("CsvReader constructor: There was neither an existingFileStream nor a fileName proided.");
 
       if (existingFileStream!=null) {
@@ -59,11 +70,16 @@ namespace Storage {
         throw new Exception($"CsvReader constructor '{FileName}': Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName}.");
 
       delimiter = (int)csvConfig.Delimiter;
-      if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
-        throw new Exception($"CsvReader constructor '{FileName}': Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+      //if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
+      //  throw new Exception($"CsvReader constructor '{FileName}': Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
 
-      MaxLineCharLenght = maxLineLenght;
-      MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
+      //MaxLineCharLenght = maxLineLenght;
+      //MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
+      MaxLineByteLenght = CsvConfig.BufferSize/Csv.LineToBufferRatio;
+      if (maxLineCharLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
+        throw new Exception($"CsvReader constructor: Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+
+      MaxLineCharLenght = maxLineCharLenght;
       if (existingFileStream is null) {
         isFileStreamOwner = true;
         if (string.IsNullOrEmpty(fileName)) throw new Exception("CsvReader constructor: File name is missing.");
@@ -75,11 +91,10 @@ namespace Storage {
         FileName = fileStream.Name;
       }
       byteArray = new byte[CsvConfig.BufferSize + MaxLineByteLenght];
-      readPos = 0;
-      endPos = 0;
+      readIndex = 0;
+      endIndex = 0;
       IsEof = false;
-      tempBytes = new byte[MaxLineByteLenght];
-      tempChars = new char[maxLineLenght];
+      tempChars = new char[MaxLineByteLenght/Csv.Utf8BytesPerChar];
     }
     #endregion
 
@@ -141,10 +156,10 @@ namespace Storage {
     //      -------
 
     public bool IsEndOfFileReached() {
-      if (readPos<endPos) {
+      if (readIndex<endIndex) {
         return false;
       }
-      if (endPos<CsvConfig.BufferSize) {
+      if (endIndex<CsvConfig.BufferSize) {
         IsEof = true;
         return true;
       }
@@ -165,40 +180,37 @@ namespace Storage {
 
 
     public void ReadEndOfLine() {
-      var remainingBytesCount = endPos - readPos;
+      var remainingBytesCount = endIndex - readIndex;
       if (remainingBytesCount<=MaxLineByteLenght) {
         if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception($"CsvReader.ReadEndOfLine() '{FileName}': premature EOF found:" + Environment.NewLine + GetPresentContent());
       }
 
       // test for Carriage Return
-      if (byteArray[readPos++]!=0x0D) { //carriage return) {
+      if (byteArray[readIndex++]!=0x0D) { //carriage return) {
         throw new Exception($"CsvReader.ReadEndOfLine() '{FileName}': Carriage return missing: " + Environment.NewLine + GetPresentContent());
       }
 
       //test for line feed
-      if (byteArray[readPos++]!=0x0A) { //line feed) {
+      if (byteArray[readIndex++]!=0x0A) { //line feed) {
         throw new Exception($"CsvReader.ReadEndOfLine() '{FileName}': Line feed missing: " + Environment.NewLine + GetPresentContent());
       }
 #if DEBUG
-      if ((readPos-lineStart)%CsvConfig.BufferSize > MaxLineByteLenght) throw new Exception();
-      lineStart = readPos;
+      if ((readIndex-lineStart)%CsvConfig.BufferSize > MaxLineByteLenght) throw new Exception();
+      lineStart = readIndex;
 #endif
     }
 
 
     public void SkipToEndOfLine() {
       while (true) {
-        if (byteArray[readPos++]==0x0D) { //carriage return) {
-          if (byteArray[readPos++]==0x0A) { //line feed) {
+        if (byteArray[readIndex++]==0x0D) { //carriage return) {
+          if (byteArray[readIndex++]==0x0A) { //line feed) {
             return;
           } else {
             throw new Exception($"CsvReader.SkipToEndOfLine() '{FileName}': Line feed missing: " + Environment.NewLine + GetPresentContent());
           }
         }
       }
-      // test for Carriage Return
-
-      //test for line feed
     }
 
 
@@ -211,14 +223,14 @@ namespace Storage {
       }
 
       if (remainingBytesCount>0) {
-        Array.Copy(byteArray, readPos, byteArray, 0, remainingBytesCount);
+        Array.Copy(byteArray, readIndex, byteArray, 0, remainingBytesCount);
       }
-      readPos = 0;
+      readIndex = 0;
       var bytesRead = fileStream!.Read(byteArray, remainingBytesCount, CsvConfig.BufferSize);
       if (bytesRead<CsvConfig.BufferSize) areAllBytesRead = true;
 
-      endPos = remainingBytesCount + bytesRead;
-      if (endPos<=0) {
+      endIndex = remainingBytesCount + bytesRead;
+      if (endIndex<=0) {
         IsEof = true;
         return false;
       }
@@ -231,7 +243,7 @@ namespace Storage {
     /// </summary>
     public bool ReadBool() {
       bool b;
-      int readByteAsInt = (int)byteArray[readPos++];
+      int readByteAsInt = (int)byteArray[readIndex++];
       if (readByteAsInt=='0') {
         b = false;
       } else if (readByteAsInt=='1') {
@@ -239,7 +251,7 @@ namespace Storage {
       } else {
         throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
       }
-      readByteAsInt = (int)byteArray[readPos++];
+      readByteAsInt = (int)byteArray[readIndex++];
       if (readByteAsInt!=CsvConfig.Delimiter) {
         throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
       }
@@ -251,7 +263,7 @@ namespace Storage {
     /// Read boolean? as '', 0 or 1 from UTF8 filestream including delimiter.
     /// </summary>
     public bool? ReadBoolNull() {
-      int readByteAsInt = (int)byteArray[readPos++];
+      int readByteAsInt = (int)byteArray[readIndex++];
       if (readByteAsInt==CsvConfig.Delimiter) {
         return null;
       }
@@ -263,7 +275,7 @@ namespace Storage {
       } else {
         throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
       }
-      readByteAsInt = (int)byteArray[readPos++];
+      readByteAsInt = (int)byteArray[readIndex++];
       if (readByteAsInt!=CsvConfig.Delimiter) {
         throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
       }
@@ -275,16 +287,11 @@ namespace Storage {
     /// Read integer from UTF8 filestream including delimiter.
     /// </summary>
     public int ReadInt() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
       //check for minus sign
-      int readByteAsInt = (int)byteArray[readPos++];
+      int readByteAsInt = (int)byteArray[readIndex++];
       var isMinus = readByteAsInt=='-';
       if (isMinus) {
-        readByteAsInt = (int)byteArray[readPos++];
+        readByteAsInt = (int)byteArray[readIndex++];
       }
 
       //read first digit. There must be at least 1
@@ -297,7 +304,7 @@ namespace Storage {
 
       //read other digits until delimiter is reached
       while (true) {
-        readByteAsInt = (int)byteArray[readPos++];
+        readByteAsInt = (int)byteArray[readIndex++];
         if (readByteAsInt>='0' && readByteAsInt<='9') {
           i = 10*i + readByteAsInt - '0';
           continue;
@@ -315,198 +322,12 @@ namespace Storage {
     }
 
 
-    ///// <summary>
-    ///// Read integer from UTF8 filestream including delimiter.
-    ///// </summary>
-    //public int ReadInt() {
-    //  var byteLength = endPos - readPos;
-    //  if (byteLength<=0) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //    byteLength = endPos - readPos;
-    //  }
-
-    //  if (byteLength<MaxLineLenght) {
-    //    //maybe not enough bytes in the buffer, need to check before each read
-
-    //    //check for minus sign
-    //    int readByteAsInt = (int)byteArray[readPos++];
-    //    var isMinus = readByteAsInt=='-';
-    //    if (isMinus) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //    }
-
-    //    //read first digit. There must be at least 1
-    //    var i = 0;
-    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //      i = 10*i + readByteAsInt - '0';
-    //    }
-
-    //    //read other digits until delimiter is reached
-    //    while (true) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //        i = 10*i + readByteAsInt - '0';
-    //        continue;
-    //      }
-
-    //      if (readByteAsInt==delimiter) {
-    //        if (isMinus) {
-    //          return -i;
-    //        } else {
-    //          return i;
-    //        }
-    //      }
-    //      throw new Exception();
-    //    }
-
-    //  } else {
-    //    //enough bytes in the buffer, no need to check before each read
-    //    //check for minus sign
-    //    int readByteAsInt = (int)byteArray[readPos++];
-    //    var isMinus = readByteAsInt=='-';
-    //    if (isMinus) {
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //    }
-
-    //    //read first digit. There must be at least 1
-    //    var i = 0;
-    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //      i = 10*i + readByteAsInt - '0';
-    //    }
-
-    //    //read other digits until delimiter is reached
-    //    while (true) {
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //        i = 10*i + readByteAsInt - '0';
-    //        continue;
-    //      }
-
-    //      if (readByteAsInt==delimiter) {
-    //        if (isMinus) {
-    //          return -i;
-    //        } else {
-    //          return i;
-    //        }
-    //      }
-    //      throw new Exception();
-    //    }
-    //  }
-    //}
-
-
-    ///// <summary>
-    ///// Read integer from UTF8 filestream including delimiter.
-    ///// </summary>
-    //public int? ReadIntNull() {
-    //  var byteLength = endPos - readPos;
-    //  if (byteLength<=0) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //    byteLength = endPos - readPos;
-    //  }
-
-    //  if (byteLength<MaxLineLenght) {
-    //    //maybe not enough bytes in the buffer, need to check before each read
-
-    //    int readByteAsInt = (int)byteArray[readPos++];
-    //    //check for null
-    //    if (readByteAsInt==delimiter) {
-    //      return null;
-    //    }
-    //    //check for minus sign
-    //    var isMinus = readByteAsInt=='-';
-    //    if (isMinus) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //    }
-
-    //    //read first digit. There must be at least 1
-    //    var i = 0;
-    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //      i = 10*i + readByteAsInt - '0';
-    //    }
-
-    //    //read other digits until delimiter is reached
-    //    while (true) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //        i = 10*i + readByteAsInt - '0';
-    //        continue;
-    //      }
-
-    //      if (readByteAsInt==delimiter) {
-    //        if (isMinus) {
-    //          return -i;
-    //        } else {
-    //          return i;
-    //        }
-    //      }
-    //      throw new Exception();
-    //    }
-
-    //  } else {
-    //    //enough bytes in the buffer, no need to check before each read
-    //    //check for minus sign
-    //    int readByteAsInt = (int)byteArray[readPos++];
-    //    //check for null
-    //    if (readByteAsInt==delimiter) {
-    //      return null;
-    //    }
-
-    //    var isMinus = readByteAsInt=='-';
-    //    if (isMinus) {
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //    }
-
-    //    //read first digit. There must be at least 1
-    //    var i = 0;
-    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //      i = 10*i + readByteAsInt - '0';
-    //    }
-
-    //    //read other digits until delimiter is reached
-    //    while (true) {
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //        i = 10*i + readByteAsInt - '0';
-    //        continue;
-    //      }
-
-    //      if (readByteAsInt==delimiter) {
-    //        if (isMinus) {
-    //          return -i;
-    //        } else {
-    //          return i;
-    //        }
-    //      }
-    //      throw new Exception();
-    //    }
-    //  }
-    //}
-
-
     /// <summary>
     /// Read integer from UTF8 filestream including delimiter.
     /// </summary>
     public int? ReadIntNull() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
       //check for minus sign
-      int readByteAsInt = (int)byteArray[readPos++];
+      int readByteAsInt = (int)byteArray[readIndex++];
       //check for null
       if (readByteAsInt==delimiter) {
         return null;
@@ -514,7 +335,7 @@ namespace Storage {
 
       var isMinus = readByteAsInt=='-';
       if (isMinus) {
-        readByteAsInt = (int)byteArray[readPos++];
+        readByteAsInt = (int)byteArray[readIndex++];
       }
 
       //read first digit. There must be at least 1
@@ -527,7 +348,7 @@ namespace Storage {
 
       //read other digits until delimiter is reached
       while (true) {
-        readByteAsInt = (int)byteArray[readPos++];
+        readByteAsInt = (int)byteArray[readIndex++];
         if (readByteAsInt>='0' && readByteAsInt<='9') {
           i = 10*i + readByteAsInt - '0';
           continue;
@@ -545,106 +366,15 @@ namespace Storage {
     }
 
 
-    ///// <summary>
-    ///// Read long from UTF8 filestream including delimiter.
-    ///// </summary>
-    //public long ReadLong() {
-    //  var byteLength = endPos - readPos;
-    //  if (byteLength<=0) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //    byteLength = endPos - readPos;
-    //  }
-
-    //  if (byteLength<MaxLineLenght) {
-    //    //maybe not enough bytes in the buffer, need to check before each read
-
-    //    //check for minus sign
-    //    int readByteAsInt = (int)byteArray[readPos++];
-    //    var isMinus = readByteAsInt=='-';
-    //    if (isMinus) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //    }
-
-    //    //read first digit. There must be at least 1
-    //    var l = 0L;
-    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //      l = 10*l + readByteAsInt - '0';
-    //    }
-
-    //    //read other digits until delimiter is reached
-    //    while (true) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //        l = 10*l + readByteAsInt - '0';
-    //        continue;
-    //      }
-
-    //      if (readByteAsInt==delimiter) {
-    //        if (isMinus) {
-    //          return -l;
-    //        } else {
-    //          return l;
-    //        }
-    //      }
-    //      throw new Exception();
-    //    }
-
-    //  } else {
-    //    //enough bytes in the buffer, no need to check before each read
-    //    //check for minus sign
-    //    int readByteAsInt = (int)byteArray[readPos++];
-    //    var isMinus = readByteAsInt=='-';
-    //    if (isMinus) {
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //    }
-
-    //    //read first digit. There must be at least 1
-    //    var l = 0L;
-    //    if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //      l = 10*l + readByteAsInt - '0';
-    //    }
-
-    //    //read other digits until delimiter is reached
-    //    while (true) {
-    //      readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>='0' && readByteAsInt<='9') {
-    //        l = 10*l + readByteAsInt - '0';
-    //        continue;
-    //      }
-
-    //      if (readByteAsInt==delimiter) {
-    //        if (isMinus) {
-    //          return -l;
-    //        } else {
-    //          return l;
-    //        }
-    //      }
-    //      throw new Exception();
-    //    }
-    //  }
-    //}
-
-
     /// <summary>
     /// Read long from UTF8 filestream including delimiter.
     /// </summary>
     public long ReadLong() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
       //check for minus sign
-      int readByteAsInt = (int)byteArray[readPos++];
+      int readByteAsInt = (int)byteArray[readIndex++];
       var isMinus = readByteAsInt=='-';
       if (isMinus) {
-        readByteAsInt = (int)byteArray[readPos++];
+        readByteAsInt = (int)byteArray[readIndex++];
       }
 
       //read first digit. There must be at least 1
@@ -657,7 +387,7 @@ namespace Storage {
 
       //read other digits until delimiter is reached
       while (true) {
-        readByteAsInt = (int)byteArray[readPos++];
+        readByteAsInt = (int)byteArray[readIndex++];
         if (readByteAsInt>='0' && readByteAsInt<='9') {
           l = 10*l + readByteAsInt - '0';
           continue;
@@ -675,62 +405,13 @@ namespace Storage {
     }
 
 
-    ///// <summary>
-    ///// Read long from UTF8 filestream including delimiter.
-    ///// </summary>
-    //public decimal ReadDecimal() {
-    //  var byteLength = endPos - readPos;
-    //  if (byteLength<=0) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //    byteLength = endPos - readPos;
-    //  }
-
-    //  if (byteLength<MaxLineLenght) {
-    //    //maybe not enough bytes in the buffer, need to check before each read
-    //    var tempCharsIndex = 0;
-    //    while (true) {
-    //      int readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>=0x80) throw new Exception();
-
-    //      if (readByteAsInt==delimiter) {
-    //        var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
-    //        //return Decimal.Parse(tempCharsSpan);
-    //        var sw = new Stopwatch();
-    //        sw.Restart();
-    //        var d = Decimal.Parse(tempCharsSpan);
-    //        sw.Stop();
-    //        return d;
-    //      }
-    //      tempChars[tempCharsIndex++] = (char)readByteAsInt;
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //    }
-
-    //  } else {
-    //    //enough bytes in the buffer, no need to check before each read
-    //    var tempCharsIndex = 0;
-    //    while (true) {
-    //      int readByteAsInt = (int)byteArray[readPos++];
-    //      if (readByteAsInt>=0x80) throw new Exception();
-
-    //      if (readByteAsInt==delimiter) {
-    //        var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
-    //        return Decimal.Parse(tempCharsSpan);
-    //      }
-    //      tempChars[tempCharsIndex++] = (char)readByteAsInt;
-    //    }
-    //  }
-    //}
-
-
     /// <summary>
     /// Read decimal from UTF8 filestream including delimiter.
     /// </summary>
     public decimal ReadDecimal() {
       var tempCharsIndex = 0;
       while (true) {
-        int readByteAsInt = (int)byteArray[readPos++];
+        int readByteAsInt = (int)byteArray[readIndex++];
         if (readByteAsInt>=0x80) throw new Exception($"CsvReader.ReadDecimal() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
 
         if (readByteAsInt==delimiter) {
@@ -748,7 +429,7 @@ namespace Storage {
     public decimal? ReadDecimalNull() {
       var tempCharsIndex = 0;
       while (true) {
-        int readByteAsInt = (int)byteArray[readPos++];
+        int readByteAsInt = (int)byteArray[readIndex++];
         if (readByteAsInt==delimiter) {
           if (tempCharsIndex==0) return null;
           var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
@@ -761,58 +442,21 @@ namespace Storage {
     }
 
 
-    //public char ReadChar() {
-    //  char returnChar;
-    //  if (readPos>=endPos) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //  }
-    //  byte readByte = byteArray[readPos++];
-    //  if (readByte<0x80) {
-    //    returnChar = (char)readByte;
-    //    if (readPos>=endPos) {
-    //      if (!fillBufferFromFileStream()) throw new Exception();
-    //    }
-    //    readByte = byteArray[readPos++];
-    //    if (readByte!=delimiter) throw new Exception();
-    //    return returnChar;
-
-    //  } else {
-    //    var charBytesIndex = 0;
-    //    do {
-    //      tempBytes[charBytesIndex++] = readByte;
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      readByte = byteArray[readPos++];
-    //    } while (readByte!=delimiter);
-    //    var length = Encoding.UTF8.GetChars(tempBytes, 0, charBytesIndex, tempChars, 0);
-    //    if (length>1) throw new Exception();
-    //    return tempChars[0];
-    //  }
-    //}
-
-
     public char ReadChar() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
       char returnChar;
-      byte readByte = byteArray[readPos++];
+      byte readByte = byteArray[readIndex++];
       if (readByte<0x80) {
         returnChar = (char)readByte;
-        readByte = byteArray[readPos++];
+        readByte = byteArray[readIndex++];
         if (readByte!=delimiter) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + Environment.NewLine + GetPresentContent());
         return returnChar;
 
       } else {
-        var charBytesIndex = 0;
+        var startIndex = readIndex-1;
         do {
-          tempBytes[charBytesIndex++] = readByte;
-          readByte = byteArray[readPos++];
+          readByte = byteArray[readIndex++];
         } while (readByte!=delimiter);
-        var length = Encoding.UTF8.GetChars(tempBytes, 0, charBytesIndex, tempChars, 0);
+        var length = Encoding.UTF8.GetChars(byteArray, startIndex, readIndex-startIndex-1, tempChars, 0);
         if (length>1) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + Environment.NewLine + GetPresentContent());
         return tempChars[0];
       }
@@ -824,111 +468,23 @@ namespace Storage {
     /// that the whole line can be read. ReadLeadingLineChar() must be called before any other Readxxx() except ReadLine().
     /// </summary>
     public char ReadFirstLineChar() {
-      var remainingBytesCount = endPos - readPos;
+      var remainingBytesCount = endIndex - readIndex;
       if (remainingBytesCount<=MaxLineByteLenght) {
         if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception($"CsvReader.ReadFirstLineChar() '{FileName}': Premature EOF found: " + Environment.NewLine + GetPresentContent());
       }
 
-      char readByteAsChar = (char)byteArray[readPos++];
+      char readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar>=0x80) throw new Exception($"CsvReader.ReadFirstLineChar() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
 
       return readByteAsChar;
     }
 
 
-    //public string? ReadString() {
-    //  var tempCharsIndex = 0;
-    //  var byteLength = endPos - readPos;
-    //  if (byteLength<=0) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //    byteLength = endPos - readPos;
-    //  }
-
-    //  if (byteLength<MaxLineLenght) {
-    //    //maybe not enough bytes in the buffer, need to check before each read
-    //    while (true) {
-    //      if (readPos>=endPos) {
-    //        if (!fillBufferFromFileStream()) throw new Exception();
-    //      }
-    //      var readByte = byteArray[readPos++];
-    //      var readChar = (char)readByte;
-    //      if (readChar==delimiter) {
-    //        if (tempCharsIndex==0) {
-    //          return null;
-    //        }
-    //        return new string(tempChars, 0, tempCharsIndex);
-    //      }
-    //      if (readChar<0x80) {
-    //        tempChars[tempCharsIndex++] = readChar;
-    //      } else {
-    //        var tempBytesIndex = 0;
-    //        for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
-    //          tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
-    //        }
-    //        tempBytes[tempBytesIndex++] = readByte;
-    //        while (true) {
-    //          if (readPos>=endPos) {
-    //            if (!fillBufferFromFileStream()) throw new Exception();
-    //          }
-    //          readByte = byteArray[readPos++];
-    //          readChar = (char)readByte;
-    //          if (readChar==delimiter) {
-    //            return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
-    //          }
-    //          tempBytes[tempBytesIndex++] = readByte;
-    //        }
-    //      }
-    //    }
-
-    //  } else {
-    //    //enough bytes in the buffer, no need to check before each read
-    //    var startReadPos = readPos;
-    //    while (true) {
-    //      var readByte = byteArray[readPos++];
-    //      var readChar = (char)readByte;
-    //      if (readChar==delimiter) {
-    //        if (tempCharsIndex==0) {
-    //          return null;
-    //        }
-    //        return new string(tempChars, 0, tempCharsIndex);
-    //      }
-    //      if (readChar<0x80) {
-    //        tempChars[tempCharsIndex++] = readChar;
-    //      } else {
-    //        var tempBytesIndex = 0;
-    //        //for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
-    //        //  tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
-    //        //}
-    //        //tempBytes[tempBytesIndex++] = readByte;
-    //        var bytesCount = readPos-startReadPos;
-    //        if (bytesCount>0) {
-    //          Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
-    //          tempBytesIndex += bytesCount;
-    //        }
-    //        while (true) {
-    //          readByte = byteArray[readPos++];
-    //          readChar = (char)readByte;
-    //          if (readChar==delimiter) {
-    //            return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
-    //          }
-    //          tempBytes[tempBytesIndex++] = readByte;
-    //        }
-    //      }
-    //    }
-    //  }
-    //}
-
-
     public string? ReadString() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
       var tempCharsIndex = 0;
-      var startReadPos = readPos;
+      var startReadIndex = readIndex;
       while (true) {
-        var readByte = byteArray[readPos++];
+        var readByte = byteArray[readIndex++];
         var readChar = (char)readByte;
         if (readChar==delimiter) {
           if (tempCharsIndex==0) {
@@ -939,121 +495,63 @@ namespace Storage {
         if (readChar<0x80) {
           tempChars[tempCharsIndex++] = readChar;
         } else {
-          var tempBytesIndex = 0;
-          //for (int tempCharsIndex2 = 0; tempCharsIndex2 < tempCharsIndex; tempCharsIndex2++) {
-          //  tempBytes[tempBytesIndex++] = (byte)tempChars[tempCharsIndex2];
-          //}
-          //tempBytes[tempBytesIndex++] = readByte;
-          var bytesCount = readPos-startReadPos;
-          if (bytesCount>0) {
-            Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
-            tempBytesIndex += bytesCount;
-          }
           while (true) {
-            readByte = byteArray[readPos++];
-            readChar = (char)readByte;
+            readChar = (char)byteArray[readIndex++];
             if (readChar==delimiter) {
-              return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
+              return Encoding.UTF8.GetString(byteArray, startReadIndex, readIndex-startReadIndex-1);
             }
-            tempBytes[tempBytesIndex++] = readByte;
           }
         }
       }
     }
 
 
-    //public DateTime ReadDate() {
-    //  var byteLength = endPos - readPos;
-    //  if (byteLength<=0) {
-    //    if (!fillBufferFromFileStream()) throw new Exception();
-    //    byteLength = endPos - readPos;
-    //  }
-
-    //  //if (byteLength<MaxLineLenght) {
-    //  //  //maybe not enough bytes in the buffer, need to check before each read
-    //  //  //if (readPos>=endPos) {
-    //  //  //  if (!fillBufferFromFileStream()) throw new Exception();
-    //  //  //}
-
-    //  //} else {
-    //    //enough bytes in the buffer, no need to check before each read
-    //    var day = (int)(byteArray[readPos++] - '0');
-    //    var readByteAsChar = (char)byteArray[readPos++];
-    //    if (readByteAsChar!='.') {
-    //      day = day*10 + (int)(readByteAsChar - '0');
-    //      if ((char)byteArray[readPos++]!='.') throw new Exception();
-    //    }
-
-    //    var month = (int)(byteArray[readPos++] - '0');
-    //    readByteAsChar = (char)byteArray[readPos++];
-    //    if (readByteAsChar!='.') {
-    //      month = month*10 + (int)(readByteAsChar - '0');
-    //      if ((char)byteArray[readPos++]!='.') throw new Exception();
-    //    }
-
-    //    var year = (int)(byteArray[readPos++] - '0'); 
-    //    year = 10*year + (int)(byteArray[readPos++] - '0');
-    //    year = 10*year + (int)(byteArray[readPos++] - '0');
-    //    year = 10*year + (int)(byteArray[readPos++] - '0');
-
-    //    if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception();
-
-    //    return new DateTime(year, month, day);
-    //  //}
-    //}
-
-
     public DateTime ReadDate() {
-      //var remainingBytesCount = endPos - readPos;
-      //if (remainingBytesCount<=MaxLineByteLenght) {
-      //  if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception();
-      //}
-
-      var day = (int)(byteArray[readPos++] - '0');
-      var readByteAsChar = (char)byteArray[readPos++];
+      var day = (int)(byteArray[readIndex++] - '0');
+      var readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar!='.') {
         day = day*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
-      var month = (int)(byteArray[readPos++] - '0');
-      readByteAsChar = (char)byteArray[readPos++];
+      var month = (int)(byteArray[readIndex++] - '0');
+      readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar!='.') {
         month = month*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
-      var year = (int)(byteArray[readPos++] - '0');
-      year = 10*year + (int)(byteArray[readPos++] - '0');
-      year = 10*year + (int)(byteArray[readPos++] - '0');
-      year = 10*year + (int)(byteArray[readPos++] - '0');
+      var year = (int)(byteArray[readIndex++] - '0');
+      year = 10*year + (int)(byteArray[readIndex++] - '0');
+      year = 10*year + (int)(byteArray[readIndex++] - '0');
+      year = 10*year + (int)(byteArray[readIndex++] - '0');
 
-      if ((char)byteArray[readPos++]!=CsvConfig.Delimiter) throw new Exception($"CsvReader.ReadDate() '{FileName}': delimiter not found after 4 characters for year: " + Environment.NewLine + GetPresentContent());
+      if ((char)byteArray[readIndex++]!=CsvConfig.Delimiter) throw new Exception($"CsvReader.ReadDate() '{FileName}': delimiter not found after 4 characters for year: " + Environment.NewLine + GetPresentContent());
 
       return new DateTime(year, month, day);
     }
 
 
     public DateTime ReadDateSeconds() {
-      var day = (int)(byteArray[readPos++] - '0');
-      var readByteAsChar = (char)byteArray[readPos++];
+      var day = (int)(byteArray[readIndex++] - '0');
+      var readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar!='.') {
         day = day*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
-      var month = (int)(byteArray[readPos++] - '0');
-      readByteAsChar = (char)byteArray[readPos++];
+      var month = (int)(byteArray[readIndex++] - '0');
+      readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar!='.') {
         month = month*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readPos++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
-      var year = (int)(byteArray[readPos++] - '0');
-      year = 10*year + (int)(byteArray[readPos++] - '0');
-      year = 10*year + (int)(byteArray[readPos++] - '0');
-      year = 10*year + (int)(byteArray[readPos++] - '0');
-      if ((char)byteArray[readPos++]!=' ') throw new Exception($"CsvReader.ReadDateSeconds() '{FileName}': ' ' missing after date: " + Environment.NewLine + GetPresentContent());
+      var year = (int)(byteArray[readIndex++] - '0');
+      year = 10*year + (int)(byteArray[readIndex++] - '0');
+      year = 10*year + (int)(byteArray[readIndex++] - '0');
+      year = 10*year + (int)(byteArray[readIndex++] - '0');
+      if ((char)byteArray[readIndex++]!=' ') throw new Exception($"CsvReader.ReadDateSeconds() '{FileName}': ' ' missing after date: " + Environment.NewLine + GetPresentContent());
 
       var timeSpan = ReadTime();
 
@@ -1069,37 +567,37 @@ namespace Storage {
     //23:59: 0 => "23:59"
     //23:59:59 => "23:59:59"
     public TimeSpan ReadTime() {
-      var hour = (int)(byteArray[readPos++] - '0');
-      var readByteAsChar = (char)byteArray[readPos++];
+      var hour = (int)(byteArray[readIndex++] - '0');
+      var readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar==CsvConfig.Delimiter) return TimeSpan.FromHours(hour);
 
       if (readByteAsChar!=':') {
         hour = hour*10 + (int)(readByteAsChar - '0');
-        readByteAsChar = (char)byteArray[readPos++];
+        readByteAsChar = (char)byteArray[readIndex++];
         if (readByteAsChar==CsvConfig.Delimiter) return TimeSpan.FromHours(hour);
 
         if (readByteAsChar!=':') throw new Exception($"CsvReader.ReadTime() '{FileName}': Hour has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
-      var minute = (int)(byteArray[readPos++] - '0');
-      readByteAsChar = (char)byteArray[readPos++];
+      var minute = (int)(byteArray[readIndex++] - '0');
+      readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, 0);
       
       if (readByteAsChar!=':') {
         minute = minute*10 + (int)(readByteAsChar - '0');
-        readByteAsChar = (char)byteArray[readPos++];
+        readByteAsChar = (char)byteArray[readIndex++];
         if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, 0);
         
         if (readByteAsChar!=':') throw new Exception($"CsvReader.ReadTime() '{FileName}': Minute has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
-      var second = (int)(byteArray[readPos++] - '0');
-      readByteAsChar = (char)byteArray[readPos++];
+      var second = (int)(byteArray[readIndex++] - '0');
+      readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, second);
 
       if (readByteAsChar!=':') {
         second = second*10 + (int)(readByteAsChar - '0');
-        readByteAsChar = (char)byteArray[readPos++];
+        readByteAsChar = (char)byteArray[readIndex++];
         if (readByteAsChar==CsvConfig.Delimiter) return new TimeSpan(hour, minute, second);
       }
 
@@ -1116,19 +614,18 @@ namespace Storage {
     /// <summary>
     /// reads one complete line as string. ReadLine() should be avoided, because of the string creation overhead.
     /// </summary>
-    /// <returns></returns>
     public string ReadLine() {
-      var remainingBytesCount = endPos - readPos;
+      var remainingBytesCount = endIndex - readIndex;
       if (remainingBytesCount<=MaxLineByteLenght) {
         if (!fillBufferFromFileStream(remainingBytesCount)) throw new Exception($"CsvReader.ReadLine() '{FileName}': Premature EOF found: " + Environment.NewLine + GetPresentContent());
       }
 
       var tempCharsIndex = 0;
-      var startReadPos = readPos;
+      var startReadIndex = readIndex;
       while (true) {
-        var readByteAsChar = (char)byteArray[readPos++];
+        var readByteAsChar = (char)byteArray[readIndex++];
         if (readByteAsChar==0x0D) { //carriage return) {
-          if (byteArray[readPos++]==0x0A) { //line feed) {
+          if (byteArray[readIndex++]==0x0A) { //line feed) {
             return new string(tempChars, 0, tempCharsIndex);
           } else {
             throw new Exception($"CsvReader.ReadLine() '{FileName}': Line feed missing after carriage return: " + Environment.NewLine + GetPresentContent());
@@ -1137,22 +634,15 @@ namespace Storage {
         if (readByteAsChar<0x80) {
           tempChars[tempCharsIndex++] = readByteAsChar;
         } else {
-          var tempBytesIndex = 0;
-          var bytesCount = readPos-startReadPos;
-          if (bytesCount>0) {
-            Array.Copy(byteArray, startReadPos, tempBytes, 0, bytesCount);
-            tempBytesIndex += bytesCount;
-          }
           while (true) {
-            var readByte = byteArray[readPos++];
-            if (readByte==0x0D) { //carriage return) {
-              if (byteArray[readPos++]==0x0A) { //line feed) {
-                return Encoding.UTF8.GetString(tempBytes, 0, tempBytesIndex);
+            readByteAsChar = (char)byteArray[readIndex++];
+            if (readByteAsChar==0x0D) { //carriage return) {
+              if (byteArray[readIndex++]==0x0A) { //line feed) {
+                return Encoding.UTF8.GetString(byteArray, startReadIndex, readIndex-startReadIndex-2);
               } else {
                 throw new Exception($"CsvReader.ReadLine() '{FileName}': Line feed missing after carriage return: " + Environment.NewLine + GetPresentContent());
               }
             }
-            tempBytes[tempBytesIndex++] = readByte;
           }
         }
       }
@@ -1162,15 +652,15 @@ namespace Storage {
 
     public string GetPresentContent() {
       int fromPos;
-      if (readPos>100) {
-        fromPos = readPos - 100;
+      if (readIndex>100) {
+        fromPos = readIndex - 100;
       } else {
         fromPos = 0;
       }
-      var presentPos = readPos - fromPos;
+      var presentPos = readIndex - fromPos;
 
-      int toPos = readPos + 30;
-      toPos = Math.Max(toPos, endPos);
+      int toPos = readIndex + 30;
+      toPos = Math.Max(toPos, endIndex);
       var byteString = UTF8Encoding.UTF8.GetString(byteArray, fromPos, toPos-fromPos+1).Replace(CsvConfig.Delimiter, '|');
       return byteString[..presentPos] + '^' + byteString[presentPos..];
     }

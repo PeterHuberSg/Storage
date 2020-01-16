@@ -19,13 +19,14 @@ namespace Storage {
     public readonly HashSet<ClassInfo> Parents;
     public readonly List<ClassInfo> Children;
 
+    public int EstimatedMaxByteSize;
     public bool IsAddedToParentChildTree;
 
 
     public ClassInfo(
       string name, 
       string? classComment, 
-      int maxLineLength, 
+      int? maxLineLength, 
       string pluralName, 
       bool areItemsUpdatable, 
       bool areItemsDeletable, 
@@ -43,39 +44,43 @@ namespace Storage {
       Members = new Dictionary<string, MemberInfo>();
       Parents = new HashSet<ClassInfo>();
       Children = new List<ClassInfo>();
+      EstimatedMaxByteSize = 0;
       IsAddedToParentChildTree = false;
     }
 
 
     public void AddMember(string name, string memberTypeString, string? propertyComment, string ? defaultValue) {
+      MemberInfo member;
       var isNullable = memberTypeString[^1]=='?';
       if (isNullable) {
         memberTypeString = memberTypeString[..^1];
       }
       switch (memberTypeString.ToLowerInvariant()) {
-      case "date": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Date, this, isNullable, propertyComment, defaultValue)); break;
-      case "time": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Time, this, isNullable, propertyComment, defaultValue)); break;
-      case "dateminutes": Members.Add(name, new MemberInfo(name, MemberTypeEnum.DateMinutes, this, isNullable, propertyComment, defaultValue)); break;
-      case "dateseconds": Members.Add(name, new MemberInfo(name, MemberTypeEnum.DateSeconds, this, isNullable, propertyComment, defaultValue)); break;
-      case "datetime": Members.Add(name, new MemberInfo(name, MemberTypeEnum.DateTime, this, isNullable, propertyComment, defaultValue)); break;
-      case "decimal": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Decimal, this, isNullable, propertyComment, defaultValue)); break;
-      case "decimal2": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Decimal2, this, isNullable, propertyComment, defaultValue)); break;
-      case "bool": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Bool, this, isNullable, propertyComment, defaultValue)); break;
-      case "int": Members.Add(name, new MemberInfo(name, MemberTypeEnum.Int, this, isNullable, propertyComment, defaultValue)); break;
-      case "string": Members.Add(name, new MemberInfo(name, MemberTypeEnum.String, this, isNullable, propertyComment, defaultValue)); break;
+      case "date": member = new MemberInfo(name, MemberTypeEnum.Date, this, isNullable, propertyComment, defaultValue); break;
+      case "time": member = new MemberInfo(name, MemberTypeEnum.Time, this, isNullable, propertyComment, defaultValue); break;
+      case "dateminutes": member = new MemberInfo(name, MemberTypeEnum.DateMinutes, this, isNullable, propertyComment, defaultValue); break;
+      case "dateseconds": member = new MemberInfo(name, MemberTypeEnum.DateSeconds, this, isNullable, propertyComment, defaultValue); break;
+      case "datetime": member = new MemberInfo(name, MemberTypeEnum.DateTime, this, isNullable, propertyComment, defaultValue); break;
+      case "decimal": member = new MemberInfo(name, MemberTypeEnum.Decimal, this, isNullable, propertyComment, defaultValue); break;
+      case "decimal2": member = new MemberInfo(name, MemberTypeEnum.Decimal2, this, isNullable, propertyComment, defaultValue); break;
+      case "bool": member = new MemberInfo(name, MemberTypeEnum.Bool, this, isNullable, propertyComment, defaultValue); break;
+      case "int": member = new MemberInfo(name, MemberTypeEnum.Int, this, isNullable, propertyComment, defaultValue); break;
+      case "string": member = new MemberInfo(name, MemberTypeEnum.String, this, isNullable, propertyComment, defaultValue); break;
       default:
         if (memberTypeString.Contains("<")) {
           if (memberTypeString.StartsWith("List<") && memberTypeString.EndsWith(">")) {
             if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} cannot be nullable.");
 
-            Members.Add/*List*/(name, new MemberInfo(name, this, memberTypeString, memberTypeString[5..^1], propertyComment, defaultValue));
+            /*List*/member = new MemberInfo(name, this, memberTypeString, memberTypeString[5..^1], propertyComment, defaultValue);
             break;
           }
           throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} not support. Should it be a List<> ?");
         }
-        Members.Add/*Parent*/(name, new MemberInfo(name, this, memberTypeString, isNullable, propertyComment, defaultValue));
+        /*Parent*/member = new MemberInfo(name, this, memberTypeString, isNullable, propertyComment, defaultValue);
         break;
       }
+      Members.Add(member.MemberName, member);
+      EstimatedMaxByteSize +=member.MaxStorageSize;
     }
 
 
@@ -509,7 +514,11 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine($"    /// Maximal number of UTF8 characters needed to write {ClassName} to CSV file");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    internal const int MaxLineLength = {MaxLineLength};");
+      if (MaxLineLength is null) {
+        streamWriter.WriteLine($"    internal const int MaxLineLength = {EstimatedMaxByteSize};");
+      } else {
+        streamWriter.WriteLine($"    internal const int MaxLineLength = {MaxLineLength};");
+      }
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion

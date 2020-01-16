@@ -232,6 +232,65 @@ namespace Storage {
       UpdateAreKeysContinous();
     }
 
+    /*
+    too complicated solution to allow lines to be written that are longer than 25% of byteArray.
+    --------------------------------------------------------------------------------------------
+
+    end of constructor:
+            csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, flushDelay: flushDelay, writeFirstLine);
+      } else {
+        //there is no file yet. Write an empty file with just the CSV header
+        csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, flushDelay: flushDelay, writeFirstLine);
+        WriteToCsvFile(csvWriter);
+      }
+      //flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
+      FlushDelay = flushDelay;
+    }
+----------------------------------------------
+
+
+    end of OnDispose:
+            using var csvWriter = new CsvWriter("", CsvConfig, MaxLineLenght, fileStream, writeFirstLine: writeFirstLine);
+            WriteToCsvFile(csvWriter);
+          } catch (Exception ex) {
+            CsvConfig.ReportException?.Invoke(ex);
+          }
+        }
+      }
+    }
+----------------------------------------------
+
+
+    private void readFromCsvFile(CsvReader csvReader) {
+      //read first line which states what is maximum line width in UTF8 bytes
+      var firstLine = csvReader.ReadLine();
+      if (!firstLine.StartsWith(FileFirstLineLabel)) throw new Exception($"StorageDictionary: File {csvReader.FileName} should start with {FileFirstLineLabel} but was '{firstLine}'.");
+     
+      var storedMaxLine = int.Parse(firstLine[FileFirstLineLabel.Length..]);
+      MaxLineLenght = Math.Max(MaxLineLenght, storedMaxLine);
+----------------------------------------------
+
+    public const string FileFirstLineLabel = "MaxUtf8LineWidth:";
+
+
+    string writeFirstLine(int maxLineLenght) {
+      return FileFirstLineLabel + maxLineLenght.ToString(new string('0', int.MaxValue.ToString().Length));
+    }
+
+
+    public void WriteToCsvFile(CsvWriter csvWriter) {
+      csvWriter.WriteLine(writeFirstLine(MaxLineLenght));
+      csvWriter.WriteLine(CsvHeaderString);
+      foreach (TItemCSV item in this) {
+        if (item!=null) {
+          csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+          csvWriter.Write(item.Key);
+          write(item, csvWriter);
+          csvWriter.WriteEndOfLine();
+        }
+      }
+    }
+    */
 
     public void WriteToCsvFile(CsvWriter csvWriter) {
       csvWriter.WriteLine(CsvHeaderString);

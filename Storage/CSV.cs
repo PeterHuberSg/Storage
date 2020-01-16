@@ -10,8 +10,32 @@ namespace Storage {
   /// </summary>
   public static class Csv {
 
-    public const int Utf8BytesPerChar = 4; //UTF8 can have 4 bytes for 1 character
-    public const int LineToBufferRatio = 10 * Utf8BytesPerChar;
+    #region ByteBuffer constants
+    //      --------------------
+
+    /*
+    CsvReader and CsvWriter each read from or write to a file CsvConfig.BufferSize bytes at a time. CsvReader and 
+    CsvWriter use each a byteArray which is 25% bigger than BufferSize. The maximal length of a line that can be read
+    or written is 25% of BufferSize. This arrangement guarantees there is always enough space in the buffer for
+    reading or writing entire lines.
+    */
+
+
+    /// <summary>
+    /// UTF8 can use up to 4 bytes for 1 character
+    /// </summary>
+    public const int Utf8BytesPerChar = 4;
+
+    /// <summary>
+    /// The byteArray in CsvReader or CsvWriter should be 25% bigger than BufferSize
+    /// </summary>
+    public const int ByteBufferToReserveRatio = 4;
+
+    /// <summary>
+    /// CsvConfig.BufferSize should be at least 16 bigger than the number of characters in the longest expected line to write
+    /// </summary>
+    public const int LineToBufferRatio = 4 * ByteBufferToReserveRatio;
+    #endregion
 
 
     #region Parsing

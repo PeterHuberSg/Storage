@@ -129,7 +129,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write SampleMaster to CSV file
     /// </summary>
-    internal const int MaxLineLength = 50;
+    internal const int MaxLineLength = 161;
 
 
     /// <summary>

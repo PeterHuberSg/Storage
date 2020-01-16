@@ -30,14 +30,15 @@ namespace Storage {
     public readonly string LowerMemberName;
     public MemberTypeEnum MemberType;
     public readonly ClassInfo ClassInfo;
+    public readonly string TypeString;
     public readonly bool IsNullable;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
     public readonly string? Rounding;
     public readonly string? DefaultValue;
+    public readonly int MaxStorageSize;
     public readonly string? ChildTypeName;
     public readonly string? LowerChildTypeName;
-    public readonly string TypeString;
     public readonly string? ParentType;//is only different from TypeString when IsNullable
     public readonly string? LowerParentType;
     public readonly string? CsvReaderRead;
@@ -64,6 +65,7 @@ namespace Storage {
       switch (memberType) {
       case MemberTypeEnum.Date:
         TypeString = "DateTime";
+        MaxStorageSize = "12.12.1234\t".Length;
         CsvReaderRead = "ReadDate()";
         CsvWriterWrite = "WriteDate";
         NoValue = "DateTime.MinValue.Date";
@@ -71,8 +73,10 @@ namespace Storage {
         PrecissionComment = "Stores only dates but no times.";
         Rounding = ".Floor(Rounding.Days)";
         break;
+
       case MemberTypeEnum.Time:
         TypeString = "TimeSpan";
+        MaxStorageSize = "23:59:59\t".Length;
         CsvReaderRead = "ReadTime()";
         CsvWriterWrite = "WriteTime";
         NoValue = "TimeSpan.MinValue";
@@ -80,8 +84,10 @@ namespace Storage {
         PrecissionComment = "Stores less than 24 hours with second precission.";
         Rounding = ".Round(Rounding.Seconds)";
         break;
+
       case MemberTypeEnum.DateMinutes:
         TypeString = "DateTime";
+        MaxStorageSize = "12.12.1234 23:59\t".Length;
         CsvReaderRead = "ReadDateSeconds()";//can also be used for minutes
         CsvWriterWrite = "WriteDateMinutes";
         NoValue = "DateTime.MinValue";
@@ -89,8 +95,10 @@ namespace Storage {
         PrecissionComment = "Stores date and time with minute precission.";
         Rounding = ".Round(Rounding.Minutes)";
         break;
+
       case MemberTypeEnum.DateSeconds:
         TypeString = "DateTime";
+        MaxStorageSize = "12.12.1234 23:59:59\t".Length;
         CsvReaderRead = "ReadDateSeconds()";
         CsvWriterWrite = "WriteDateSeconds";
         NoValue = "DateTime.MinValue";
@@ -98,72 +106,89 @@ namespace Storage {
         PrecissionComment = "Stores date and time with seconds precission.";
         Rounding = ".Round(Rounding.Seconds)";
         break;
+
       case MemberTypeEnum.DateTime: 
         TypeString = "DateTime";
+        MaxStorageSize = (long.MaxValue.ToString()+"\t").Length;
         CsvReaderRead = "ReadDateTimeTicks()";
         CsvWriterWrite = "WriteDateTimeTicks";
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with tick precission.";
         break;
+
       case MemberTypeEnum.Decimal: 
         TypeString = "decimal";
+        MaxStorageSize = (decimal.MinValue.ToString()+"\t").Length;
         if (isNullable) {
           CsvReaderRead = "ReadDecimalNull()";
+          NoValue = "null";
         } else {
           CsvReaderRead = "ReadDecimal()";
+          NoValue = "Decimal.MinValue";
         }
         CsvWriterWrite = "Write";
-        NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with maximum precission.";
         break;
+
       case MemberTypeEnum.Decimal2:
         TypeString = "decimal";
+        MaxStorageSize = "-1234567.89\t".Length;//reasonable limit, but could be as long as decimal.MinValue
         if (isNullable) {
           CsvReaderRead = "ReadDecimalNull()";
+          NoValue = "null";
         } else {
           CsvReaderRead = "ReadDecimal()";
+          NoValue = "Decimal.MinValue";
         }
         CsvWriterWrite = "WriteDecimal2";
-        NoValue = "Decimal.MinValue";
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 2 digits after comma.";
         Rounding = ".Round(2)";
         break;
+
       case MemberTypeEnum.Bool:
         TypeString = "bool";
+        MaxStorageSize = "1\t".Length;
         if (isNullable) {
           CsvReaderRead = "ReadBoolNull()";
+          NoValue = "null";
         } else {
           CsvReaderRead = "ReadBool()";
+          NoValue = "false";
         }
         CsvWriterWrite = "Write";
-        NoValue = "false";
         ToStringFunc = "";
         break;
+
       case MemberTypeEnum.Int:
         TypeString = "int";
+        MaxStorageSize = "-123456789\t".Length;//reasonable limit, but could be int.MinValue
         if (isNullable) {
           CsvReaderRead = "ReadIntNull()";
+          NoValue = "null";
         } else {
           CsvReaderRead = "ReadInt()";
+          NoValue = "int.MinValue";
         }
         CsvWriterWrite = "Write";
-        NoValue = "int.MinValue";
         ToStringFunc = "";
         break;
-      case MemberTypeEnum.List:
-        throw new Exception("List uses its own constructor.");
-      case MemberTypeEnum.Parent:
-        throw new Exception("Parent uses its own constructor.");
+
       case MemberTypeEnum.String: 
         TypeString = "string";
+        MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and coorects this number for CsvReader
         CsvReaderRead = "ReadString()!";
         CsvWriterWrite = "Write";
         NoValue = isNullable ? "null" : $"\"No{name}\"";
         ToStringFunc = "";
         break;
+
+      case MemberTypeEnum.List:
+        throw new Exception("List uses its own constructor.");
+      case MemberTypeEnum.Parent:
+        throw new Exception("Parent uses its own constructor.");
       case MemberTypeEnum.Enum:
         throw new Exception("Enum needs to get constructed as Parent first and only later memberType gets changed to MemberTypeEnum.Enum.");
       default:
@@ -180,6 +205,7 @@ namespace Storage {
     /// </summary>
     public MemberInfo(string name, ClassInfo classInfo, string listType, string childType, string? comment, string? defaultValue) {
       MemberType = MemberTypeEnum.List;
+      MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
       ClassInfo = classInfo;

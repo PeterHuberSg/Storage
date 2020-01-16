@@ -34,7 +34,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// BufferSize of FileStream. Default is 4k Bytes, as is default in StreamReader class.
+    /// BufferSize of FileStream. Default is 32k Bytes, any smaller size is slower.
     /// </summary>
     public readonly int BufferSize;
 
@@ -64,7 +64,7 @@ namespace Storage {
     /// <param name="directoryPath">Directory where the CSV files get stored</param>
     /// <param name="delimiter">Delemiter character used in CSV file to seperate fields</param>
     /// <param name="encoding">Encoding used to read and write CSV Files</param>
-    /// <param name="bufferSize">BufferSize of FileStream. Default is 4k Bytes, as is default in StreamReader class.</param>
+    /// <param name="bufferSize">BufferSize of FileStream. Default is 32k Bytes, any smaller Buffer is slower.</param>
     ///// <param name="writingIntervall">How often new content of RecordCollection gets writen to the CSV file, in milliseconds</param>
     ///// <param name="maxWaitIntervalls">How often new content of RecordCollection gets writen to the CSV file, in milliseconds</param>
     /// <param name="reportException">The timer throws exception on a ThreadPool thread. reportException() needs to pass the exception to the main thread of the application.</param>
@@ -83,8 +83,9 @@ namespace Storage {
       if (encoding!=null) {
         Encoding = encoding;
       }
-
-      if (bufferSize<0) throw new ArgumentOutOfRangeException("bufferSize " + bufferSize + " cannot be smaller 0.");
+      var _4k = 1<<12;
+      if (bufferSize<_4k) throw new ArgumentOutOfRangeException("bufferSize " + bufferSize + " cannot be smaller 4k (4096).");
+      if (bufferSize%_4k!=0) throw new ArgumentOutOfRangeException("bufferSize " + bufferSize + " should be a multiple of 4k (4096).");
       BufferSize = bufferSize;
       //WritingIntervall = writingIntervall;
       //MaxWaitIntervalls = maxWaitIntervalls;

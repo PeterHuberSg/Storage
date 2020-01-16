@@ -48,7 +48,7 @@ namespace Storage {
         }
         var className = classDeclaration.Identifier.Text;
         string? classComment = getComment(classDeclaration.GetLeadingTrivia());
-        int maxLineLength = 0;
+        int? maxLineLength = null;
         string? pluralName = className + 's';
         bool areItemsUpdatable = true;
         bool areItemsDeletable = true;
@@ -309,7 +309,14 @@ namespace Storage {
           throw new GeneratorException($"Cannot delete file {baseFileNameAndPath}.");
         }
         using (var streamWriter = new StreamWriter(baseFileNameAndPath)) {
-          Console.WriteLine(classInfo.ClassName + ".base.cs");
+          Console.Write(classInfo.ClassName + ".base.cs");
+          if (classInfo.MaxLineLength is null) {
+            Console.WriteLine($"  MaxBytes: {classInfo.EstimatedMaxByteSize}, default");
+          } else if (classInfo.MaxLineLength<classInfo.EstimatedMaxByteSize) {
+            Console.WriteLine($"  MaxBytes: {classInfo.MaxLineLength}, default would be: {classInfo.EstimatedMaxByteSize}");
+          } else {
+            Console.WriteLine($"  MaxBytes: {classInfo.MaxLineLength}, longer than default");
+          }
           classInfo.WriteBaseClassFile(streamWriter, nameSpaceString!, context);
         }
 

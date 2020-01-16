@@ -428,7 +428,7 @@ namespace StorageTest {
 
         var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
         var fileName = csvConfig.DirectoryPath + @"\TestCsvWriterInt.csv";
-        using (var csvWriter = new CsvWriter(fileName, csvConfig, maxLineLenght: 250, flushDelay: 50)) {
+        using (var csvWriter = new CsvWriter(fileName, csvConfig, maxLineCharLenght: 250, flushDelay: 50)) {
           csvWriter.WriteLine("Some header");
 
           csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);

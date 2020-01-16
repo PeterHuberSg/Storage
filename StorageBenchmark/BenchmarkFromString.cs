@@ -123,7 +123,7 @@ after removing checks for every read method if there is another byte in the buff
       var csvConfig = new CsvConfig(directoryInfo.FullName, ';', bufferSize: 1<<17, reportException: reportException);
       var fileName = csvConfig.DirectoryPath + @"\TestCsvReader.csv";
 
-      using var csvReader = new CsvReader(pathFileName, csvConfig, maxLineLenght: 60);
+      using var csvReader = new CsvReader(pathFileName, csvConfig, maxLineCharLenght: 60);
       do {
         csvReader.ReadFirstLineChar();
         for (int fieldIndex = 0; fieldIndex<7; fieldIndex++) {

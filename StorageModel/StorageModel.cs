@@ -23,7 +23,7 @@ namespace StorageModel {
   /// Some comment for SampleMaster.
   /// With an additional line.
   /// </summary>
-  [StorageClass(maxLineLength: 50, areItemsDeletable: false, isCompactDuringDispose: false)]
+  [StorageClass(areItemsDeletable: false, isCompactDuringDispose: false)]
   public class SampleMaster {
 
     /// <summary>
@@ -136,7 +136,7 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for SampleDetail
   /// </summary>
-  [StorageClass(maxLineLength: 50, isCompactDuringDispose: false)]
+  [StorageClass(maxLineLength: 151, isCompactDuringDispose: false)]
   public class SampleDetail {
     /// <summary>
     /// Some Text comment

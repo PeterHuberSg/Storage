@@ -18,15 +18,14 @@ namespace Storage {
     public CsvConfig CsvConfig { get; }
 
     /// <summary>
-    /// How many chars can a line max contain ?
+    /// How many UTF8 chars can a line max contain ?
     /// </summary>
     public int MaxLineCharLenght { get; }
 
     /// <summary>
-    /// How many bytes can a line max contain ?
+    /// How many bytes can a line max contain ? (25% of CsvConfig.BufferSize)
     /// </summary>
-    public int MaxLineByteLenght { get; }
-
+    public int MaxLineByteLenght { get; private set; }
 
     /// <summary>
     /// Dealy in millisecond before flush gets executed after the last write
@@ -44,6 +43,7 @@ namespace Storage {
 
     #region Constructor
     //      -----------
+
 #pragma warning disable IDE0069 // Disposable fields should be disposed
     FileStream? fileStream;
 #pragma warning restore IDE0069 // Disposable fields should be disposed
@@ -53,14 +53,14 @@ namespace Storage {
     readonly int maxBufferWriteLength;
     readonly byte delimiter;
     Timer? flushTimer;
-    readonly byte[] tempBytes;
+    //byte[] tempBytes;
     readonly char[] tempChars;
 
 
     public CsvWriter(
       string? fileName, 
       CsvConfig csvConfig, 
-      int maxLineLenght, 
+      int maxLineCharLenght, 
       FileStream? existingFileStream = null, 
       int flushDelay = 200) 
     {
@@ -76,13 +76,12 @@ namespace Storage {
         throw new Exception($"CsvWriter constructor: Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName} for file {fileName}.");
       
       delimiter = (byte)csvConfig.Delimiter;
-      if (maxLineLenght>CsvConfig.BufferSize/Csv.LineToBufferRatio)
+      MaxLineByteLenght = CsvConfig.BufferSize/Csv.LineToBufferRatio;
+      if (maxLineCharLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
         throw new Exception($"CsvWriter constructor: Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
 
-      MaxLineCharLenght = maxLineLenght;
-      MaxLineByteLenght = maxLineLenght * Csv.Utf8BytesPerChar;
-      tempBytes = new byte[MaxLineByteLenght];
-      tempChars = new char[maxLineLenght];
+      MaxLineCharLenght = maxLineCharLenght;
+      tempChars = new char[50]; //tempchars is only used for formating decimals, which needs maybe 10-30 chars
       FlushDelay = flushDelay;
       if (existingFileStream is null) {
         isFileStreamOwner = true;
@@ -95,7 +94,7 @@ namespace Storage {
       //byteArray = new byte[csvConfig.BufferSize];
       //writePos = 0;
       //maxBufferWriteLength = CsvConfig.BufferSize - maxLineLenght;
-      byteArray = new byte[csvConfig.BufferSize + maxLineLenght];
+      byteArray = new byte[csvConfig.BufferSize + MaxLineByteLenght];
       writePos = 0;
       maxBufferWriteLength = CsvConfig.BufferSize;
       flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
@@ -194,10 +193,85 @@ namespace Storage {
         byteArray[writePos++] = 0x0D;
         byteArray[writePos++] = 0x0A;
 
-#if DEBUG
-        if (writePos-lineStart>MaxLineByteLenght) throw new Exception($"MaxLineByteLenght {MaxLineByteLenght} should be at least {writePos-lineStart}.");
+        var actualLineLength = writePos-lineStart;
+        if (actualLineLength>MaxLineByteLenght) {
+          //actually written line is longer than expected.
+          throw new Exception($"MaxLineByteLenght {MaxLineByteLenght} should be at least {writePos-lineStart}.");
 
-#endif
+          /*most likely it's not a problem to write the longer than expected string and it would be possible to
+          write the new line lenght into the CSV file header so the CsvReader knows what to expect. But that solution
+          gets complicated and has some ugly consequences. Better stick with the simple solution: If a line is longer
+          than 25% of the byte buffer, an exception is thrown during write
+          */
+
+          /*part of constructor:
+
+     readonly Func<int, string>? writeFirstLine; 
+
+    public CsvWriter(
+      string? fileName, 
+      CsvConfig csvConfig, 
+      int maxLineLenght, 
+      FileStream? existingFileStream = null, 
+      int flushDelay = 200,
+      Func<int, string>? writeFirstLine = null) 
+    {
+      if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) throw new Exception("CsvWriter constructor: There was neither an existingFileStream nor a fileName proided.");
+
+      if (existingFileStream!=null) {
+        FileName = existingFileStream.Name;
+      } else {
+        FileName = fileName!;
+      }
+      CsvConfig = csvConfig;
+      if (csvConfig.Encoding!=Encoding.UTF8) 
+        throw new Exception($"CsvWriter constructor: Only reading from UTF8 files is supported, but the Encoding was {csvConfig.Encoding.EncodingName} for file {fileName}.");
+      
+      delimiter = (byte)csvConfig.Delimiter;
+      MaxLineByteLenght = CsvConfig.BufferSize/Csv.LineToBufferRatio;
+      if (maxLineLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
+        throw new Exception($"CsvWriter constructor: Buffersize {CsvConfig.BufferSize} should be at least {Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+
+      MaxLineCharLenght = maxLineLenght;
+      //tempBytes = new byte[MaxLineByteLenght];
+      tempChars = new char[50]; //tempchars is only used for formating decimals, which needs maybe 10-30 chars
+      FlushDelay = flushDelay;
+      this.writeFirstLine = writeFirstLine;
+          */
+
+
+
+          //if (writeFirstLine is null) {
+          //  throw new Exception($"MaxLineByteLenght {MaxLineByteLenght} should be at least {writePos-lineStart}.");
+          //}
+
+          ////increase MaxLineByteLenght
+          //MaxLineByteLenght = actualLineLength * 3 / 2;
+          //var newFirstLine = Encoding.UTF8.GetBytes(writeFirstLine(actualLineLength));
+          //if (fileStream!.Position==0) {
+          //  Array.Copy(newFirstLine, 0, byteArray, 0, newFirstLine.Length);
+          //} else {
+          //  var filePosition = fileStream!.Position;
+          //  fileStream.Write(newFirstLine);
+          //  fileStream!.Position = filePosition;
+          //}
+
+          //if (writePos>maxBufferWriteLength) {
+          //  fileStream!.Write(byteArray, 0, maxBufferWriteLength);
+          //  var numberOfBytesToCopy = writePos - maxBufferWriteLength;
+          //  if (numberOfBytesToCopy>0) {
+          //    Array.Copy(byteArray, maxBufferWriteLength, byteArray, 0, numberOfBytesToCopy);
+          //    writePos = numberOfBytesToCopy;
+          //  } else {
+          //    writePos = 0;
+          //  }
+          //} else {
+          //  fileStream!.Write(byteArray, 0, writePos);
+          //  writePos = 0;
+          //}
+          //kickFlushTimer();
+        }
+
         if (writePos>maxBufferWriteLength) {
           fileStream!.Write(byteArray, 0, maxBufferWriteLength);
           var numberOfBytesToCopy = writePos - maxBufferWriteLength;
@@ -524,9 +598,13 @@ namespace Storage {
           if (c<0x80) {
             byteArray[writePos++] = (byte)c;
           } else {
-            var readOnlySpan = ((ReadOnlySpan<char>)s).Slice(readIndex, s.Length-readIndex);
-            var byteLength = Encoding.UTF8.GetBytes(readOnlySpan, tempBytes);
-            Array.Copy(tempBytes, 0, byteArray, writePos, byteLength);
+            //var readOnlySpan = (ReadOnlySpan<char>)s[readIndex .. (s.Length-readIndex)];
+            //if (readOnlySpan.Length * Csv.Utf8BytesPerChar > tempBytes.Length) {
+            //  tempBytes = new byte[readOnlySpan.Length * Csv.Utf8BytesPerChar];
+            //}
+            //var byteLength = Encoding.UTF8.GetBytes(readOnlySpan, tempBytes,);
+            //Array.Copy(tempBytes, 0, byteArray, writePos, byteLength);
+            var byteLength = Encoding.UTF8.GetBytes(s, readIndex, s.Length-readIndex, byteArray, writePos);
             writePos += byteLength;
             break;
           }
@@ -658,9 +736,13 @@ namespace Storage {
           if (c<0x80) {
             byteArray[writePos++] = (byte)c;
           } else {
-            var readOnlySpan = ((ReadOnlySpan<char>)line).Slice(readIndex, line.Length-readIndex);
-            var byteLength = Encoding.UTF8.GetBytes(readOnlySpan, tempBytes);
-            Array.Copy(tempBytes, 0, byteArray, writePos, byteLength);
+            //var readOnlySpan = (ReadOnlySpan<char>)line[readIndex .. (line.Length-readIndex)];
+            //if (readOnlySpan.Length * Csv.Utf8BytesPerChar > tempBytes.Length) {
+            //  tempBytes = new byte[readOnlySpan.Length * Csv.Utf8BytesPerChar];
+            //}
+            //var byteLength = Encoding.UTF8.GetBytes(readOnlySpan, tempBytes);
+            //Array.Copy(tempBytes, 0, byteArray, writePos, byteLength);
+            var byteLength = Encoding.UTF8.GetBytes(line, readIndex, line.Length-readIndex, byteArray, writePos);
             writePos += byteLength;
             break;
           }
