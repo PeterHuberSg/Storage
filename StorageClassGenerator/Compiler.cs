@@ -37,14 +37,13 @@ namespace Storage {
         throw new GeneratorException($"{fileName} defines a different namespace 'newNameSpaceString' than the already defined one 'nameSpaceString'.");
       }
       foreach (var namespaceMember in namespaceDeclaration.Members) {
-        var classDeclaration = namespaceMember as ClassDeclarationSyntax;
-        if (classDeclaration is null) {
-          var enumDeclarationSyntax = namespaceMember as EnumDeclarationSyntax;
-          if (enumDeclarationSyntax is null) {
-            throw new GeneratorException($"{fileName} contains not only class and enum declarations in namespace '{nameSpaceString}'.");
-          }
+        if (namespaceMember is EnumDeclarationSyntax enumDeclarationSyntax) {
           parseEnum(enumDeclarationSyntax);
           continue;
+        }
+
+        if (!(namespaceMember is ClassDeclarationSyntax classDeclaration)) {
+          throw new GeneratorException($"{fileName} contains not only class and enum declarations in namespace '{nameSpaceString}'.");
         }
         var className = classDeclaration.Identifier.Text;
         string? classComment = getComment(classDeclaration.GetLeadingTrivia());
@@ -63,8 +62,7 @@ namespace Storage {
           if (attributes.Count!=1) throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{attributes}'");
 
           var attribute = attributes[0];
-          var attributeName = attribute.Name as IdentifierNameSyntax;
-          if (attributeName==null || attributeName.Identifier.Text!="StorageClass") {
+          if (!(attribute.Name is IdentifierNameSyntax attributeName) || attributeName.Identifier.Text!="StorageClass") {
             throw new GeneratorException($"Class {className} schould contain only a StorageClass attribute, but has: '{classDeclaration.AttributeLists}'");
           }
           foreach (var argument in attribute.ArgumentList!.Arguments) {
@@ -91,8 +89,8 @@ namespace Storage {
         classes.Add(className, classInfo);
         var isPropertyWithDefaultValueFound = false;
         foreach (var classMember in classDeclaration.Members) {
-          var field = classMember as FieldDeclarationSyntax; //each field has only 1 property
-          if (field is null) {
+          //each field has only 1 property
+          if (!(classMember is FieldDeclarationSyntax field)) {
             throw new GeneratorException($"Class {className} schould contain only properties, but has '{classMember}'.");
           }
 
@@ -107,8 +105,7 @@ namespace Storage {
             }
           }
 
-          var variableDeclaration = field.Declaration as VariableDeclarationSyntax;
-          if (variableDeclaration is null) {
+          if (!(field.Declaration is VariableDeclarationSyntax variableDeclaration)) {
             throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{field.Declaration}'.");
           }
           var propertyType = variableDeclaration.Type.ToString();
@@ -159,20 +156,28 @@ namespace Storage {
               if (attributes.Count!=1) throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{attributes}'");
 
               var attribute = attributes[0];
-              var attributeName = attribute.Name as IdentifierNameSyntax;
-              if (attributeName==null || attributeName.Identifier.Text!="StorageProperty") {
+              if (!(attribute.Name is IdentifierNameSyntax attributeName) || attributeName.Identifier.Text!="StorageProperty") {
                 throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain only a StorageProperty attribute, but has: '{classDeclaration.AttributeLists}'");
               }
               foreach (var argument in attribute.ArgumentList!.Arguments) {
                 if (argument.NameColon is null) throw new GeneratorException($"Property {className}.{property.Identifier.Text} Attribute{attribute}: the argument name is missing, like 'defaultValue: null'.");
 
                 var name = argument.NameColon.Name.Identifier.Text;
+                //try {
+                //  var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
+                //  switch (name) {
+                //  case "defaultValue": defaultValue = value[1..^1]; break;
+                //  default: throw new Exception();
+                //  }
+                //} catch {
+                //  new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
+                //}
                 try {
                   var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
-                  switch (name) {
-                  case "defaultValue": defaultValue = value[1..^1]; break;
-                  default: throw new Exception();
-                  }
+                  defaultValue = name switch {
+                    "defaultValue" => value[1..^1],
+                    _ => throw new Exception(),
+                  };
                 } catch {
                   new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
                 }
@@ -338,6 +343,15 @@ namespace Storage {
         throw new GeneratorException($"Cannot delete file {fileNameAndPath}.");
       }
       using var streamWriter = new StreamWriter(fileNameAndPath);
+      streamWriter.WriteLine("//------------------------------------------------------------------------------");
+      streamWriter.WriteLine("// <auto-generated>");
+      streamWriter.WriteLine("//     This code was generated by StorageClassGenerator");
+      streamWriter.WriteLine("//");
+      streamWriter.WriteLine("//     Do not change code in this file, it will get lost when the file gets ");
+      streamWriter.WriteLine($"//     autogenerated again. Write your code into {context}.cs.");
+      streamWriter.WriteLine("// </auto-generated>");
+      streamWriter.WriteLine("//------------------------------------------------------------------------------");
+      streamWriter.WriteLine("#nullable enable");
       streamWriter.WriteLine("using System;");
       streamWriter.WriteLine("using System.Threading;");
       streamWriter.WriteLine("using Storage;");

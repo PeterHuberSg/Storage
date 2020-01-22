@@ -125,11 +125,6 @@ namespace StorageModel {
     /// Some SampleDetails comment
     /// </summary>
     public List<SampleDetail> SampleDetails;
-
-    //public const int MaxLineLenght = 200;
-    //public const bool AreItemsUpdatable = false;
-    //public const bool AreItemsDeletable = true;
-    //public const bool IsCompactDuringDispose = false;
   }
 
 

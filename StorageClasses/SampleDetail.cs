@@ -32,6 +32,15 @@ namespace StorageModel  {
     /// </summary>
     //partial void onConstruct() {
     //}
+
+
+    /// <summary>
+    /// Called once the Csv-constructor who reads the data from a CSV file has filled all the properties
+    /// </summary>
+    //partial void onCsvConstruct() {
+    //}
+
+
     #endregion
 
 
@@ -46,6 +55,13 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Called before the data gets written to a CSV file
+    /// </summary>
+    //partial void onCsvWrite() {
+    //}
+
+
+    /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
     //partial void onUpdate() {
@@ -53,9 +69,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called before any remove activities get executed
+    /// Called after an update is read from a CSV file
     /// </summary>
-    //partial void onRemove() {
+    //partial void onCsvUpdate() {
     //}
 
 

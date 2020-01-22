@@ -7,7 +7,7 @@ namespace Storage {
   class Program {
 
 
-    static void Main(string[] args) {
+    public static void Main(string[] _) {
       new StorageClassGenerator(
         sourceDirectoryString: @"C:\Users\peter\Source\Repos\Storage\StorageModel", //directory from where the .cs files get read.
         targetDirectoryString: @"C:\Users\peter\Source\Repos\Storage\StorageClasses", //directory where the new .cs files get written.

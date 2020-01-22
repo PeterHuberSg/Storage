@@ -151,134 +151,133 @@ namespace StorageTest {
         }
 
         int maxLineLenght = 150;
-        using (var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght)) {
-          //bool
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          Assert.AreEqual(false, csvReader.ReadBool());
-          Assert.AreEqual(true, csvReader.ReadBool());
-          csvReader.ReadEndOfLine();
-          Assert.IsFalse(csvReader.IsEof);
+        using var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght);
+        //bool
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        Assert.AreEqual(false, csvReader.ReadBool());
+        Assert.AreEqual(true, csvReader.ReadBool());
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
 
-          //int
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          foreach (var expectedInt in expectedInts) {
-            Assert.AreEqual(expectedInt, csvReader.ReadInt());
-            Assert.IsFalse(csvReader.IsEndOfFileReached());
-            Assert.IsFalse(csvReader.IsEof);
+        //int
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        foreach (var expectedInt in expectedInts) {
+          Assert.AreEqual(expectedInt, csvReader.ReadInt());
+          Assert.IsFalse(csvReader.IsEndOfFileReached());
+          Assert.IsFalse(csvReader.IsEof);
+        }
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
+
+        //int?
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        foreach (var expectedInt in expectedNullInts) {
+          var actualInt = csvReader.ReadIntNull();
+          if (expectedInt.HasValue) {
+            Assert.AreEqual(expectedInt, actualInt);
+          } else {
+            Assert.IsNull(actualInt);
           }
-          csvReader.ReadEndOfLine();
+          Assert.IsFalse(csvReader.IsEndOfFileReached());
           Assert.IsFalse(csvReader.IsEof);
+        }
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
 
-          //int?
+        //long
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        foreach (var expectedLong in expectedLongs) {
+          Assert.AreEqual(expectedLong, csvReader.ReadLong());
+          Assert.IsFalse(csvReader.IsEndOfFileReached());
+          Assert.IsFalse(csvReader.IsEof);
+        }
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
+
+        //decimal
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        foreach (var expectedDecimal in expectedDecimals) {
+          Assert.AreEqual(expectedDecimal, csvReader.ReadDecimal());
+          Assert.IsFalse(csvReader.IsEndOfFileReached());
+          Assert.IsFalse(csvReader.IsEof);
+        }
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
+
+        //decimal or null
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        foreach (var expectedDecimal in expectedDecimalNulls) {
+          Assert.AreEqual(expectedDecimal, csvReader.ReadDecimalNull());
+          Assert.IsFalse(csvReader.IsEndOfFileReached());
+          Assert.IsFalse(csvReader.IsEof);
+        }
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
+
+        //char
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        Assert.AreEqual('a', csvReader.ReadChar());
+        Assert.AreEqual('Ä', csvReader.ReadChar());
+        Assert.AreEqual('☹', csvReader.ReadChar());
+        csvReader.ReadEndOfLine();
+        Assert.IsFalse(csvReader.IsEof);
+
+        //string?
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        Assert.IsNull(csvReader.ReadString());
+        Assert.AreEqual("a", csvReader.ReadString());
+        Assert.AreEqual("abc", csvReader.ReadString());
+        Assert.AreEqual("Ä", csvReader.ReadString());
+        Assert.AreEqual("aÄ", csvReader.ReadString());
+        Assert.AreEqual("abcÄ ☹de", csvReader.ReadString());
+        csvReader.ReadEndOfLine();
+
+        //Date
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        Assert.AreEqual(DateTime.MaxValue.Date, csvReader.ReadDate());
+        Assert.AreEqual(DateTime.MinValue.Date, csvReader.ReadDate());
+        csvReader.ReadEndOfLine();
+
+        //Time
+        Assert.AreEqual(new TimeSpan(0, 0, 0), csvReader.ReadTime());
+        Assert.AreEqual(new TimeSpan(0, 0, 1), csvReader.ReadTime());
+        Assert.AreEqual(new TimeSpan(0, 1, 1), csvReader.ReadTime());
+        Assert.AreEqual(new TimeSpan(1, 1, 1), csvReader.ReadTime());
+        Assert.AreEqual(new TimeSpan(23, 0, 0), csvReader.ReadTime());
+        Assert.AreEqual(new TimeSpan(23, 59, 0), csvReader.ReadTime());
+        Assert.AreEqual(new TimeSpan(23, 59, 59), csvReader.ReadTime());
+        csvReader.ReadEndOfLine();
+
+        //DateTime
+        Assert.AreEqual(DateTime.MaxValue, csvReader.ReadDateTimeTicks());
+        Assert.AreEqual(DateTime.MinValue, csvReader.ReadDateTimeTicks());
+        Assert.AreEqual(new DateTime(2000, 1, 1), csvReader.ReadDateTimeTicks());
+        Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1, 1), csvReader.ReadDateTimeTicks());
+        Assert.AreEqual(new DateTime(2009, 12, 31), csvReader.ReadDateTimeTicks());
+        Assert.AreEqual(new DateTime(2009, 12, 31, 23, 59, 59, 999), csvReader.ReadDateTimeTicks());
+        csvReader.ReadEndOfLine();
+
+        //DateSeconds
+        Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
+        Assert.AreEqual(new DateTime(9999, 12, 31, 23, 59, 59, 0), csvReader.ReadDateSeconds());
+        Assert.AreEqual(new DateTime(1, 1, 1, 0, 0, 1, 0), csvReader.ReadDateSeconds());
+        Assert.AreEqual(new DateTime(2000, 1, 31, 0, 12, 0, 0), csvReader.ReadDateSeconds());
+        Assert.AreEqual(new DateTime(2001, 1, 31, 12, 0, 0, 0), csvReader.ReadDateSeconds());
+        csvReader.ReadEndOfLine();
+
+        //more than 1 buffer data
+        for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
           Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          foreach (var expectedInt in expectedNullInts) {
-            var actualInt = csvReader.ReadIntNull();
-            if (expectedInt.HasValue) {
-              Assert.AreEqual(expectedInt, actualInt);
-            } else {
-              Assert.IsNull(actualInt);
-            }
+          Assert.AreEqual(i, csvReader.ReadInt());
+          Assert.IsFalse(csvReader.IsEndOfFileReached());
+          Assert.IsFalse(csvReader.IsEof);
+          csvReader.ReadEndOfLine();
+          if (i < csvConfig.BufferSize-1) {
             Assert.IsFalse(csvReader.IsEndOfFileReached());
             Assert.IsFalse(csvReader.IsEof);
-          }
-          csvReader.ReadEndOfLine();
-          Assert.IsFalse(csvReader.IsEof);
-
-          //long
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          foreach (var expectedLong in expectedLongs) {
-            Assert.AreEqual(expectedLong, csvReader.ReadLong());
-            Assert.IsFalse(csvReader.IsEndOfFileReached());
-            Assert.IsFalse(csvReader.IsEof);
-          }
-          csvReader.ReadEndOfLine();
-          Assert.IsFalse(csvReader.IsEof);
-
-          //decimal
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          foreach (var expectedDecimal in expectedDecimals) {
-            Assert.AreEqual(expectedDecimal, csvReader.ReadDecimal());
-            Assert.IsFalse(csvReader.IsEndOfFileReached());
-            Assert.IsFalse(csvReader.IsEof);
-          }
-          csvReader.ReadEndOfLine();
-          Assert.IsFalse(csvReader.IsEof);
-
-          //decimal or null
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          foreach (var expectedDecimal in expectedDecimalNulls) {
-            Assert.AreEqual(expectedDecimal, csvReader.ReadDecimalNull());
-            Assert.IsFalse(csvReader.IsEndOfFileReached());
-            Assert.IsFalse(csvReader.IsEof);
-          }
-          csvReader.ReadEndOfLine();
-          Assert.IsFalse(csvReader.IsEof);
-
-          //char
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          Assert.AreEqual('a', csvReader.ReadChar());
-          Assert.AreEqual('Ä', csvReader.ReadChar());
-          Assert.AreEqual('☹', csvReader.ReadChar());
-          csvReader.ReadEndOfLine();
-          Assert.IsFalse(csvReader.IsEof);
-
-          //string?
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          Assert.IsNull(csvReader.ReadString());
-          Assert.AreEqual("a", csvReader.ReadString());
-          Assert.AreEqual("abc", csvReader.ReadString());
-          Assert.AreEqual("Ä", csvReader.ReadString());
-          Assert.AreEqual("aÄ", csvReader.ReadString());
-          Assert.AreEqual("abcÄ ☹de", csvReader.ReadString());
-          csvReader.ReadEndOfLine();
-
-          //Date
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          Assert.AreEqual(DateTime.MaxValue.Date, csvReader.ReadDate());
-          Assert.AreEqual(DateTime.MinValue.Date, csvReader.ReadDate());
-          csvReader.ReadEndOfLine();
-
-          //Time
-          Assert.AreEqual(new TimeSpan( 0,  0,  0), csvReader.ReadTime());
-          Assert.AreEqual(new TimeSpan( 0,  0,  1), csvReader.ReadTime());
-          Assert.AreEqual(new TimeSpan( 0,  1,  1), csvReader.ReadTime());
-          Assert.AreEqual(new TimeSpan( 1,  1,  1), csvReader.ReadTime());
-          Assert.AreEqual(new TimeSpan(23,  0,  0), csvReader.ReadTime());
-          Assert.AreEqual(new TimeSpan(23, 59,  0), csvReader.ReadTime());
-          Assert.AreEqual(new TimeSpan(23, 59, 59), csvReader.ReadTime());
-          csvReader.ReadEndOfLine();
-
-          //DateTime
-          Assert.AreEqual(DateTime.MaxValue, csvReader.ReadDateTimeTicks());
-          Assert.AreEqual(DateTime.MinValue, csvReader.ReadDateTimeTicks());
-          Assert.AreEqual(new DateTime(2000, 1, 1), csvReader.ReadDateTimeTicks());
-          Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1, 1), csvReader.ReadDateTimeTicks());
-          Assert.AreEqual(new DateTime(2009, 12, 31), csvReader.ReadDateTimeTicks());
-          Assert.AreEqual(new DateTime(2009, 12, 31, 23, 59, 59, 999), csvReader.ReadDateTimeTicks());
-          csvReader.ReadEndOfLine();
-
-          //DateSeconds
-          Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-          Assert.AreEqual(new DateTime(9999, 12, 31, 23, 59, 59, 0), csvReader.ReadDateSeconds());
-          Assert.AreEqual(new DateTime(1, 1, 1, 0, 0, 1, 0), csvReader.ReadDateSeconds());
-          Assert.AreEqual(new DateTime(2000, 1, 31, 0, 12, 0, 0), csvReader.ReadDateSeconds());
-          Assert.AreEqual(new DateTime(2001, 1, 31, 12, 0, 0, 0), csvReader.ReadDateSeconds());
-          csvReader.ReadEndOfLine();
-
-          //more than 1 buffer data
-          for (int i = -csvConfig.BufferSize; i < csvConfig.BufferSize; i++) {
-            Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-            Assert.AreEqual(i, csvReader.ReadInt());
-            Assert.IsFalse(csvReader.IsEndOfFileReached());
-            Assert.IsFalse(csvReader.IsEof);
-            csvReader.ReadEndOfLine();
-            if (i < csvConfig.BufferSize-1) {
-              Assert.IsFalse(csvReader.IsEndOfFileReached());
-              Assert.IsFalse(csvReader.IsEof);
-            } else {
-              Assert.IsTrue(csvReader.IsEndOfFileReached());
-              Assert.IsTrue(csvReader.IsEof);
-            }
+          } else {
+            Assert.IsTrue(csvReader.IsEndOfFileReached());
+            Assert.IsTrue(csvReader.IsEof);
           }
         }
       } finally {
@@ -351,16 +350,15 @@ namespace StorageTest {
         }
 
         int maxLineLenght = 6;
-        using (var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght)) {
-          Assert.AreEqual("", csvReader.ReadLine());
-          Assert.AreEqual("a", csvReader.ReadLine());
-          Assert.AreEqual("abc" + csvConfig.Delimiter, csvReader.ReadLine());
-          Assert.AreEqual("Ä", csvReader.ReadLine());
-          Assert.AreEqual("aÄ" + csvConfig.Delimiter, csvReader.ReadLine());
-          Assert.AreEqual("abcÄ ☹de" + csvConfig.Delimiter, csvReader.ReadLine());
-          Assert.IsTrue(csvReader.IsEndOfFileReached());
-          Assert.IsTrue(csvReader.IsEof);
-        }
+        using var csvReader = new CsvReader(fileName, csvConfig, maxLineLenght);
+        Assert.AreEqual("", csvReader.ReadLine());
+        Assert.AreEqual("a", csvReader.ReadLine());
+        Assert.AreEqual("abc" + csvConfig.Delimiter, csvReader.ReadLine());
+        Assert.AreEqual("Ä", csvReader.ReadLine());
+        Assert.AreEqual("aÄ" + csvConfig.Delimiter, csvReader.ReadLine());
+        Assert.AreEqual("abcÄ ☹de" + csvConfig.Delimiter, csvReader.ReadLine());
+        Assert.IsTrue(csvReader.IsEndOfFileReached());
+        Assert.IsTrue(csvReader.IsEof);
       } finally {
         directoryInfo.Delete(recursive: true);
       }

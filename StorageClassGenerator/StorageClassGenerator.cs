@@ -118,8 +118,7 @@ namespace Storage {
 
     private bool isModelFile(FileInfo file, out NamespaceDeclarationSyntax? namespaceDeclaration) {
       var tree = CSharpSyntaxTree.ParseText(file.OpenText().ReadToEnd());
-      var root = tree.GetRoot() as CompilationUnitSyntax;
-      if (root is null) {
+      if (!(tree.GetRoot() is CompilationUnitSyntax root)) {
         Console.WriteLine($"{file.Name} skipped, it cannot be converted to a compilation unit.");
         namespaceDeclaration = null;
         return false;
@@ -136,17 +135,14 @@ namespace Storage {
 
       }
       foreach (var member in namespaceDeclaration.Members) {
-        var classDeclaration = member as ClassDeclarationSyntax;
-        if (classDeclaration is null) {
-          var enumDeclaration = member as EnumDeclarationSyntax;
-          if (enumDeclaration is null) {
+        if (!(member is ClassDeclarationSyntax classDeclaration)) {
+          if (!(member is EnumDeclarationSyntax)) {
             Console.WriteLine($"{file.Name} skipped, namespace does not contain just class and enum declarations.");
             return false;
           }
         } else {
           foreach (var classMember in classDeclaration.Members) {
-            var methodDeclaration = classMember as MethodDeclarationSyntax;
-            if (methodDeclaration!=null) {
+            if (classMember is MethodDeclarationSyntax methodDeclaration) {
               Console.WriteLine($"{file.Name} skipped, it has a method {methodDeclaration.Identifier.Text}.");
               return false;
             }

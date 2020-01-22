@@ -146,7 +146,6 @@ namespace StorageTest {
           optional: null,
           isStoring: false); ;
       } else {
-        var master =
         sample = new Sample(
           text: sampleText,
           flag: true,
@@ -295,23 +294,23 @@ namespace StorageTest {
     }
 
 
-    private string showStructure() {
-      var sb = new StringBuilder();
-      sb.AppendLine("Samples");
-      foreach (var sample in DL.Data.SampleX.Values) {
-        sb.AppendLine($"{sample.Key}: {sample.OneMaster?.Key} {sample.OtherMaster?.Key}");
-      }
-      sb.AppendLine();
-      sb.AppendLine("Masters");
-      foreach (var master in DL.Data.SampleMasters.Values) {
-        sb.Append(master.Key + ":");
-        foreach (var sample in master.SampleX) {
-          sb.Append(" " + sample.Key);
-        }
-        sb.AppendLine();
-      }
-      return sb.ToString();
-    }
+    //private string showStructure() {
+    //  var sb = new StringBuilder();
+    //  sb.AppendLine("Samples");
+    //  foreach (var sample in DL.Data.SampleX.Values) {
+    //    sb.AppendLine($"{sample.Key}: {sample.OneMaster?.Key} {sample.OtherMaster?.Key}");
+    //  }
+    //  sb.AppendLine();
+    //  sb.AppendLine("Masters");
+    //  foreach (var master in DL.Data.SampleMasters.Values) {
+    //    sb.Append(master.Key + ":");
+    //    foreach (var sample in master.SampleX) {
+    //      sb.Append(" " + sample.Key);
+    //    }
+    //    sb.AppendLine();
+    //  }
+    //  return sb.ToString();
+    //}
 
 
     private void addSampleToMaster(Sample sample, SampleMaster? master, Dictionary<int, HashSet<Sample>> mastersFromSamples) {
