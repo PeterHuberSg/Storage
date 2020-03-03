@@ -73,7 +73,7 @@ namespace StorageModel  {
     /// and adds SampleDetail to sample.SampleDetails.
     /// </summary>
     public SampleDetail(string text, Sample sample, bool isStoring = true) {
-      Key = Storage.Storage.NoKey;
+      Key = StorageExtensions.NoKey;
       Text = text;
       Sample = sample;
       onConstruct();

@@ -80,7 +80,7 @@ namespace StorageModel  {
     /// SampleMaster Constructor. If isStoring is true, adds SampleMaster to DL.Data.SampleMasters.
     /// </summary>
     public SampleMaster(string text, int numberWithDefault = int.MinValue, bool isStoring = true) {
-      Key = Storage.Storage.NoKey;
+      Key = StorageExtensions.NoKey;
       Text = text;
       sampleX = new HashSet<Sample>();
       NumberWithDefault = numberWithDefault;

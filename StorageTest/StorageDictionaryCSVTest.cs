@@ -128,7 +128,7 @@ namespace StorageTest {
       var dataString = $"{key}|{text}";
       expectedList.Add(dataString);
       var testItemCsv = new TestItemCsv(text);
-      Assert.AreEqual(Storage.Storage.NoKey, testItemCsv.Key);
+      Assert.AreEqual(StorageExtensions.NoKey, testItemCsv.Key);
       dictionary.Add(testItemCsv);
       Assert.IsTrue(wasAdded);
       wasAdded = false;

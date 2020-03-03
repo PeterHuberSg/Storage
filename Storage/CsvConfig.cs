@@ -1,10 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/**************************************************************************************
+
+Storage.CsvConfig
+=================
+
+Defines parameters used for CSV file generation.
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
 using System.Text;
 
 namespace Storage {
 
 
+  /// <summary>
+  /// Defines parameters used for CSV file generation.
+  /// </summary>
   public class CsvConfig {
 
     #region Properties
@@ -15,6 +34,7 @@ namespace Storage {
     /// </summary>
     public static string DateFormat = "dd.MM.yyyy";
 
+
     /// <summary>
     /// Directory where the CSV files get stored
     /// </summary>
@@ -22,7 +42,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Delemiter character used in CSV file to seperate fields
+    /// Delimiter character used in CSV file to separate fields
     /// </summary>
     public readonly char Delimiter;
 
@@ -40,17 +60,26 @@ namespace Storage {
 
 
     /// <summary>
-    /// The timer throws exception on a ThreadPool thread. reportException() needs to pass the exception to the main thread of the application.
+    /// The timer throws exception on a ThreadPool thread. ReportException() needs to pass the exception to the main thread of the application.
     /// </summary>
     public readonly Action<Exception>? ReportException;
 
 
+    /// <summary>
+    /// Character used at the start of a line in a CSV file to mark adding a new item.
+    /// </summary>
     public readonly char LineCharAdd;
 
 
+    /// <summary>
+    /// Character used at the start of a line in a CSV file to mark an updated item.
+    /// </summary>
     public readonly char LineCharUpdate;
 
 
+    /// <summary>
+    /// Character used at the start of a line in a CSV file to mark a deleted item.
+    /// </summary>
     public readonly char LineCharDelete;
     #endregion
 
@@ -62,12 +91,11 @@ namespace Storage {
     /// Constructor
     /// </summary>
     /// <param name="directoryPath">Directory where the CSV files get stored</param>
-    /// <param name="delimiter">Delemiter character used in CSV file to seperate fields</param>
+    /// <param name="delimiter">Delimiter character used in CSV file to separate fields</param>
     /// <param name="encoding">Encoding used to read and write CSV Files</param>
     /// <param name="bufferSize">BufferSize of FileStream. Default is 32k Bytes, any smaller Buffer is slower.</param>
-    ///// <param name="writingIntervall">How often new content of RecordCollection gets writen to the CSV file, in milliseconds</param>
-    ///// <param name="maxWaitIntervalls">How often new content of RecordCollection gets writen to the CSV file, in milliseconds</param>
-    /// <param name="reportException">The timer throws exception on a ThreadPool thread. reportException() needs to pass the exception to the main thread of the application.</param>
+    /// <param name="reportException">The timer throws exception on a ThreadPool thread. reportException() needs to 
+    /// pass the exception to the main thread of the application.</param>
     public CsvConfig(
       string directoryPath,
       char delimiter = '\t',
@@ -100,6 +128,9 @@ namespace Storage {
     #region Methods
     //      -------
 
+    /// <summary>
+    /// Write CsvConfig parameters into a string
+    /// </summary>
     public override string ToString() {
       return
         "DirectoryPath: " + DirectoryPath +

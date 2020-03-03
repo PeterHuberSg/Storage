@@ -18,7 +18,7 @@ namespace StorageTest {
 
 
     public TestItem(string text) {
-      Key = Storage.Storage.NoKey;
+      Key = StorageExtensions.NoKey;
       Text = text;
     }
 
@@ -44,7 +44,7 @@ namespace StorageTest {
     }
 
 
-    internal static void Disconnect(TestItem item) {
+    internal static void Disconnect(TestItem _) {
       //nothing to do
     }
 

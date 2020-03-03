@@ -1,26 +1,35 @@
-﻿using System;
+﻿/**************************************************************************************
+
+Storage.StorageDictionary
+=========================
+
+Stores instances (=item) of classes inheriting IStorage in an array. An item can be accessed by its key. It behaves
+like a dictionary, but is much faster.
+The data is only stored in RAM and gets lost once the application ends. Use StorageDictionaryCSV for permanent data 
+storage.
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 
 namespace Storage {
 
-  ////By not allowing property changes, insertions or deletions, reentrance and concurrency problems get
-  ////avoided. The NotifyCollectionChanged event handlers will still find the data which caused the event (adding
-  ////new record), even if other threads have changed StorageDictionary in the meantime(adding other records). Note that
-  ////Microsoft's collection are not multithreading safe and do not support reentrancy.
-
-
-
   /// <summary>
   /// A fast collection of items which implement IStorage. Each item has a unique int key. Only items can be added which have 
   /// a key grater than any other existing key.
-  /// The collection can be kept in RAM only or made permanent in a local file or in a database or ... It's only possible to add 
-  /// items, not insert, resulting in very fast implementations. Deletion is made by marking the item deleted.
   /// Ideally, TContext is the parent and holds all StorageDictionaries of the application.
   /// </summary>
   public class StorageDictionary<TItem, TContext>: IEnumerable<TItem>, IDictionary<int, TItem>, IDisposable 
@@ -31,6 +40,9 @@ namespace Storage {
     #region Properties
     //      ----------
 
+    /// <summary>
+    /// Indexer, returns item based on key
+    /// </summary>
     public TItem this[int key] { 
       get {
         int arrayIndex = binarySearch(key);
@@ -42,6 +54,9 @@ namespace Storage {
     }
 
 
+    /// <summary>
+    /// Returns all keys in an array.
+    /// </summary>
     public ICollection<int> Keys {
       get {
         int[] keys = new int[count];
@@ -59,6 +74,9 @@ namespace Storage {
     }
 
 
+    /// <summary>
+    /// Returns all items in an array
+    /// </summary>
     public System.Collections.Generic.ICollection<TItem> Values {
       get {
         TItem[] values = new TItem[count];
@@ -76,11 +94,17 @@ namespace Storage {
     }
 
 
+    /// <summary>
+    /// Number if items in StorageDictionary
+    /// </summary>
     public int Count => count;
 
 
+    /// <summary>
+    /// Returns true if items are not updatable not deletable
+    /// </summary>
     public bool IsReadOnly {
-      get { return false; }
+      get { return !AreItemsUpdatable && !AreItemsDeletable; }
     }
 
 
@@ -121,31 +145,34 @@ namespace Storage {
 
 
     /// <summary>
-    /// Can stord items be changed ? If yea, a change record gets written to the CVS file
+    /// Can content of an items be changed ? If yes, a change item gets written to the CVS file
     /// </summary>
     public bool AreItemsUpdatable { get; }
 
 
     /// <summary>
-    /// The content of some items has changed and change records have been written to the CVS file. During
+    /// The content of some items has changed and change items have been written to the CVS file. During
     /// Dispose() a new file is written containing only the latest version of the changed items.
     /// </summary>
     public bool AreItemsUpdated { get; private set; }
 
 
     /// <summary>
-    /// Can stord items be removed ? If yes, a delete record gets written to the CVS file
+    /// Can stored items be removed ? If yes, a delete item gets written to the CVS file
     /// </summary>
     public bool AreItemsDeletable { get; }
 
 
     /// <summary>
-    /// Some items have been deleted and delete records have been written to the CVS file. During
+    /// Some items have been deleted and delete items have been written to the CVS file. During
     /// Dispose() a new file is written containing only the undeleted items.
     /// </summary>
     public bool AreItemsDeleted { get; private set; }
 
 
+    /// <summary>
+    /// Parent holding all StorageDictionaries of the application
+    /// </summary>
     public TContext? Context { get; }
     #endregion
 
@@ -181,9 +208,9 @@ namespace Storage {
 
     readonly object itemsLock = new object();
     TItem?[] items;
-    static readonly TItem?[]  emptyItems = new TItem[0];
-    int[] keys; //keys don't get deleted when an items gets removed, because the key of the removed item is still needed for binary search
-    static readonly int[]  emptyKeys = new int[0];
+    static readonly TItem?[] emptyItems = new TItem[0];
+    int[] keys; //keys don't get deleted when an item gets removed, because the key of the removed item is still needed for binary search
+    static readonly int[] emptyKeys = new int[0];
     int firstItemIndex;
     int lastItemIndex;
     int count;
@@ -194,6 +221,13 @@ namespace Storage {
     /// Constructs a StorageDictionary with a given initial capacity. It is initially empty, but will have room for the given 
     /// number of items. When too many items get added, the capacity gets increased.
     /// </summary>
+    /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
+    /// <param name="setKey">Called when an item gets added without a key (=-1)</param>
+    /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
+    /// items linked to this item and/or to remove item from parent(s)</param>
+    /// <param name="areItemsUpdatable">Can the property of an item change ?</param>
+    /// <param name="areItemsDeletable">Can an item be removed from StorageDictionary</param>
+    /// <param name="capacity">How many items should StorageDictionary by able to hold initially ?</param>
     public StorageDictionary(
       TContext? context,
       Action<TItem, int> setKey,
@@ -260,7 +294,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Would clear the contents of StorageDictionary, but not supported to prevent reentrance and concurrency problems. Create 
+    /// Would clear the contents of StorageDictionary, but not supported to prevent re-entrance and concurrency problems. Create 
     /// new StorageDictionary instead.
     /// </summary>
     public void Clear() {
@@ -297,7 +331,7 @@ namespace Storage {
         throw new ArgumentException($"Index {index} must be within array boundaries 0..{array.Length}.");
       }
       if (array.Length - index < count) {
-        throw new ArgumentException($"Array with Lenght {array.Length} is too small to add {count} items at Index {index}.");
+        throw new ArgumentException($"Array with Length {array.Length} is too small to add {count} items at Index {index}.");
       }
 
       for (int itemIndex = firstItemIndex; itemIndex<=lastItemIndex; itemIndex++) {
@@ -310,7 +344,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Returns an enumarator over all undeleted TItems in StorageDictionary
+    /// Returns an enumerator over all undeleted TItems in StorageDictionary
     /// </summary>
     public IEnumerator<TItem> GetEnumerator() {
       return new EnumeratorItems(this);
@@ -318,7 +352,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Returns an object enumarator over all undeleted TItems in StorageDictionary. Better use the strongly 
+    /// Returns an object enumerator over all undeleted TItems in StorageDictionary. Better use the strongly 
     /// typed IEnumerator<TItem> GetEnumerator(). 
     /// </summary>
     IEnumerator IEnumerable.GetEnumerator() {
@@ -327,7 +361,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Returns an KeyValuePair enumarator over all undeleted TItems in StorageDictionary. This is only provided for
+    /// Returns an KeyValuePair enumerator over all undeleted TItems in StorageDictionary. This is only provided for
     /// to implement the IDictionary<int, TItem> interface. If possible use IEnumerator<TItem> GetEnumerator() instead. 
     /// </summary>
     IEnumerator<KeyValuePair<int, TItem>> IEnumerable<KeyValuePair<int, TItem>>.GetEnumerator() {
@@ -419,7 +453,7 @@ namespace Storage {
 
     /// <summary>
     /// Removes item from this StorageDirectory and any children from their StorageDirectories. Removed event gets fired.
-    /// If item was removed alreay, still true gets returned. No Removed event gets fired.
+    /// If item was removed already, still true gets returned. No Removed event gets fired.
     /// </summary>
     public bool Remove(TItem item) {
       if (item.Key<0) throw new Exception($"StorageDictionary can not remove item '{item}' with no key (-1).");
@@ -427,6 +461,10 @@ namespace Storage {
       return Remove(item.Key);
     }
 
+
+    /// <summary>
+    /// If item with key is found, returns true and item in value, otherwise false and null in value.
+    /// </summary>
     public bool TryGetValue(int key, [MaybeNullWhen(false)] out TItem value) {
       var index = binarySearch(key);
       if (index<0) {
@@ -473,7 +511,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Inheritors should overwrite OnDispose() and put the diposal code in there. 
+    /// Inheritors should overwrite OnDispose() and put the disposal code in there. 
     /// </summary>
     /// <param name="disposing">is false if it is called from a destructor.</param>
     protected virtual void OnDispose(bool disposing) {
@@ -485,7 +523,7 @@ namespace Storage {
     #region Public Methods
     //     ---------------
 
-    // From Microsoft imposes limits on maximum array lenght (defined as internal constant in Array class)
+    // From Microsoft imposes limits on maximum array length (defined as internal constant in Array class)
     const uint maxArrayLength = 0X7FEFFFFF;
 
 
@@ -505,7 +543,7 @@ namespace Storage {
 
       lock (itemsLock) {
         var lastItemKey = lastItemIndex==-1 ? -1 : items[lastItemIndex]!.Key;//throws exception if indexed item is null
-        if (item.Key==Storage.NoKey) {
+        if (item.Key==StorageExtensions.NoKey) {
           setKey(item, ++lastItemKey);
         } else {
           if (item.Key<=lastItemKey) throw new Exception($"Cannot add {typeof(TItem).Name} '{item}' to StorageDictionary, because its key should be greater that lastItemKey {lastItemKey}.");
@@ -570,8 +608,8 @@ namespace Storage {
 
     #endregion
 
-    #region Private Methodes
-    //      ----------------
+    #region Private Methods
+    //      ---------------
 
     int binarySearch(int key) {
       if (count==0) return -1;// StorageDictionary is empty

@@ -193,7 +193,7 @@ namespace StorageModel  {
       string? optional, 
       bool isStoring = true)
     {
-      Key = Storage.Storage.NoKey;
+      Key = StorageExtensions.NoKey;
       Text = text;
       Flag = flag;
       Number = number;

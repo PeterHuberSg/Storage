@@ -380,7 +380,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write($"    public {ClassName}(");
       writeParameters(streamWriter, isConstructor: true);
-      streamWriter.WriteLine("      Key = Storage.Storage.NoKey;");
+      streamWriter.WriteLine("      Key = StorageExtensions.NoKey;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
           if (mi.ChildCount>1) {

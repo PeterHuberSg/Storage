@@ -94,7 +94,7 @@ namespace StorageTest {
       var dataString = $"{key}|{text}";
       expectedList.Add(dataString);
       var testItem = new TestItem(text);
-      Assert.AreEqual(Storage.Storage.NoKey, testItem.Key);
+      Assert.AreEqual(StorageExtensions.NoKey, testItem.Key);
       dictionary.Add(testItem);
       Assert.IsTrue(wasAdded);
       wasAdded = false;

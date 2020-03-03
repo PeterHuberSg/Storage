@@ -1,9 +1,9 @@
 ﻿/**************************************************************************************
 
-Storage.FileRegionsTemplate
-===========================
+Storage.StorageExtensions
+=========================
 
-Template for c# file
+Extension used to display key as string.
 
 Written in 2020 by Jürgpeter Huber 
 Contact: PeterCode at Peterbox dot com
@@ -15,43 +15,26 @@ the Creative Commons 0 license (details see COPYING.txt file, see also
 
 This software is distributed without any warranty. 
 **************************************************************************************/
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 
 namespace Storage {
 
 
-  public class FileRegionsTemplate {
+  /// <summary>
+  /// Extension used to display key as string.
+  /// </summary>
+  public static class StorageExtensions {
 
-    #region Properties
-    //      ----------
-
-    #endregion
-
-
-    #region Events
-    //      ------
-
-    #endregion
+    public const int NoKey = -1;
 
 
-    #region Constructors
-    //      ------------
+    /// <summary>
+    /// Display key as string
+    /// </summary>
+    public static string ToKeyString(this int key) {
+      if (key==NoKey) return "no";
+      return key.ToString();
+    }
 
-    #endregion
-
-
-    #region Event Handlers
-    //      --------------
-
-    #endregion
-
-
-    #region Methods
-    //      -------
-
-    #endregion
   }
 }

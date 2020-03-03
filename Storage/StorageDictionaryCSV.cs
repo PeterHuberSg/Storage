@@ -1,4 +1,24 @@
-﻿using System;
+﻿/**************************************************************************************
+
+Storage.StorageDictionaryCSV
+============================
+
+Stores items in a StorageDictionary and permanently in a CSV (comma separated value) file. An item can be accessed by its 
+key. When starting, the file content gets read into the StorageDictionary, if a file exists, otherwise an empty file with 
+only the header definition gets written. Items added to or deleted from StorageDictionary and items with changed content get 
+continuously written to the file. 
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -8,10 +28,10 @@ namespace Storage {
 
 
   /// <summary>
-  /// Stores records in a StorageDictionary and in a CSV (comma separated value) file. When starting, the file content gets read into the 
-  /// StorageDictionary, if a file exists, otherwise an empty file with only the header definition gets written. Records added to or deleted
-  /// from StorageDictionary and items with changed content get continuously writtento the file. If there is no write activity, a flush timer
-  /// ensures that the writes are committed to the hard disk.
+  /// Stores items in a StorageDictionary and permanently in a CSV (comma separated value) file. When starting, the file 
+  /// content gets read into the StorageDictionary, if a file exists, otherwise an empty file with only the header definition 
+  /// gets written. Items added to or deleted from StorageDictionary and items with changed content get continuously written 
+  /// to the file. If there is no write activity, a flush timer ensures that the writes are committed to the hard disk.
   /// Disposing the StorageDictionary ensures that all data is flushed to the file if only new files were added or the complete 
   /// StorageDictionaryCSV is rewritten, which eliminates all the updated and deleted lines.
   /// </summary>
@@ -30,7 +50,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Maximal lenght of TItemCSV when stored as string. Can be too long, but not to short. 10*MaxLineLenght should be shorter
+    /// Maximal length of TItemCSV when stored as string. Can be too long, but not to short. 10*MaxLineLenght should be shorter
     /// than CsvConfig.BufferSize
     /// </summary>
     public int MaxLineLenght { get; private set; }
@@ -43,25 +63,22 @@ namespace Storage {
 
 
     /// <summary>
-    /// Headers of the CsvRecord, separated by delimiter 
+    /// Headers of the item, separated by delimiter 
     /// </summary>
     public readonly string CsvHeaderString;
 
 
     /// <summary>
-    /// Dealy in millisecond before flush gets executed after the last write
+    /// Delay in millisecond before flush gets executed after the last write
     /// </summary>
     public readonly int FlushDelay;
 
 
     /// <summary>
-    /// During Dispoe(), should a new file be written when some items have changed their content or some items were deleted ? 
+    /// Should during Dispose() a new file be written when some items have changed their content or some items were deleted ? 
     /// This compacts the file.
     /// </summary>
     public bool IsCompactDuringDispose { get; }
-
-
-    //public readonly TData Data;
     #endregion
 
     #region Constructor
@@ -79,6 +96,27 @@ namespace Storage {
     //Timer? flushTimer;
 
 
+    /// <summary>
+    /// Constructs a StorageDictionaryCSV. If a CSV file exists already, its content gets read at startup. If no CSV exists, an
+    /// empty one gets created with a header line.
+    /// </summary>
+    /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
+    /// <param name="csvConfig">File name and other parameters for CSV file</param>
+    /// <param name="maxLineLenght">Maximal number of bytes needed to write one line</param>
+    /// <param name="headers">Name for each item property</param>
+    /// <param name="setKey">Method to be called if item has no key yet</param>
+    /// <param name="create">Creates a new item with one line read from the CSV file</param>
+    /// <param name="verify">Verifies item, for example it parent(s) exist</param>
+    /// <param name="update">Updates an item if an line with updates is read</param>
+    /// <param name="write">Writes item to CSV file</param>
+    /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
+    /// items linked to this item and/or to remove item from parent(s)</param>
+    /// <param name="areItemsUpdatable">Can the property of an item change ?</param>
+    /// <param name="areItemsDeletable">Can an item be removed from StorageDictionaryCSV</param>
+    /// <param name="isCompactDuringDispose">Should during dispose the CSV file get deleted and a more compact version written ?</param>
+    /// <param name="capacity">How many items should StorageDictionaryCSV by able to hold initially ?</param>
+    /// <param name="flushDelay">When the items in StorageDictionaryCSV are not changed for flushDelay milliseconds, the internal
+    /// buffer gets written to the CSV file.</param>
     public StorageDictionaryCSV(
       TContext? context,
       CsvConfig csvConfig,
@@ -134,15 +172,6 @@ namespace Storage {
 
     protected override void OnDispose(bool disposing) {
       lock (disposingLock) {
-        //var wasflushTimer = Interlocked.Exchange(ref flushTimer, null);
-        //if (wasflushTimer!=null) {
-        //  try {
-        //    wasflushTimer.Dispose();//Dispose() is multithreading safe
-        //  } catch (Exception ex) {
-        //    CsvConfig.ReportException?.Invoke(ex);
-        //  }
-        //}
-
         var wasCsvWriter = Interlocked.Exchange(ref csvWriter, null);
         if (wasCsvWriter!=null) {
           try {
@@ -232,66 +261,10 @@ namespace Storage {
       UpdateAreKeysContinous();
     }
 
-    /*
-    too complicated solution to allow lines to be written that are longer than 25% of byteArray.
-    --------------------------------------------------------------------------------------------
 
-    end of constructor:
-            csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, flushDelay: flushDelay, writeFirstLine);
-      } else {
-        //there is no file yet. Write an empty file with just the CSV header
-        csvWriter = new CsvWriter("", csvConfig, maxLineLenght, fileStream, flushDelay: flushDelay, writeFirstLine);
-        WriteToCsvFile(csvWriter);
-      }
-      //flushTimer = new Timer(flushTimerMethod, null, Timeout.Infinite, Timeout.Infinite);
-      FlushDelay = flushDelay;
-    }
-----------------------------------------------
-
-
-    end of OnDispose:
-            using var csvWriter = new CsvWriter("", CsvConfig, MaxLineLenght, fileStream, writeFirstLine: writeFirstLine);
-            WriteToCsvFile(csvWriter);
-          } catch (Exception ex) {
-            CsvConfig.ReportException?.Invoke(ex);
-          }
-        }
-      }
-    }
-----------------------------------------------
-
-
-    private void readFromCsvFile(CsvReader csvReader) {
-      //read first line which states what is maximum line width in UTF8 bytes
-      var firstLine = csvReader.ReadLine();
-      if (!firstLine.StartsWith(FileFirstLineLabel)) throw new Exception($"StorageDictionary: File {csvReader.FileName} should start with {FileFirstLineLabel} but was '{firstLine}'.");
-     
-      var storedMaxLine = int.Parse(firstLine[FileFirstLineLabel.Length..]);
-      MaxLineLenght = Math.Max(MaxLineLenght, storedMaxLine);
-----------------------------------------------
-
-    public const string FileFirstLineLabel = "MaxUtf8LineWidth:";
-
-
-    string writeFirstLine(int maxLineLenght) {
-      return FileFirstLineLabel + maxLineLenght.ToString(new string('0', int.MaxValue.ToString().Length));
-    }
-
-
-    public void WriteToCsvFile(CsvWriter csvWriter) {
-      csvWriter.WriteLine(writeFirstLine(MaxLineLenght));
-      csvWriter.WriteLine(CsvHeaderString);
-      foreach (TItemCSV item in this) {
-        if (item!=null) {
-          csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
-          csvWriter.Write(item.Key);
-          write(item, csvWriter);
-          csvWriter.WriteEndOfLine();
-        }
-      }
-    }
-    */
-
+    /// <summary>
+    /// Writes all items in StorageDictionaryCSV to a CSV file
+    /// </summary>
     public void WriteToCsvFile(CsvWriter csvWriter) {
       csvWriter.WriteLine(CsvHeaderString);
       foreach (TItemCSV item in this) {
@@ -358,8 +331,6 @@ namespace Storage {
       }
     }
 #endregion
-
-
 #endregion
   }
 }

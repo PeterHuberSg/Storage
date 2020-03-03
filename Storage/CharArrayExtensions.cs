@@ -1,23 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/**************************************************************************************
+
+Storage.CharArrayExtensions
+===========================
+
+Extension methods to read from and write to char[]
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
 using System.Text;
 
 
 namespace Storage {
 
 
+  /// <summary>
+  /// Extension methods to read from and write to char[]
+  /// </summary>
   public static class CharArrayExtensions {
 
     #region Integer
     //      -------
 
+    /// <summary>
+    /// Write integer i at position index in charArray
+    /// </summary>
     public static void Write(this char[] charArray, int i, ref int index){
       int start;
       if (i<0) {
         charArray[index++] = '-';
         start = index;
         //since -int.MinValue is bigger than int.MaxValue, i=-i does not work of int.Minvalue.
-        //therfore write 1 character first and guarantee that i>int.MinValue
+        //therefore write 1 character first and guarantee that i>int.MinValue
         charArray[index++] = (char)(-(i % 10) + '0');
         i /= 10;
         if (i==0) return;
@@ -41,7 +62,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Parse field into int
+    /// Parse charArray into int
     /// </summary>
     public static int ReadInt(
       this char[] charArray, 

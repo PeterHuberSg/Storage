@@ -1,12 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/**************************************************************************************
+
+Storage.Csv
+===========
+
+Contains static helper methods for CommaSeparateValue file processing, like reading data from CSV files
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
 using System.Text;
+
 
 namespace Storage {
 
 
   /// <summary>
-  /// Contains static helper methods for CommaSeparateValue file processing, like reading data from csv files
+  /// Contains static helper methods for CommaSeparateValue file processing, like reading data from CSV files, although
+  /// CsvReader has the faster methods.
   /// </summary>
   public static class Csv {
 
@@ -16,10 +34,9 @@ namespace Storage {
     /*
     CsvReader and CsvWriter each read from or write to a file CsvConfig.BufferSize bytes at a time. CsvReader and 
     CsvWriter use each a byteArray which is 25% bigger than BufferSize. The maximal length of a line that can be read
-    or written is 25% of BufferSize. This arrangement guarantees there is always enough space in the buffer for
-    reading or writing entire lines.
+    or written is therefore 25% of BufferSize. This arrangement guarantees there is always enough space in the buffer 
+    for reading or writing entire lines.
     */
-
 
     /// <summary>
     /// UTF8 can use up to 4 bytes for 1 character
@@ -56,6 +73,9 @@ namespace Storage {
     }
 
 
+    /// <summary>
+    /// Parse field into int
+    /// </summary>
     public static int ParseInt(String fieldName, String line, int lineLength, ref int charIndex, char delimiter, ref Boolean isLineError, StringBuilder errorStringBuilder) {
       if (isLineError) return int.MinValue;
 
@@ -118,9 +138,8 @@ namespace Storage {
     #region Bool
     //      ----
 
-
     /// <summary>
-    /// Parse field into bool
+    /// Parse field with 'y' or 'n' into bool
     /// </summary>
     public static bool ParseBoolYN(string fieldName, string field, string line, StringBuilder errorStringBuilder) {
       if (field=="y")
@@ -187,6 +206,9 @@ namespace Storage {
       year,
     }
 
+    /// <summary>
+    /// Parse field into DateTime
+    /// </summary>
     public static DateTime ParseDateTime(String fieldName, String line, Int32 lineLength, ref Int32 charIndex, Char delimiter, ref Boolean isLineError, StringBuilder errorStringBuilder) {
       if (isLineError) return default;
 
@@ -242,7 +264,6 @@ namespace Storage {
     #region Decimal
     //      -------
 
-
     /// <summary>
     /// Parse field into Decimal
     /// </summary>
@@ -253,75 +274,6 @@ namespace Storage {
       errorStringBuilder.AppendLine(fieldName + " should be Decimal, but was '" + field + "' in line: '" + line + "'.");
       return Decimal.MinValue;
     }
-
-
-    //is slower than decimal.parse()
-    //const int maxDigitsInt = 9;
-    //const int maxDigitsLong = 19;
-
-
-    ///// <summary>
-    ///// Parse field into Decimal, faster implementation for numbers with less than 19 digits
-    ///// </summary>
-    //public static Decimal ParseDecimalFast(string fieldName, string field, string line, StringBuilder errorStringBuilder) {
-    //  int number = 0;
-    //  long numberLong = 0;
-    //  int offset = 0;
-    //  int length = field.Length;
-    //  var isFoundNumber = false;
-    //  var isNegative = false;
-    //  var isScale = false;
-    //  var isLongNumber = false;
-    //  byte scale = 0;
-    //  int maxDigits = maxDigitsInt;
-    //  if (length>maxDigitsLong) {
-    //    if (Decimal.TryParse(field, out decimal value))
-    //      return value;
-    //  } else {
-    //    while (offset<length) {
-    //      var c = field[offset];
-    //      offset++;
-    //      if (c>='0' && c<='9') {
-    //        isFoundNumber = true;
-    //        if (isScale) {
-    //          scale++;
-    //        }
-    //        if (isLongNumber) {
-    //          numberLong = unchecked(numberLong * 10 + (c - '0'));
-    //          if (offset==length) {
-    //            int low = (int)(numberLong);
-    //            int high = (int)(numberLong>>32);
-    //            return new Decimal(low, high, 0, isNegative, scale);
-    //          }
-    //          if (offset>maxDigits) {
-    //            break;
-    //          }
-    //        } else {
-    //          number = unchecked(number * 10 + (c - '0'));
-    //          if (offset==length) {
-    //            return new Decimal(number, 0, 0, isNegative, scale);
-    //          }
-    //          if (offset>=maxDigits) {
-    //            numberLong = number;
-    //            isLongNumber = true;
-    //            maxDigits += 10;
-    //          }
-    //        }
-    //      } else if (c=='-' && !isFoundNumber && !isNegative) {
-    //        isNegative = true;
-    //        maxDigits++;
-    //      } else if (c=='.' && !isScale) {
-    //        isScale = true;
-    //        maxDigits++;
-    //      } else {
-    //        break;
-    //      }
-    //    };
-    //  }
-
-    //  errorStringBuilder.AppendLine(fieldName + " should be Decimal, but was '" + field + "' in line: '" + line + "'.");
-    //  return Decimal.MinValue;
-    //}
 
 
     /// <summary>
@@ -339,85 +291,15 @@ namespace Storage {
     }
 
 
-    //const int maxM = 10;
-    //static Stopwatch sw = new Stopwatch();
-    //static int i = 0;
-    //static int j = 0;
-    //static long[,] ts = new long[maxM,3];
-
-
-    //public static Decimal ParseDecimal(String fieldName, String line, int lineLength, ref int charIndex, char delimiter, ref bool isLineError, StringBuilder errorStringBuilder) {
-    //  //sw.Restart();
-    //  if (isLineError) return decimal.MinValue;
-
-    //  decimal number = 0;
-    //  var isFoundNumber = false;
-    //  decimal negativeMultiplier = 1;
-    //  decimal fractionMultiplier = 1;
-    //  //var t = sw.ElapsedTicks; ts[i, 0] = t; sw.Restart();
-    //  //t = sw.ElapsedTicks; ts[i, 1] = t; sw.Restart();
-    //  while (charIndex<lineLength) {
-    //    var c = line[charIndex++];
-    //    if (c>='0' && c<='9') {
-    //      isFoundNumber = true;
-    //      if (fractionMultiplier==1) {
-    //        number = number * 10 + (c - '0');
-    //      } else {
-    //        number += (c - '0') * fractionMultiplier;
-    //        fractionMultiplier /= 10;
-    //      }
-    //    } else if (!isFoundNumber && c=='-') {
-    //      negativeMultiplier = -1;
-    //    } else if (fractionMultiplier==1 && c=='.') {
-    //      fractionMultiplier = 0.1m;
-    //    } else if (c==delimiter && isFoundNumber) {
-    //      //t = sw.ElapsedTicks; ts[i, 2] = t;
-    //      //if (j % 100000==0) {
-    //      //  i++;
-    //      //}
-    //      //j++;
-    //      //if (i==10) {
-    //      //  var f = Stopwatch.Frequency / 1000000.0;
-    //      //  var sb = new StringBuilder();
-    //      //  for (int ix = 0; ix < maxM; ix++) {
-    //      //    sb.AppendLine($"{ix}: {ts[ix, 0]}, {ts[ix, 1]}, {ts[ix, 2]}");
-    //      //  }
-    //      //  var s = sb.ToString();
-    //      //}
-    //      return negativeMultiplier * number;
-    //    } else {
-    //      break;
-    //    }
-    //  };
-
-    //  isLineError = true;
-    //  errorStringBuilder.AppendLine(fieldName + " should be decmimal in line '" + line + "' at position " + charIndex + ".");
-    //  return Decimal.MinValue;
-    //}
-
-
-    //public static Decimal? ParseDecimalNull(String fieldName, String line, int lineLength, ref int charIndex, Char delimiter, ref bool isLineError, StringBuilder errorStringBuilder) {
-    //  if (isLineError) return null;
-
-    //  if (charIndex>=lineLength) {
-    //    isLineError = true;
-    //    errorStringBuilder.AppendLine(fieldName + " is empty in line '" + line + "' at position " + charIndex + ".");
-    //    return null;
-    //  }
-
-    //  if (line[charIndex]==delimiter) {
-    //    charIndex++;
-    //    return null;
-    //  }
-
-    //  return ParseDecimal(fieldName, line, lineLength, ref charIndex, delimiter, ref isLineError, errorStringBuilder);
-    //}
     #endregion
 
 
     #region String
     //      ------
 
+    /// <summary>
+    /// Reads from line at position charIndex until delimiter and returns that string
+    /// </summary>
     public static String ParseString(String fieldName, String line, Int32 lineLength, ref Int32 charIndex, Char delimiter, ref Boolean isLineError, StringBuilder errorStringBuilder) {
       if (isLineError) return "";
 
@@ -436,7 +318,6 @@ namespace Storage {
       return "";
     }
     #endregion
-
     #endregion
 
 
@@ -454,28 +335,36 @@ namespace Storage {
       if ((thisString==null || thisString=="") && (thatString==null || thatString=="")) return true;
       return false;
     }
-
     #endregion
 
 
     #region other helpers
     //      -------------
 
-    public static bool SplitLine(string line, char delimiter, int length, StringBuilder errorStringBuilder, string typeName, out string[] fields) {
-      fields = line.Split(delimiter);
-      if (fields.Length-1!=length) {
-        errorStringBuilder.AppendLine(typeName + " should have " + length + " fields, but had " + (fields.Length-1) + ": '" + line + "'.");
-        return false;
-      }
-      return true;
-    }
+    //public static bool SplitLine(string line, char delimiter, int length, StringBuilder errorStringBuilder, string typeName, out string[] fields) {
+    //  fields = line.Split(delimiter);
+    //  if (fields.Length-1!=length) {
+    //    errorStringBuilder.AppendLine(typeName + " should have " + length + " fields, but had " + (fields.Length-1) + ": '" + line + "'.");
+    //    return false;
+    //  }
+    //  return true;
+    //}
 
 
+    /// <summary>
+    /// Adds path as defined in csvConfig to name and adds '.csv' as extension
+    /// </summary>
+    /// <param name="csvConfig"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
     internal static string ToPathFileName(CsvConfig csvConfig, string name) {
       return csvConfig.DirectoryPath + @"\"  + name + ".csv";
     }
 
 
+    /// <summary>
+    /// Combines each string in headers into one string
+    /// </summary>
     public static string ToCsvHeaderString(string[] headers, char delimiter) {
       string csvHeaderString = "";
       foreach (string header in headers) {
@@ -483,7 +372,6 @@ namespace Storage {
       }
       return csvHeaderString;
     }
-
     #endregion
   }
 }

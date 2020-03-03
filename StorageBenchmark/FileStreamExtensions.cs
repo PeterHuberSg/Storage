@@ -21,7 +21,7 @@ namespace Storage {
     //  if (i<0) {
     //    filestream.WriteByte((byte)'-');
     //    //since -int.MinValue is bigger than int.MaxValue, i=-i does not work of int.Minvalue.
-    //    //therfore write 1 character first and guarantee that i>int.MinValue
+    //    //therefore write 1 character first and guarantee that i>int.MinValue
     //    bytes[index++] = (byte)(-(i % 10) + '0');
     //    i /= 10;
     //    if (i==0) {
@@ -46,7 +46,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read integer from UTF8 filestream including delimiter. Returns IsEof=true, if there is nothing left to read. If the EOF happened
+    /// Read integer from UTF8 FileStream including delimiter. Returns IsEof=true, if there is nothing left to read. If the EOF happened
     /// when reading the first character, no error message gets added to errorStringBuilder. 
     /// </summary>
     public static int ReadInt(
@@ -54,8 +54,7 @@ namespace Storage {
       int Index,
       int lenght,
       string fieldName,
-      StringBuilder errorStringBuilder) 
-    {
+      StringBuilder errorStringBuilder) {
       var i = 0;
       var isMinus = false;
       var isFirstByte = true;
@@ -70,7 +69,7 @@ namespace Storage {
           }
         }
         if (readByte<'0' || readByte>'9') {
-          errorStringBuilder.AppendLine($"{fieldName} illegal character '{(char)readByte}' encountered while readin integer {(isMinus ? -i : i)}.");
+          errorStringBuilder.AppendLine($"{fieldName} illegal character '{(char)readByte}' encountered while reading integer {(isMinus ? -i : i)}.");
           return int.MinValue;
         }
         i = 10*i + readByte - '0';
@@ -91,7 +90,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Write i to filestream as UTF8 bytes including delimiter
+    /// Write i to FileStream as UTF8 bytes including delimiter
     /// </summary>
     public static void Write(this FileStream filestream, int i, int delimiter) {
       Span<byte> bytes = stackalloc byte[maxLengthInt];
@@ -99,7 +98,7 @@ namespace Storage {
       if (i<0) {
         filestream.WriteByte((byte)'-');
         //since -int.MinValue is bigger than int.MaxValue, i=-i does not work of int.Minvalue.
-        //therfore write 1 character first and guarantee that i>int.MinValue
+        //therefore write 1 character first and guarantee that i>int.MinValue
         bytes[index++] = (byte)(-(i % 10) + '0');
         i /= 10;
         if (i==0) {
@@ -124,15 +123,14 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read integer from UTF8 filestream including delimiter. Returns IsEof=true, if there is nothing left to read. If the EOF happened
+    /// Read integer from UTF8 FileStream including delimiter. Returns IsEof=true, if there is nothing left to read. If the EOF happened
     /// when reading the first character, no error message gets added to errorStringBuilder. 
     /// </summary>
     public static (bool IsEof, int I) ReadInt(
       this FileStream filestream,
       int delimiter,
       string fieldName,
-      StringBuilder errorStringBuilder) 
-    {
+      StringBuilder errorStringBuilder) {
       var i = 0;
       var isMinus = false;
       var isFirstbyte = true;
@@ -160,7 +158,7 @@ namespace Storage {
           }
         }
         if (readByte<'0' || readByte>'9') {
-          errorStringBuilder.AppendLine($"{fieldName} illegal character '{(char)readByte}' encountered while readin integer {(isMinus ? -i : i)} from file {filestream.Name}.");
+          errorStringBuilder.AppendLine($"{fieldName} illegal character '{(char)readByte}' encountered while reading integer {(isMinus ? -i : i)} from file {filestream.Name}.");
           while (readByte!=delimiter) {
             readByte = filestream.ReadByte();
             if (readByte<0) return (true, int.MinValue);

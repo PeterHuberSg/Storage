@@ -23,7 +23,7 @@ namespace StorageTest {
 
 
     public TestItemCsv(string text) {
-      Key = Storage.Storage.NoKey;
+      Key = StorageExtensions.NoKey;
       Text = text;
     }
 
@@ -34,7 +34,7 @@ namespace StorageTest {
     }
 
 
-    public static TestItemCsv Create(int key, CsvReader csvReader, object notUsedContext) {
+    public static TestItemCsv Create(int key, CsvReader csvReader, object _) {
       return new TestItemCsv(key, csvReader);
     }
 
@@ -44,7 +44,7 @@ namespace StorageTest {
     }
 
 
-    internal static void Update(TestItemCsv testItemCsv, CsvReader csvReader, object notUsedContext) 
+    internal static void Update(TestItemCsv testItemCsv, CsvReader csvReader, object _) 
     {
       testItemCsv.Text = csvReader.ReadString()!;
     }
@@ -71,7 +71,7 @@ namespace StorageTest {
     }
 
 
-    internal static void Disconnect(TestItemCsv testItemCsv) {
+    internal static void Disconnect(TestItemCsv _) {
       //nothing to do
     }
 
