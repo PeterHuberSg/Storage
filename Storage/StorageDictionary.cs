@@ -101,7 +101,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Returns true if items are not updatable not deletable
+    /// Returns true if items are not updatable nor deletable
     /// </summary>
     public bool IsReadOnly {
       get { return !AreItemsUpdatable && !AreItemsDeletable; }
@@ -204,7 +204,7 @@ namespace Storage {
     const uint defaultCapacity = 4;
 
     readonly Action<TItem, int> setKey;
-    readonly Action<TItem> disconnect;
+    readonly Action<TItem>? disconnect;
 
     readonly object itemsLock = new object();
     TItem?[] items;
@@ -218,7 +218,17 @@ namespace Storage {
 
 
     /// <summary>
-    /// Constructs a StorageDictionary with a given initial capacity. It is initially empty, but will have room for the given 
+    /// Constructs a readonly StorageDictionary with a given initial capacity. It is initially empty, but will have room for 
+    /// the given number of items. When too many items get added, the capacity gets increased.
+    /// </summary>
+    public StorageDictionary(
+      TContext? context,
+      Action<TItem, int> setKey,
+      int capacity = 0): this(context, setKey, null, false, false, capacity) {}
+
+
+    /// <summary>
+    /// Constructs StorageDictionary with a given initial capacity. It is initially empty, but will have room for the given 
     /// number of items. When too many items get added, the capacity gets increased.
     /// </summary>
     /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
@@ -231,7 +241,7 @@ namespace Storage {
     public StorageDictionary(
       TContext? context,
       Action<TItem, int> setKey,
-      Action<TItem> disconnect,
+      Action<TItem>? disconnect,
       bool areItemsUpdatable = false,
       bool areItemsDeletable = false,
       int capacity = 0) 
@@ -385,7 +395,7 @@ namespace Storage {
         item = items[index];
         if (item==null) return true; //item was already deleted
 
-        disconnect(item);
+        disconnect!(item);
         items[index] = null;
         item.HasChanged -= item_HasChanged;
         version++;

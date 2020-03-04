@@ -44,7 +44,7 @@ Unit tests for Storage
 The same classes like in StorageClasses, used for unit testing
 
 # Project Status
-Coding completed and tested
+Coding completed and tested  
 Used in one application, a second application is presently in work.
  
 

@@ -86,8 +86,8 @@ namespace Storage {
 
     readonly Func<int, CsvReader, TContext, TItemCSV?> create;
     readonly Func<TItemCSV, bool>? verify;
-    readonly Action<TItemCSV, CsvReader, TContext> update;
-    readonly Action<TItemCSV, CsvWriter> write;
+    readonly Action<TItemCSV, CsvReader, TContext>? update;
+    readonly Action<TItemCSV, CsvWriter>? write;
 
     readonly bool isInitialReading;
     FileStream? fileStream;
@@ -97,8 +97,37 @@ namespace Storage {
 
 
     /// <summary>
-    /// Constructs a StorageDictionaryCSV. If a CSV file exists already, its content gets read at startup. If no CSV exists, an
-    /// empty one gets created with a header line.
+    /// Constructs a readonly StorageDictionaryCSV. If a CSV file exists already, its content gets read at startup. If no CSV
+    /// file exists, an empty one gets created with a header line.
+    /// </summary>
+    /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
+    /// <param name="csvConfig">File name and other parameters for CSV file</param>
+    /// <param name="maxLineLenght">Maximal number of bytes needed to write one line</param>
+    /// <param name="headers">Name for each item property</param>
+    /// <param name="setKey">Method to be called if item has no key yet</param>
+    /// <param name="create">Creates a new item with one line read from the CSV file</param>
+    /// <param name="verify">Verifies item, for example it parent(s) exist</param>
+    /// <param name="write">Writes item to CSV file</param>
+    /// <param name="capacity">How many items should StorageDictionaryCSV by able to hold initially ?</param>
+    /// <param name="flushDelay">When the items in StorageDictionaryCSV are not changed for flushDelay milliseconds, the internal
+    /// buffer gets written to the CSV file.</param>
+    public StorageDictionaryCSV(
+      TContext? context,
+      CsvConfig csvConfig,
+      int maxLineLenght,
+      string[] headers,
+      Action<TItemCSV, int> setKey,
+      Func<int, CsvReader, TContext, TItemCSV> create,
+      Func<TItemCSV, bool>? verify,
+      Action<TItemCSV, CsvWriter> write,
+      int capacity = 0,
+      int flushDelay = 200) : this(context, csvConfig, maxLineLenght, headers, setKey, create, verify, null, write, 
+        null, false, false, false, capacity, flushDelay) {}
+
+
+    /// <summary>
+    /// Constructs a StorageDictionaryCSV. If a CSV file exists already, its content gets read at startup. If no CSV file 
+    /// exists, an empty one gets created with a header line.
     /// </summary>
     /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
     /// <param name="csvConfig">File name and other parameters for CSV file</param>
@@ -125,9 +154,9 @@ namespace Storage {
       Action<TItemCSV, int> setKey,
       Func<int, CsvReader, TContext, TItemCSV> create,
       Func<TItemCSV, bool>? verify,
-      Action<TItemCSV, CsvReader, TContext> update,
+      Action<TItemCSV, CsvReader, TContext>? update,
       Action<TItemCSV, CsvWriter> write,
-      Action<TItemCSV> disconnect,
+      Action<TItemCSV>? disconnect,
       bool areItemsUpdatable = false,
       bool areItemsDeletable = false,
       bool isCompactDuringDispose = true,
@@ -217,32 +246,31 @@ namespace Storage {
       //read data lines
       var errorStringBuilder = new StringBuilder();
       while (!csvReader.IsEndOfFileReached()) {
-        var firstLineChar = csvReader.ReadFirstLineChar();
-        if (firstLineChar==CsvConfig.LineCharAdd) {
-          //add
-          var item = create(csvReader.ReadInt(), csvReader, Context!);
-          if (errorStringBuilder.Length==0) {
-            AddProtected(item!);
-          }
-          csvReader.ReadEndOfLine();
-
-        } else if (firstLineChar==CsvConfig.LineCharDelete) {
-          //delete
-          int key = csvReader.ReadInt();
-          csvReader.SkipToEndOfLine();
-          if (!Remove(key)) {
-            errorStringBuilder.AppendLine($"Deletion Line with key '{key}' did not exist in StorageDictonary.");
-          }
-#if DEBUG
-        } else if (firstLineChar!=CsvConfig.LineCharUpdate) {
-          throw new Exception();
-#endif
+        if (IsReadOnly) {
+          addItem(csvReader, errorStringBuilder);
         } else {
-          //update
-          var key = csvReader.ReadInt();
-          var item = this[key];
-          update(item, csvReader, Context!);
-          csvReader.ReadEndOfLine();
+          var firstLineChar = csvReader.ReadFirstLineChar();
+          if (firstLineChar==CsvConfig.LineCharAdd) {
+            addItem(csvReader, errorStringBuilder);
+
+          } else if (firstLineChar==CsvConfig.LineCharDelete) {
+            //delete
+            int key = csvReader.ReadInt();
+            csvReader.SkipToEndOfLine();
+            if (!Remove(key)) {
+              errorStringBuilder.AppendLine($"Deletion Line with key '{key}' did not exist in StorageDictonary.");
+            }
+#if DEBUG
+          } else if (firstLineChar!=CsvConfig.LineCharUpdate) {
+            throw new Exception();
+#endif
+          } else {
+            //update
+            var key = csvReader.ReadInt();
+            var item = this[key];
+            update!(item, csvReader, Context!);
+            csvReader.ReadEndOfLine();
+          }
         }
       }
 
@@ -262,6 +290,15 @@ namespace Storage {
     }
 
 
+    private void addItem(CsvReader csvReader, StringBuilder errorStringBuilder) {
+      var item = create(csvReader.ReadInt(), csvReader, Context!);
+      if (errorStringBuilder.Length==0) {
+        AddProtected(item!);
+      }
+      csvReader.ReadEndOfLine();
+    }
+
+
     /// <summary>
     /// Writes all items in StorageDictionaryCSV to a CSV file
     /// </summary>
@@ -269,9 +306,13 @@ namespace Storage {
       csvWriter.WriteLine(CsvHeaderString);
       foreach (TItemCSV item in this) {
         if (item!=null) {
-          csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+          if (IsReadOnly) {
+            csvWriter.StartNewLine();
+          } else {
+            csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+          }
           csvWriter.Write(item.Key);
-          write(item, csvWriter);
+          write!(item, csvWriter);
           csvWriter.WriteEndOfLine();
         }
       }
@@ -286,9 +327,13 @@ namespace Storage {
 
       try {
         lock (csvWriter!) {
-          csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+          if (IsReadOnly) {
+            csvWriter.StartNewLine();
+          } else {
+            csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+          }
           csvWriter.Write(item.Key);
-          write(item, csvWriter);
+          write!(item, csvWriter);
           csvWriter.WriteEndOfLine();
         }
         //kickFlushTimer();
@@ -305,7 +350,7 @@ namespace Storage {
         lock (csvWriter!) {
           csvWriter.WriteFirstLineChar(CsvConfig.LineCharUpdate);
           csvWriter.Write(item.Key);
-          write(item, csvWriter);
+          write!(item, csvWriter);
           csvWriter.WriteEndOfLine();
         }
         //kickFlushTimer();
@@ -322,7 +367,7 @@ namespace Storage {
         lock (csvWriter!) {
           csvWriter.WriteFirstLineChar(CsvConfig.LineCharDelete);
           csvWriter.Write(item.Key);
-          write(item, csvWriter);
+          write!(item, csvWriter);
           csvWriter.WriteEndOfLine();
         }
         //kickFlushTimer();

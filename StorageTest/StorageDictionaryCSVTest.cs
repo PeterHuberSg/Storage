@@ -26,6 +26,83 @@ namespace StorageTest {
     const bool notC = false;
 
 
+    #region Readonly
+    //      --------
+
+    [TestMethod]
+    public void TestStorageDictionaryReadonlyCSV() {
+      var directoryInfo = new DirectoryInfo("TestCsv");
+      try {
+        dictionary?.Dispose();
+        if (directoryInfo.Exists) {
+          directoryInfo.Delete(recursive: true);
+          directoryInfo.Refresh();
+        }
+
+        directoryInfo.Create();
+        directoryInfo.Refresh();
+
+        csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
+        dictionary = createDictionaryReadonly();
+        var expectedList = new List<string>();
+        assertRewriteReadonly(expectedList, cont, ref dictionary);
+
+        addReadonly(dictionary, expectedList, 0, "0");
+        addReadonly(dictionary, expectedList, 1, "1");
+        addReadonly(dictionary, expectedList, 2, "2");
+        addReadonly(dictionary, expectedList, 3, "3");
+      } finally {
+        dictionary?.Dispose();
+      }
+    }
+
+
+    private StorageDictionary<TestItemCsv, object> createDictionaryReadonly() {
+      dictionary = new StorageDictionaryCSV<TestItemCsv, object>(
+        null, //no context needed
+        csvConfig!,
+        TestItemCsv.MaxLineLength,
+        TestItemCsv.Headers,
+        TestItemCsv.SetKey,
+        TestItemCsv.Create,
+        null,
+        TestItemCsv.Write);
+      Assert.IsTrue(dictionary.IsReadOnly);
+      dictionary.Added += dictionary_Added;
+      dictionary.Changed += illegalActivity;
+      dictionary.Removed += illegalActivity;
+      return dictionary;
+    }
+
+
+    private void illegalActivity(TestItemCsv _) {
+      throw new Exception();
+
+
+    }
+    private void assertRewriteReadonly(List<string> expectedList, bool areKeysContinous, ref StorageDictionary<TestItemCsv, object> dictionary) {
+      assert(expectedList, areKeysContinous, ref dictionary);
+      dictionary.Dispose();
+
+      dictionary = createDictionaryReadonly();
+      assert(expectedList, areKeysContinous, ref dictionary);
+    }
+
+
+    private void addReadonly(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, string text) {
+      var dataString = $"{key}|{text}";
+      expectedList.Add(dataString);
+      var testItemCsv = new TestItemCsv(text);
+      dictionary.Add(testItemCsv);
+      Assert.IsTrue(wasAdded);
+      wasAdded = false;
+      assertRewriteReadonly(expectedList, cont, ref dictionary);
+    }
+    #endregion
+
+
+    #region Updatable
+    //      ---------
     [TestMethod]
     public void TestStorageDictionaryCSV() {
       var directoryInfo = new DirectoryInfo("TestCsv");
@@ -91,6 +168,7 @@ namespace StorageTest {
         areItemsUpdatable: true,
         areItemsDeletable: true,
         isCompactDuringDispose: isCompactDuringDispose);
+      Assert.IsFalse(dictionary.IsReadOnly);
       dictionary.Added += dictionary_Added;
       dictionary.Changed += dictionary_Changed;
       dictionary.Removed += dictionary_Deleted;
@@ -124,7 +202,7 @@ namespace StorageTest {
     }
 
 
-    private void add(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, string text, bool cont) {
+    private void add(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, string text, bool isCont) {
       var dataString = $"{key}|{text}";
       expectedList.Add(dataString);
       var testItemCsv = new TestItemCsv(text);
@@ -132,11 +210,11 @@ namespace StorageTest {
       dictionary.Add(testItemCsv);
       Assert.IsTrue(wasAdded);
       wasAdded = false;
-      assertRewrite(expectedList, cont, ref dictionary);
+      assertRewrite(expectedList, isCont, ref dictionary);
     }
 
 
-    private void update(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, string text, bool cont) {
+    private void update(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, string text, bool isCont) {
       removeExpected(expectedList, key);
       var dataString = $"{key}|{text}";
       expectedList.Add(dataString);
@@ -144,16 +222,16 @@ namespace StorageTest {
       item.Update(text); //fires HasChanged event
       Assert.IsTrue(wasChanged);
       wasChanged = false;
-      assertRewrite(expectedList, cont, ref dictionary);
+      assertRewrite(expectedList, isCont, ref dictionary);
     }
 
 
-    private void remove(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, bool cont) {
+    private void remove(StorageDictionary<TestItemCsv, object> dictionary, List<string> expectedList, int key, bool isCont) {
       removeExpected(expectedList, key);
       dictionary.Remove(key);
       Assert.IsTrue(wasDeleted);
       wasDeleted = false;
-      assertRewrite(expectedList, cont, ref dictionary);
+      assertRewrite(expectedList, isCont, ref dictionary);
     }
 
 
@@ -201,5 +279,6 @@ namespace StorageTest {
       }
       Assert.AreEqual(count, countedItems);
     }
+    #endregion
   }
 }
