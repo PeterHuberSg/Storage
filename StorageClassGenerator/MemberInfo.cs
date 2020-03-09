@@ -33,6 +33,7 @@ namespace Storage {
     DateTime,
     Decimal,
     Decimal2,
+    Decimal4,
     Bool,
     Int,
     List,
@@ -166,6 +167,22 @@ namespace Storage {
         CsvWriterWrite = "WriteDecimal2";
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 2 digits after comma.";
+        Rounding = ".Round(2)";
+        break;
+
+      case MemberTypeEnum.Decimal4:
+        TypeString = "decimal";
+        MaxStorageSize = "-12345.6789\t".Length;//reasonable limit, but could be as long as decimal.MinValue
+        if (isNullable) {
+          CsvReaderRead = "ReadDecimalNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadDecimal()";
+          NoValue = "Decimal.MinValue";
+        }
+        CsvWriterWrite = "WriteDecimal4";
+        ToStringFunc = "";
+        PrecissionComment = "Stores decimal with 4 digits after comma.";
         Rounding = ".Round(2)";
         break;
 

@@ -45,17 +45,16 @@ namespace Storage {
     /// Reads all .cs files in sourceDirectoryString. The .cs file can contain one or several classes. If any class contains
     /// a method, it gets skipped, otherwise StorageClassGenerator generates for each class a new .base.cs file in targetDirectoryString, 
     /// adding all code needed for object oriented data storage. A corresponding.cs file gets created, if it doesn't exist yet, where
-    /// more code can get added manually. The generator will not overwrite these changes.
+    /// more code can get added manually. The generator will not overwrite these changes.<para/>
     /// 
-    /// <para/>
-    /// The following constants can be used in a class to configure its behavior:
-    /// <para/>
-    /// MaxLineLenght: Number of UTF8 bytes needed to store longest class instance in a CVS file
-    /// <para/>
-    /// AreItemsUpdatable, default true: Can the property values be changed once an instance is created ?
-    /// <para/>
-    /// AreItemsDeletable, default true: Can an created instance get removed from its StorageDirectory ?
-    /// <para/>
+    /// The following constants can be used in a class to configure its behavior:<para/>
+    /// 
+    /// MaxLineLenght: Number of UTF8 bytes needed to store longest class instance in a CVS file<para/>
+    /// 
+    /// AreItemsUpdatable, default true: Can the property values be changed once an instance is created ?<para/>
+    /// 
+    /// AreItemsDeletable, default true: Can an created instance get removed from its StorageDirectory ?<para/>
+    /// 
     /// IsCompactDuringDispose, default true: When property values get changed or an instance deleted, this activity gets written 
     /// immediately to the CVS file. IsCompactDuringDispose is true, a new CSV file gets written containing only the still existing
     /// instances with their updated values.

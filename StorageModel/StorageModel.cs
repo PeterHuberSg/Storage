@@ -89,6 +89,11 @@ namespace StorageModel {
     public Decimal2 Amount;
 
     /// <summary>
+    /// Amount with 4 digits after comma comment
+    /// </summary>
+    public Decimal4 Amount4;
+
+    /// <summary>
     /// PreciseDecimal with about 20 digits precision, takes a lot of storage space
     /// </summary>
     public decimal PreciseDecimal;
