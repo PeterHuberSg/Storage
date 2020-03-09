@@ -1,14 +1,34 @@
-﻿using System;
+﻿/**************************************************************************************
+
+Storage.Compiler
+================
+
+Compiles a Model into a data Context
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 
 namespace Storage {
 
 
+  /// <summary>
+  /// Compiles a Model into a data Context
+  /// </summary>
   public class Compiler {
 
     readonly Dictionary<string, ClassInfo> classes;
@@ -55,15 +75,15 @@ namespace Storage {
         if (classDeclaration.AttributeLists.Count==0) {
           //use the default values
         } else if (classDeclaration.AttributeLists.Count>1) {
-          throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{classDeclaration.AttributeLists}'");
+          throw new GeneratorException($"Class {className} should contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{classDeclaration.AttributeLists}'");
 
         } else {
           var attributes = classDeclaration.AttributeLists[0].Attributes;
-          if (attributes.Count!=1) throw new GeneratorException($"Class {className} schould contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{attributes}'");
+          if (attributes.Count!=1) throw new GeneratorException($"Class {className} should contain at most 1 attribute, i.e. StorageClass attribute, but has '{classDeclaration.AttributeLists.Count}' attributes: '{attributes}'");
 
           var attribute = attributes[0];
           if (!(attribute.Name is IdentifierNameSyntax attributeName) || attributeName.Identifier.Text!="StorageClass") {
-            throw new GeneratorException($"Class {className} schould contain only a StorageClass attribute, but has: '{classDeclaration.AttributeLists}'");
+            throw new GeneratorException($"Class {className} should contain only a StorageClass attribute, but has: '{classDeclaration.AttributeLists}'");
           }
           foreach (var argument in attribute.ArgumentList!.Arguments) {
             if (argument.NameColon is null) throw new GeneratorException($"Class {className} Attribute{attribute}: the argument name is missing, like 'areItemsUpdatable: true'.");
@@ -91,7 +111,7 @@ namespace Storage {
         foreach (var classMember in classDeclaration.Members) {
           //each field has only 1 property
           if (!(classMember is FieldDeclarationSyntax field)) {
-            throw new GeneratorException($"Class {className} schould contain only properties, but has '{classMember}'.");
+            throw new GeneratorException($"Class {className} should contain only properties, but has '{classMember}'.");
           }
 
           string? propertyComment = getComment(field.GetLeadingTrivia());
@@ -101,7 +121,7 @@ namespace Storage {
             if (modifierToken.Text=="const") {
               //isConst = true;
               //break;
-              throw new GeneratorException($"Class {className} schould contain only properties, but has const '{classMember}'.");
+              throw new GeneratorException($"Class {className} should contain only properties, but has const '{classMember}'.");
             }
           }
 
@@ -143,21 +163,21 @@ namespace Storage {
             string? defaultValue = null;
             if (field.AttributeLists.Count==0) {
               if (isPropertyWithDefaultValueFound && !propertyType.StartsWith("List<")) {
-                throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould have a " +
+                throw new GeneratorException($"Property {className}.{property.Identifier.Text} should have a " +
                   "StorageProperty(defaultValue: \"xxx\") attribute, because the previous one had one too. Once a " +
-                  "property has a deault value, all following properties need to have one too.");
+                  "property has a default value, all following properties need to have one too.");
               }
               //use the default values
             } else if (field.AttributeLists.Count>1) {
-              throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{field.AttributeLists}'");
+              throw new GeneratorException($"Property {className}.{property.Identifier.Text} should contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{field.AttributeLists}'");
 
             } else {
               var attributes = field.AttributeLists[0].Attributes;
-              if (attributes.Count!=1) throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{attributes}'");
+              if (attributes.Count!=1) throw new GeneratorException($"Property {className}.{property.Identifier.Text} should contain at most 1 attribute, i.e. StorageProperty attribute, but has '{field.AttributeLists.Count}' attributes: '{attributes}'");
 
               var attribute = attributes[0];
               if (!(attribute.Name is IdentifierNameSyntax attributeName) || attributeName.Identifier.Text!="StorageProperty") {
-                throw new GeneratorException($"Property {className}.{property.Identifier.Text} schould contain only a StorageProperty attribute, but has: '{classDeclaration.AttributeLists}'");
+                throw new GeneratorException($"Property {className}.{property.Identifier.Text} should contain only a StorageProperty attribute, but has: '{classDeclaration.AttributeLists}'");
               }
               foreach (var argument in attribute.ArgumentList!.Arguments) {
                 if (argument.NameColon is null) throw new GeneratorException($"Property {className}.{property.Identifier.Text} Attribute{attribute}: the argument name is missing, like 'defaultValue: null'.");
@@ -348,7 +368,7 @@ namespace Storage {
       streamWriter.WriteLine("//     This code was generated by StorageClassGenerator");
       streamWriter.WriteLine("//");
       streamWriter.WriteLine("//     Do not change code in this file, it will get lost when the file gets ");
-      streamWriter.WriteLine($"//     autogenerated again. Write your code into {context}.cs.");
+      streamWriter.WriteLine($"//     auto generated again. Write your code into {context}.cs.");
       streamWriter.WriteLine("// </auto-generated>");
       streamWriter.WriteLine("//------------------------------------------------------------------------------");
       streamWriter.WriteLine("#nullable enable");
@@ -361,8 +381,8 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine("  /// <summary>");
       streamWriter.WriteLine($"  /// A part of {context} is static, which gives easy access to all stored data (=context) through {context}.Data. But most functionality is in the");
-      streamWriter.WriteLine($"  /// instantiatable part of {context}. Since it is instantiatable, is is possible to use different contexts over the lifetime of a program. This ");
-      streamWriter.WriteLine($"  /// is helpful for unti testing. Use {context}.Init() to create a new context and dispose it with DisposeData() before creating a new one.");
+      streamWriter.WriteLine($"  /// instantiatable part of {context}. Since it is instantiatable, is possible to use different contexts over the lifetime of a program. This ");
+      streamWriter.WriteLine($"  /// is helpful for unit testing. Use {context}.Init() to create a new context and dispose it with DisposeData() before creating a new one.");
       streamWriter.WriteLine("  /// </summary>");
       streamWriter.WriteLine($"  public partial class {context}: IDisposable {{");
       streamWriter.WriteLine();

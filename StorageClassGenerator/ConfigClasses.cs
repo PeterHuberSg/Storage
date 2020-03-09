@@ -1,8 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿/**************************************************************************************
+
+Storage.ConfigClasses
+=====================
+
+Some small classes to define storage attributes and data types
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
+
 
 namespace Storage {
+
+
+#pragma warning disable IDE0060 // Remove unused parameter
   /// <summary>
   /// Provides additional information about storing the class in a CSV file
   /// </summary>
@@ -34,6 +53,7 @@ namespace Storage {
     /// <param name="defaultValue">Provides a default value for this property in the class constructor.</param>
     public StoragePropertyAttribute(string? defaultValue = null) { }
   }
+#pragma warning restore IDE0060 // Remove unused parameter
 
 
   /// <summary>
@@ -43,19 +63,19 @@ namespace Storage {
 
 
   /// <summary>
-  /// Stores only times shorter than 24 hours and only with seconds precission
+  /// Stores only times shorter than 24 hours and only with seconds precision
   /// </summary>
   public class Time {}
 
 
   /// <summary>
-  /// Stores dates and time with a precission of seconds
+  /// Stores dates and time with a precision of seconds
   /// </summary>
   public class DateMinutes { }
 
 
   /// <summary>
-  /// Stores dates and time with a precission of seconds
+  /// Stores dates and time with a precision of seconds
   /// </summary>
   public class DateSeconds { }
 

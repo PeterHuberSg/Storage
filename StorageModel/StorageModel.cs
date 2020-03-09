@@ -1,9 +1,26 @@
-﻿#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+﻿/**************************************************************************************
+
+StorageModel
+============
+
+Shows how Data Model classes can be defined for storage compiler
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
 using System;
 using System.Collections.Generic;
 using Storage;
 
 
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 namespace StorageModel {
 
 
@@ -72,7 +89,7 @@ namespace StorageModel {
     public Decimal2 Amount;
 
     /// <summary>
-    /// PreciseDecimal with about 20 digits precission, takes a lot of storage space
+    /// PreciseDecimal with about 20 digits precision, takes a lot of storage space
     /// </summary>
     public decimal PreciseDecimal;
 

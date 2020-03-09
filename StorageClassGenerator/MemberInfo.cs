@@ -1,11 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/**************************************************************************************
+
+Storage.MemberInfo
+==================
+
+Some info for each class defined in data model
+
+Written in 2020 by Jürgpeter Huber 
+Contact: PeterCode at Peterbox dot com
+
+To the extent possible under law, the author(s) have dedicated all copyright and 
+related and neighboring rights to this software to the public domain worldwide under
+the Creative Commons 0 license (details see COPYING.txt file, see also
+<http://creativecommons.org/publicdomain/zero/1.0/>). 
+
+This software is distributed without any warranty. 
+**************************************************************************************/
+using System;
 using System.IO;
-using System.Text;
 
 
 namespace Storage {
 
+  /// <summary>
+  /// Data types supported by storage compiler
+  /// </summary>
   public enum MemberTypeEnum {
     Undefined = 0,
     Date,
@@ -25,6 +43,9 @@ namespace Storage {
   }
 
 
+  /// <summary>
+  /// Some info for each class defined in data model
+  /// </summary>
   public class MemberInfo {
     public readonly string MemberName;
     public readonly string LowerMemberName;
@@ -81,7 +102,7 @@ namespace Storage {
         CsvWriterWrite = "WriteTime";
         NoValue = "TimeSpan.MinValue";
         ToStringFunc = "";
-        PrecissionComment = "Stores less than 24 hours with second precission.";
+        PrecissionComment = "Stores less than 24 hours with second precision.";
         Rounding = ".Round(Rounding.Seconds)";
         break;
 
@@ -92,7 +113,7 @@ namespace Storage {
         CsvWriterWrite = "WriteDateMinutes";
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
-        PrecissionComment = "Stores date and time with minute precission.";
+        PrecissionComment = "Stores date and time with minute preclusion.";
         Rounding = ".Round(Rounding.Minutes)";
         break;
 
@@ -103,7 +124,7 @@ namespace Storage {
         CsvWriterWrite = "WriteDateSeconds";
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
-        PrecissionComment = "Stores date and time with seconds precission.";
+        PrecissionComment = "Stores date and time with seconds precision.";
         Rounding = ".Round(Rounding.Seconds)";
         break;
 
@@ -114,7 +135,7 @@ namespace Storage {
         CsvWriterWrite = "WriteDateTimeTicks";
         NoValue = "DateTime.MinValue";
         ToStringFunc = "";
-        PrecissionComment = "Stores date and time with tick precission.";
+        PrecissionComment = "Stores date and time with tick precision.";
         break;
 
       case MemberTypeEnum.Decimal: 
@@ -129,7 +150,7 @@ namespace Storage {
         }
         CsvWriterWrite = "Write";
         ToStringFunc = "";
-        PrecissionComment = "Stores date and time with maximum precission.";
+        PrecissionComment = "Stores date and time with maximum precision.";
         break;
 
       case MemberTypeEnum.Decimal2:
@@ -178,7 +199,7 @@ namespace Storage {
 
       case MemberTypeEnum.String: 
         TypeString = "string";
-        MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and coorects this number for CsvReader
+        MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and corrects this number for CsvReader
         CsvReaderRead = "ReadString()!";
         CsvWriterWrite = "Write";
         NoValue = isNullable ? "null" : $"\"No{name}\"";
