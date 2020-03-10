@@ -199,20 +199,31 @@ namespace Storage {
       streamWriter.WriteLine("    //}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onUpdate() {");
-      streamWriter.WriteLine("    //}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called after an update is read from a CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onCsvUpdate() {");
-      streamWriter.WriteLine("    //}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      if (this.AreItemsUpdatable) {
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    //partial void onUpdate() {");
+        streamWriter.WriteLine("    //}");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Called after an update is read from a CSV file");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    //partial void onCsvUpdate() {");
+        streamWriter.WriteLine("    //}");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+      }
+      if (this.AreItemsDeletable) {
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Called before removal gets executed");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    //partial void onRemove() {");
+        streamWriter.WriteLine("    //}");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+      }
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.List) {
           streamWriter.WriteLine("    /// <summary>");
@@ -618,139 +629,141 @@ namespace Storage {
       streamWriter.WriteLine();
       #endregion
 
-      #region Public Update()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Updates {ClassName} with the provided values");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write("    public void Update(");
-      writeParameters(streamWriter, isConstructor: false);
-      streamWriter.WriteLine("      var isChangeDetected = false;");
-      foreach (var mi in Members.Values) {
-        if (mi.MemberType!=MemberTypeEnum.List) {
-          if (mi.MemberType==MemberTypeEnum.Parent) {
-            if (mi.IsNullable) {
-              streamWriter.WriteLine($"      if ({mi.MemberName} is null) {{");
-              streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-              streamWriter.WriteLine("          //nothing to do");
-              streamWriter.WriteLine("        } else {");
-              streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"          {mi.MemberName}.AddTo{PluralName}(this);");
-              streamWriter.WriteLine("          isChangeDetected = true;");
-              streamWriter.WriteLine("        }");
-              streamWriter.WriteLine("      } else {");
-              streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-              streamWriter.WriteLine($"          {mi.MemberName}.RemoveFrom{PluralName}(this);");
-              streamWriter.WriteLine($"          {mi.MemberName} = null;");
-              streamWriter.WriteLine("          isChangeDetected = true;");
-              streamWriter.WriteLine("        } else {");
-              streamWriter.WriteLine($"          if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-              streamWriter.WriteLine($"            {mi.MemberName}.RemoveFrom{PluralName}(this);");
-              streamWriter.WriteLine($"            {mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"            {mi.MemberName}.AddTo{PluralName}(this);");
-              streamWriter.WriteLine("            isChangeDetected = true;");
-              streamWriter.WriteLine("          }");
-              streamWriter.WriteLine("        }");
+      if (AreItemsUpdatable) {
+        #region Public Update()
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Updates {ClassName} with the provided values");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.Write("    public void Update(");
+        writeParameters(streamWriter, isConstructor: false);
+        streamWriter.WriteLine("      var isChangeDetected = false;");
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType!=MemberTypeEnum.List) {
+            if (mi.MemberType==MemberTypeEnum.Parent) {
+              if (mi.IsNullable) {
+                streamWriter.WriteLine($"      if ({mi.MemberName} is null) {{");
+                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                streamWriter.WriteLine("          //nothing to do");
+                streamWriter.WriteLine("        } else {");
+                streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
+                streamWriter.WriteLine($"          {mi.MemberName}.AddTo{PluralName}(this);");
+                streamWriter.WriteLine("          isChangeDetected = true;");
+                streamWriter.WriteLine("        }");
+                streamWriter.WriteLine("      } else {");
+                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                streamWriter.WriteLine($"          {mi.MemberName}.RemoveFrom{PluralName}(this);");
+                streamWriter.WriteLine($"          {mi.MemberName} = null;");
+                streamWriter.WriteLine("          isChangeDetected = true;");
+                streamWriter.WriteLine("        } else {");
+                streamWriter.WriteLine($"          if ({mi.MemberName}!={mi.LowerMemberName}) {{");
+                streamWriter.WriteLine($"            {mi.MemberName}.RemoveFrom{PluralName}(this);");
+                streamWriter.WriteLine($"            {mi.MemberName} = {mi.LowerMemberName};");
+                streamWriter.WriteLine($"            {mi.MemberName}.AddTo{PluralName}(this);");
+                streamWriter.WriteLine("            isChangeDetected = true;");
+                streamWriter.WriteLine("          }");
+                streamWriter.WriteLine("        }");
+                streamWriter.WriteLine("      }");
+              } else {
+                streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
+                streamWriter.WriteLine($"        {mi.MemberName}.RemoveFrom{PluralName}(this);");
+                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
+                streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
+                streamWriter.WriteLine("        isChangeDetected = true;");
+                streamWriter.WriteLine("      }");
+              }
+            } else if (mi.Rounding!=null) {
+              streamWriter.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
+              streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
+              streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
+              streamWriter.WriteLine("        isChangeDetected = true;");
               streamWriter.WriteLine("      }");
             } else {
               streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-              streamWriter.WriteLine($"        {mi.MemberName}.RemoveFrom{PluralName}(this);");
               streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
               streamWriter.WriteLine("        isChangeDetected = true;");
               streamWriter.WriteLine("      }");
             }
-          } else if (mi.Rounding!=null) {
-            streamWriter.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
-            streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
-            streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
-            streamWriter.WriteLine("        isChangeDetected = true;");
-            streamWriter.WriteLine("      }");
-          } else {
-            streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-            streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine("        isChangeDetected = true;");
-            streamWriter.WriteLine("      }");
           }
         }
-      }
-      streamWriter.WriteLine("      if (isChangeDetected) {");
-      streamWriter.WriteLine("        onUpdate();");
-      streamWriter.WriteLine("        HasChanged?.Invoke(this);");
-      streamWriter.WriteLine("      }");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onUpdate();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      #endregion
+        streamWriter.WriteLine("      if (isChangeDetected) {");
+        streamWriter.WriteLine("        onUpdate();");
+        streamWriter.WriteLine("        HasChanged?.Invoke(this);");
+        streamWriter.WriteLine("      }");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine("    partial void onUpdate();");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        #endregion
 
-      #region Internal Update()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Updates this {ClassName} with values from CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write($"    internal static void Update({ClassName} {LowerClassName}, CsvReader csvReader, {context} ");
-      if (Parents.Count>0) {
-        streamWriter.Write("context");
-      } else {
-        streamWriter.Write("_");
-      }
-      streamWriter.WriteLine(") {");
-      foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.Parent) {
-          if (mi.IsNullable) {
-            streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
-            streamWriter.WriteLine($"      {mi.ParentType}? {mi.LowerMemberName};");
-            streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
-            streamWriter.WriteLine($"        {mi.LowerMemberName} = null;");
-            streamWriter.WriteLine("      } else {");
-            streamWriter.WriteLine($"        if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
-            streamWriter.WriteLine($"          {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
-            streamWriter.WriteLine("        }");
-            streamWriter.WriteLine("      }");
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
-            streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-            streamWriter.WriteLine("          //nothing to do");
-            streamWriter.WriteLine("        } else {");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("        }");
-            streamWriter.WriteLine("      } else {");
-            streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-            streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("          }");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
-            streamWriter.WriteLine("        } else {");
-            streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("          }");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("        }");
-            streamWriter.WriteLine("      }");
-          } else {
-            streamWriter.WriteLine($"      if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
-            streamWriter.WriteLine($"        {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
-            streamWriter.WriteLine("      }");
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
-            streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("        }");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("      }");
-          }
-        } else if (mi.MemberType==MemberTypeEnum.Enum) {
-          streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
-        } else if (mi.MemberType!=MemberTypeEnum.List) {
-          streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+        #region Internal Update()
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Updates this {ClassName} with values from CSV file");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.Write($"    internal static void Update({ClassName} {LowerClassName}, CsvReader csvReader, {context} ");
+        if (Parents.Count>0) {
+          streamWriter.Write("context");
+        } else {
+          streamWriter.Write("_");
         }
+        streamWriter.WriteLine(") {");
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.Parent) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
+              streamWriter.WriteLine($"      {mi.ParentType}? {mi.LowerMemberName};");
+              streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+              streamWriter.WriteLine($"        {mi.LowerMemberName} = null;");
+              streamWriter.WriteLine("      } else {");
+              streamWriter.WriteLine($"        if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
+              streamWriter.WriteLine($"          {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
+              streamWriter.WriteLine("        }");
+              streamWriter.WriteLine("      }");
+              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
+              streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+              streamWriter.WriteLine("          //nothing to do");
+              streamWriter.WriteLine("        } else {");
+              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("        }");
+              streamWriter.WriteLine("      } else {");
+              streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+              streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+              streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("          }");
+              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
+              streamWriter.WriteLine("        } else {");
+              streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+              streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("          }");
+              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("        }");
+              streamWriter.WriteLine("      }");
+            } else {
+              streamWriter.WriteLine($"      if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+              streamWriter.WriteLine($"        {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
+              streamWriter.WriteLine("      }");
+              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
+              streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("        }");
+              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("      }");
+            }
+          } else if (mi.MemberType==MemberTypeEnum.Enum) {
+            streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+          } else if (mi.MemberType!=MemberTypeEnum.List) {
+            streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+          }
+        }
+        streamWriter.WriteLine($"      {LowerClassName}.onCsvUpdate();");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine("    partial void onCsvUpdate();");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        #endregion
       }
-      streamWriter.WriteLine($"      {LowerClassName}.onCsvUpdate();");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onCsvUpdate();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      #endregion
 
       #region AddTo() and RemoveFrom()
       foreach (var mi in Members.Values) {
@@ -809,89 +822,100 @@ namespace Storage {
       }
       #endregion
 
-      #region Remove()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
-      writeRemoveComent(streamWriter, isCapitaliseFirstLetter: false);
-      streamWriter.WriteLine(".");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    public void Remove() {");
-      streamWriter.WriteLine("      if (Key<0) {");
-      streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Remove(): {ClassName} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
-      streamWriter.WriteLine("      }");
-      streamWriter.WriteLine("      onRemove();");
-      streamWriter.WriteLine($"      {context}.Data.{PluralName}.Remove(Key);");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onRemove();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      #endregion
+      if (AreItemsDeletable) {
+        #region Remove()
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
+        writeRemoveComent(streamWriter, isCapitaliseFirstLetter: false);
+        streamWriter.WriteLine(".");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    public void Remove() {");
+        streamWriter.WriteLine("      if (Key<0) {");
+        streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Remove(): {ClassName} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
+        streamWriter.WriteLine("      }");
+        streamWriter.WriteLine("      onRemove();");
+        streamWriter.WriteLine($"      {context}.Data.{PluralName}.Remove(Key);");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine("    partial void onRemove();");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        #endregion
 
-      #region Disconnect()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// ");
-      writeRemoveComent(streamWriter, isCapitaliseFirstLetter: true);
-      streamWriter.WriteLine(".");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
-      foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.List) {
-          streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}) {{");
+        #region Disconnect()
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.Write($"    /// ");
+        writeRemoveComent(streamWriter, isCapitaliseFirstLetter: true);
+        streamWriter.WriteLine(".");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.List) {
+            streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}) {{");
 
-          //var childClassMember = mi.ChildClassInfo!.Members[Name];
-          //if (childClassMember.IsNullable) {
-          //  streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{Name}(" + LowerName + ");");
-          //} else {
-          //  streamWriter.WriteLine("         if (sampleDetail.Key>=0) {");
-          //  streamWriter.WriteLine("           sampleDetail.Remove();");
-          //  streamWriter.WriteLine("         }");
-          //}
+            //var childClassMember = mi.ChildClassInfo!.Members[Name];
+            //if (childClassMember.IsNullable) {
+            //  streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{Name}(" + LowerName + ");");
+            //} else {
+            //  streamWriter.WriteLine("         if (sampleDetail.Key>=0) {");
+            //  streamWriter.WriteLine("           sampleDetail.Remove();");
+            //  streamWriter.WriteLine("         }");
+            //}
 
-          foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
-            if (childMI.MemberType==MemberTypeEnum.Parent && (childMI.ParentType!)==ClassName) {
-              if (childMI.IsNullable) {
-                streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{childMI.MemberName}({LowerClassName});");
-              } else {
-                streamWriter.WriteLine($"         if ({mi.LowerChildTypeName}.Key>=0) {{");
-                streamWriter.WriteLine($"           {mi.LowerChildTypeName}.Remove();");
-                streamWriter.WriteLine("         }");
+            foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
+              if (childMI.MemberType==MemberTypeEnum.Parent && (childMI.ParentType!)==ClassName) {
+                if (childMI.IsNullable) {
+                  streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{childMI.MemberName}({LowerClassName});");
+                } else {
+                  streamWriter.WriteLine($"         if ({mi.LowerChildTypeName}.Key>=0) {{");
+                  streamWriter.WriteLine($"           {mi.LowerChildTypeName}.Remove();");
+                  streamWriter.WriteLine("         }");
+                }
               }
             }
-          }
-          streamWriter.WriteLine("      }");
-        } else if (mi.MemberType==MemberTypeEnum.Parent) {
-          if (mi.IsNullable) {
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
             streamWriter.WriteLine("      }");
-          } else {
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-            streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-            streamWriter.WriteLine("      }");
+          } else if (mi.MemberType==MemberTypeEnum.Parent) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("      }");
+            } else {
+              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+              streamWriter.WriteLine("      }");
+            }
           }
         }
-      }
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      #endregion
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        #endregion
 
-      #region Internal RemoveParent())
-      foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.Parent && mi.IsNullable) {
-          streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// Removes {mi.LowerParentType} from {mi.MemberName}");
-          streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    internal void Remove{mi.MemberName}({mi.ParentType} {mi.LowerParentType}) {{");
-          streamWriter.WriteLine($"      if ({mi.LowerParentType}!={mi.MemberName}) throw new Exception();");
-          streamWriter.WriteLine($"      {mi.MemberName} = null;");
-          streamWriter.WriteLine("      HasChanged?.Invoke(this);");
-          streamWriter.WriteLine("    }");
-          streamWriter.WriteLine();
-          streamWriter.WriteLine();
+        #region Internal RemoveParent())
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.Parent && mi.IsNullable) {
+            streamWriter.WriteLine("    /// <summary>");
+            streamWriter.WriteLine($"    /// Removes {mi.LowerParentType} from {mi.MemberName}");
+            streamWriter.WriteLine("    /// </summary>");
+            streamWriter.WriteLine($"    internal void Remove{mi.MemberName}({mi.ParentType} {mi.LowerParentType}) {{");
+            streamWriter.WriteLine($"      if ({mi.LowerParentType}!={mi.MemberName}) throw new Exception();");
+            streamWriter.WriteLine($"      {mi.MemberName} = null;");
+            streamWriter.WriteLine("      HasChanged?.Invoke(this);");
+            streamWriter.WriteLine("    }");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine();
+          }
         }
+        #endregion
+      } else {
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Removing {ClassName} from {context}.Data.{PluralName} is not supported.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    public void Remove() {");
+        streamWriter.WriteLine("      throw new NotSupportedException();");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
       }
-      #endregion
 
       #region ToShortString()
       streamWriter.WriteLine("    /// <summary>");

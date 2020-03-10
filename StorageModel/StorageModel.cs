@@ -165,4 +165,11 @@ namespace StorageModel {
     /// </summary>
     public Sample Sample;
   }
+
+
+  [StorageClass(areItemsUpdatable: false, areItemsDeletable: false)]
+  public class Minimal {
+    public readonly int SomeNumber;
+    public int AnotherNumber;
+  }
 }

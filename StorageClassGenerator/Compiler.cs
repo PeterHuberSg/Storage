@@ -452,7 +452,11 @@ namespace Storage {
         streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionary<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
-        streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
+        if (classInfo.AreItemsDeletable) {
+          streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
+        } else {
+          streamWriter.WriteLine($"          null,");
+        }
         streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable.ToString().ToLowerInvariant()},");
         streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable.ToString().ToLowerInvariant()});");
       }
@@ -470,9 +474,17 @@ namespace Storage {
         } else {
           streamWriter.WriteLine("          null,");
         }
-        streamWriter.WriteLine($"          {classInfo.ClassName}.Update,");
+        if (classInfo.AreItemsUpdatable) {
+          streamWriter.WriteLine($"          {classInfo.ClassName}.Update,");
+        } else {
+          streamWriter.WriteLine($"          null,");
+        }
         streamWriter.WriteLine($"          {classInfo.ClassName}.Write,");
-        streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
+        if (classInfo.AreItemsDeletable) {
+          streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
+        } else {
+          streamWriter.WriteLine($"          null,");
+        }
         streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable.ToString().ToLowerInvariant()},");
         streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable.ToString().ToLowerInvariant()},");
         streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose.ToString().ToLowerInvariant()});");

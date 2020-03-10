@@ -59,6 +59,11 @@ namespace StorageModel  {
     //      ----------
 
     /// <summary>
+    /// Directory of all Minimals
+    /// </summary>
+    public StorageDictionary<Minimal, DL> Minimals { get; private set; }
+
+    /// <summary>
     /// Directory of all SampleX
     /// </summary>
     public StorageDictionary<Sample, DL> SampleX { get; private set; }
@@ -94,7 +99,7 @@ namespace StorageModel  {
         SampleMasters = new StorageDictionary<SampleMaster, DL>(
           this,
           SampleMaster.SetKey,
-          SampleMaster.Disconnect,
+          null,
           areItemsUpdatable: true,
           areItemsDeletable: false);
         SampleX = new StorageDictionary<Sample, DL>(
@@ -109,6 +114,12 @@ namespace StorageModel  {
           SampleDetail.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true);
+        Minimals = new StorageDictionary<Minimal, DL>(
+          this,
+          Minimal.SetKey,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -120,7 +131,7 @@ namespace StorageModel  {
           null,
           SampleMaster.Update,
           SampleMaster.Write,
-          SampleMaster.Disconnect,
+          null,
           areItemsUpdatable: true,
           areItemsDeletable: false,
           isCompactDuringDispose: false);
@@ -152,6 +163,20 @@ namespace StorageModel  {
           areItemsUpdatable: true,
           areItemsDeletable: true,
           isCompactDuringDispose: false);
+        Minimals = new StorageDictionaryCSV<Minimal, DL>(
+          this,
+          csvConfig!,
+          Minimal.MaxLineLength,
+          Minimal.Headers,
+          Minimal.SetKey,
+          Minimal.Create,
+          null,
+          null,
+          Minimal.Write,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false,
+          isCompactDuringDispose: true);
       }
       onConstruct();
     }
@@ -181,6 +206,7 @@ namespace StorageModel  {
 
       if (disposing) {
         onDispose();
+        Minimals.Dispose();
         SampleDetails.Dispose();
         SampleX.Dispose();
         SampleMasters.Dispose();

@@ -207,7 +207,7 @@ namespace StorageModel  {
       Flag = flag;
       Number = number;
       Amount = amount.Round(2);
-      Amount4 = amount4.Round(2);
+      Amount4 = amount4.Round(4);
       PreciseDecimal = preciseDecimal;
       SampleState = sampleState;
       DateOnly = dateOnly.Floor(Rounding.Days);
@@ -388,7 +388,7 @@ namespace StorageModel  {
         Amount = amountRounded;
         isChangeDetected = true;
       }
-      var amount4Rounded = amount4.Round(2);
+      var amount4Rounded = amount4.Round(4);
       if (Amount4!=amount4Rounded) {
         Amount4 = amount4Rounded;
         isChangeDetected = true;

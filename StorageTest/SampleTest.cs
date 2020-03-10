@@ -69,8 +69,8 @@ namespace StorageTest {
 
           removeDetail(2);
           removeSample(2);
-          removeMaster(2);
-          removeMaster(1);
+          //removeMaster(2);
+          //removeMaster(1);
           //showStructure()
         } finally {
           DL.DisposeData();
@@ -113,16 +113,16 @@ namespace StorageTest {
     }
 
 
-    private void removeMaster(int masterKey) {
-      expectedData!.Masters.Remove(masterKey);
-      var master = DL.Data.SampleMasters[masterKey];
-      master.Remove();
-      foreach (var sample in master.SampleX) {
-        expectedData!.Samples.Remove(sample.Key);
-        expectedData!.Samples.Add(sample.Key, sample.ToString());
-      }
-      assertData();
-    }
+    //private void removeMaster(int masterKey) {
+    //  expectedData!.Masters.Remove(masterKey);
+    //  var master = DL.Data.SampleMasters[masterKey];
+    //  master.Remove();
+    //  foreach (var sample in master.SampleX) {
+    //    expectedData!.Samples.Remove(sample.Key);
+    //    expectedData!.Samples.Add(sample.Key, sample.ToString());
+    //  }
+    //  assertData();
+    //}
 
 
     private void addSample(int sampleKey, int? masterKey) {
@@ -134,6 +134,7 @@ namespace StorageTest {
           flag: false,
           number: sampleKey,
           amount: sampleKey,
+          amount4: sampleKey==0 ? 0 : sampleKey * 0.0001m,
           preciseDecimal: sampleKey/1000000m,
           sampleState: SampleStateEnum.None,
           dateOnly: DateTime.Now.Date.AddDays(-sampleKey),
@@ -144,13 +145,14 @@ namespace StorageTest {
           oneMaster: null,
           otherMaster: null,
           optional: null,
-          isStoring: false); ;
+          isStoring: false); ; ;
       } else {
         sample = new Sample(
           text: sampleText,
           flag: true,
           number: sampleKey,
           amount: sampleKey,
+          amount4: sampleKey==0 ? 0 : sampleKey * 0.0001m,
           preciseDecimal: sampleKey/1000000m,
           sampleState: SampleStateEnum.Some,
           dateOnly: DateTime.Now.Date.AddDays(-sampleKey),
@@ -177,6 +179,7 @@ namespace StorageTest {
         flag: sample.Flag,
         number: sample.Number,
         amount: sample.Amount,
+        amount4: sampleKey==0 ? 0 : sampleKey * 0.0001m,
         preciseDecimal: sample.PreciseDecimal,
         sampleState: sample.SampleState,
         dateOnly: sample.DateOnly,

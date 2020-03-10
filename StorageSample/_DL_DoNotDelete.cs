@@ -26,9 +26,9 @@ namespace StorageModel {
         SampleMasters = new StorageDictionary<SampleMaster, DL>(
           this,
           SampleMaster.SetKey,
-          SampleMaster.Disconnect,
+          null,
           areItemsUpdatable: true,
-          areItemsDeletable: true);
+          areItemsDeletable: false);
         SampleX = new StorageDictionary<Sample, DL>(
           this,
           Sample.SetKey,
@@ -41,6 +41,12 @@ namespace StorageModel {
           SampleDetail.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true);
+        Minimals = new StorageDictionary<Minimal, DL>(
+          this,
+          Minimal.SetKey,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -52,9 +58,9 @@ namespace StorageModel {
           null,
           SampleMaster.Update,
           SampleMaster.Write,
-          SampleMaster.Disconnect,
+          null,
           areItemsUpdatable: true,
-          areItemsDeletable: true,
+          areItemsDeletable: false,
           isCompactDuringDispose: isCompactDuringDispose);
         SampleX = new StorageDictionaryCSV<Sample, DL>(
           this,
@@ -83,6 +89,20 @@ namespace StorageModel {
           SampleDetail.Disconnect,
           areItemsUpdatable: true,
           areItemsDeletable: true,
+          isCompactDuringDispose: isCompactDuringDispose);
+        Minimals = new StorageDictionaryCSV<Minimal, DL>(
+          this,
+          csvConfig!,
+          Minimal.MaxLineLength,
+          Minimal.Headers,
+          Minimal.SetKey,
+          Minimal.Create,
+          null,
+          null,
+          Minimal.Write,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false,
           isCompactDuringDispose: isCompactDuringDispose);
       }
     }

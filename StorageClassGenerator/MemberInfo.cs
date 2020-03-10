@@ -183,7 +183,7 @@ namespace Storage {
         CsvWriterWrite = "WriteDecimal4";
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 4 digits after comma.";
-        Rounding = ".Round(2)";
+        Rounding = ".Round(4)";
         break;
 
       case MemberTypeEnum.Bool:

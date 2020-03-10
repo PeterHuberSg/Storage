@@ -213,29 +213,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes SampleMaster from DL.Data.SampleMasters, 
-    /// disconnects Sample.OneMaster from SampleX and 
-    /// disconnects Sample.OtherMaster from SampleX.
+    /// Removing SampleMaster from DL.Data.SampleMasters is not supported.
     /// </summary>
     public void Remove() {
-      if (Key<0) {
-        throw new Exception($"SampleMaster.Remove(): SampleMaster 'Class SampleMaster' is not stored in DL.Data, key is {Key}.");
-      }
-      onRemove();
-      DL.Data.SampleMasters.Remove(Key);
-    }
-    partial void onRemove();
-
-
-    /// <summary>
-    /// Disconnects Sample.OneMaster from SampleX and 
-    /// disconnects Sample.OtherMaster from SampleX.
-    /// </summary>
-    internal static void Disconnect(SampleMaster sampleMaster) {
-      foreach (var sample in sampleMaster.SampleX) {
-        sample.RemoveOneMaster(sampleMaster);
-        sample.RemoveOtherMaster(sampleMaster);
-      }
+      throw new NotSupportedException();
     }
 
 

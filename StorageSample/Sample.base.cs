@@ -57,6 +57,13 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Amount with 4 digits after comma comment
+    /// Stores decimal with 4 digits after comma.
+    /// </summary>
+    public decimal Amount4 { get; private set; }
+
+
+    /// <summary>
     /// PreciseDecimal with about 20 digits precision, takes a lot of storage space
     /// Stores date and time with maximum precision.
     /// </summary>
@@ -138,6 +145,7 @@ namespace StorageModel  {
       "Flag", 
       "Number", 
       "Amount", 
+      "Amount4", 
       "PreciseDecimal", 
       "SampleState", 
       "DateOnly", 
@@ -154,7 +162,7 @@ namespace StorageModel  {
     /// <summary>
     /// None existing Sample
     /// </summary>
-    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, DateTime.MinValue, DateTime.MinValue, null, null, null, isStoring: false);
+    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, DateTime.MinValue, DateTime.MinValue, null, null, null, isStoring: false);
     #endregion
 
 
@@ -181,6 +189,7 @@ namespace StorageModel  {
       bool flag, 
       int number, 
       decimal amount, 
+      decimal amount4, 
       decimal preciseDecimal, 
       SampleStateEnum sampleState, 
       DateTime dateOnly, 
@@ -198,6 +207,7 @@ namespace StorageModel  {
       Flag = flag;
       Number = number;
       Amount = amount.Round(2);
+      Amount4 = amount4.Round(4);
       PreciseDecimal = preciseDecimal;
       SampleState = sampleState;
       DateOnly = dateOnly.Floor(Rounding.Days);
@@ -227,6 +237,7 @@ namespace StorageModel  {
       Flag = csvReader.ReadBool();
       Number = csvReader.ReadInt();
       Amount = csvReader.ReadDecimal();
+      Amount4 = csvReader.ReadDecimal();
       PreciseDecimal = csvReader.ReadDecimal();
       SampleState = (SampleStateEnum)csvReader.ReadInt();
       DateOnly = csvReader.ReadDate();
@@ -312,6 +323,7 @@ namespace StorageModel  {
       csvWriter.Write(sample.Flag);
       csvWriter.Write(sample.Number);
       csvWriter.WriteDecimal2(sample.Amount);
+      csvWriter.WriteDecimal4(sample.Amount4);
       csvWriter.Write(sample.PreciseDecimal);
       csvWriter.Write((int)sample.SampleState);
       csvWriter.WriteDate(sample.DateOnly);
@@ -346,6 +358,7 @@ namespace StorageModel  {
       bool flag, 
       int number, 
       decimal amount, 
+      decimal amount4, 
       decimal preciseDecimal, 
       SampleStateEnum sampleState, 
       DateTime dateOnly, 
@@ -373,6 +386,11 @@ namespace StorageModel  {
       var amountRounded = amount.Round(2);
       if (Amount!=amountRounded) {
         Amount = amountRounded;
+        isChangeDetected = true;
+      }
+      var amount4Rounded = amount4.Round(4);
+      if (Amount4!=amount4Rounded) {
+        Amount4 = amount4Rounded;
         isChangeDetected = true;
       }
       if (PreciseDecimal!=preciseDecimal) {
@@ -469,6 +487,7 @@ namespace StorageModel  {
       sample.Flag = csvReader.ReadBool();
       sample.Number = csvReader.ReadInt();
       sample.Amount = csvReader.ReadDecimal();
+      sample.Amount4 = csvReader.ReadDecimal();
       sample.PreciseDecimal = csvReader.ReadDecimal();
       sample.SampleState = (SampleStateEnum)csvReader.ReadInt();
       sample.DateOnly = csvReader.ReadDate();
@@ -632,6 +651,7 @@ namespace StorageModel  {
         $" {Flag}," +
         $" {Number}," +
         $" {Amount}," +
+        $" {Amount4}," +
         $" {PreciseDecimal}," +
         $" {SampleState}," +
         $" {DateOnly.ToShortDateString()}," +
@@ -658,6 +678,7 @@ namespace StorageModel  {
         $" Flag: {Flag}," +
         $" Number: {Number}," +
         $" Amount: {Amount}," +
+        $" Amount4: {Amount4}," +
         $" PreciseDecimal: {PreciseDecimal}," +
         $" SampleState: {SampleState}," +
         $" DateOnly: {DateOnly.ToShortDateString()}," +
