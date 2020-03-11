@@ -33,7 +33,7 @@ namespace Storage {
     /// <param name="pluralName">used if class name has an irregular plural. Example: Activity => Activities</param>
     /// <param name="areItemsUpdatable">Can the properties of the class change ?</param>
     /// <param name="areItemsDeletable">Can class instance be deleted from StorageDirectory ?</param>
-    /// <param name="isCompactDuringDispose">Should during StorageDirectory.Dispose the CSV file get overwritten without deleted or old values.</param>
+    /// <param name="isCompactDuringDispose">Should during StorageDirectory.Dispose the CSV file get overwritten without deleted or old values ?</param>
     public StorageClassAttribute(
       int maxLineLength = 0,
       string? pluralName = null,
@@ -51,7 +51,9 @@ namespace Storage {
     /// Constructor
     /// </summary>
     /// <param name="defaultValue">Provides a default value for this property in the class constructor.</param>
-    public StoragePropertyAttribute(string? defaultValue = null) { }
+    /// <param name="isLookupOnly">Normally, a parent has a child collection for every child type referencing it. If the
+    /// child just wants to link to the parent without the parent having a collection for that child, set isLookupOnly = true.</param>
+    public StoragePropertyAttribute(string? defaultValue = null, bool isLookupOnly = false) { }
   }
 #pragma warning restore IDE0060 // Remove unused parameter
 

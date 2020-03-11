@@ -58,6 +58,7 @@ namespace Storage {
     public readonly string? PrecissionComment;
     public readonly string? Rounding;
     public readonly string? DefaultValue;
+    public readonly bool IsLookupOnly = false;
     public readonly int MaxStorageSize;
     public readonly string? ChildTypeName;
     public readonly string? LowerChildTypeName;
@@ -261,7 +262,15 @@ namespace Storage {
     /// <summary>
     /// constructor for Parent
     /// </summary>
-    public MemberInfo(string name, ClassInfo classInfo, string memberTypeString, bool isNullable, string? comment, string? defaultValue) {
+    public MemberInfo(
+      string name, 
+      ClassInfo classInfo, 
+      string memberTypeString, 
+      bool isNullable, 
+      string? comment, 
+      string? defaultValue,
+      bool isLookupOnly) 
+    {
       MemberType = MemberTypeEnum.Parent;
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -283,6 +292,7 @@ namespace Storage {
       }
       Comment = comment;
       DefaultValue = defaultValue;
+      IsLookupOnly = isLookupOnly;
     }
 
 

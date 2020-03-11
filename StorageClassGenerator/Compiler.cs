@@ -161,6 +161,7 @@ namespace Storage {
           foreach (var property in variableDeclaration.Variables) {
             //////////////////////////////////
             string? defaultValue = null;
+            bool? isLookupOnly = null;
             if (field.AttributeLists.Count==0) {
               if (isPropertyWithDefaultValueFound && !propertyType.StartsWith("List<")) {
                 throw new GeneratorException($"Property {className}.{property.Identifier.Text} should have a " +
@@ -183,29 +184,30 @@ namespace Storage {
                 if (argument.NameColon is null) throw new GeneratorException($"Property {className}.{property.Identifier.Text} Attribute{attribute}: the argument name is missing, like 'defaultValue: null'.");
 
                 var name = argument.NameColon.Name.Identifier.Text;
-                //try {
-                //  var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
-                //  switch (name) {
-                //  case "defaultValue": defaultValue = value[1..^1]; break;
-                //  default: throw new Exception();
-                //  }
-                //} catch {
-                //  new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
-                //}
                 try {
                   var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
-                  defaultValue = name switch {
-                    "defaultValue" => value[1..^1],
-                    _ => throw new Exception(),
-                  };
+                  switch (name) {
+                  case "defaultValue": defaultValue = value[1..^1]; break;
+                  case "isLookupOnly": isLookupOnly = bool.Parse(value); break;
+                  default: throw new Exception();
+                  }
                 } catch {
                   new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
                 }
+                //try {
+                //  var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
+                //  defaultValue = name switch {
+                //    "defaultValue" => value[1..^1],
+                //    _ => throw new Exception(),
+                //  };
+                //} catch {
+                //  new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
+                //}
               }
               isPropertyWithDefaultValueFound = true;
               ///////////////////////////////////
             }
-            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue);
+            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly);
             //}
           }
         }
@@ -239,19 +241,22 @@ namespace Storage {
         foreach (var memberInfo in classInfo.Members.Values) {
           if (memberInfo.MemberType==MemberTypeEnum.Parent) {
             if (classes.TryGetValue(memberInfo.ParentType!, out memberInfo.ParentClassInfo)) {
-              classInfo.Parents.Add(memberInfo.ParentClassInfo);
-              memberInfo.ParentClassInfo.Children.Add(classInfo);
+              classInfo.ParentsAll.Add(memberInfo.ParentClassInfo);
               topClasses.Remove(classInfo.ClassName);
-              var isfound = false;
-              foreach (var parentMember in memberInfo.ParentClassInfo.Members.Values) {
-                if (parentMember.MemberName==classInfo.PluralName) {
-                  isfound = true;
-                  parentMember.ChildCount++;
-                  break;
+              memberInfo.ParentClassInfo.Children.Add(classInfo);
+              if (!memberInfo.IsLookupOnly) {
+                classInfo.ParentsWithList.Add(memberInfo.ParentClassInfo);
+                var isfound = false;
+                foreach (var parentMember in memberInfo.ParentClassInfo.Members.Values) {
+                  if (parentMember.MemberName==classInfo.PluralName) {
+                    isfound = true;
+                    parentMember.ChildCount++;
+                    break;
+                  }
                 }
-              }
-              if (!isfound) {
-                throw new GeneratorException($"Class {memberInfo.ParentClassInfo.ClassName}: property 'List<{classInfo.ClassName}> {classInfo.PluralName}' is missing.");
+                if (!isfound) {
+                  throw new GeneratorException($"Class {memberInfo.ParentClassInfo.ClassName}: property 'List<{classInfo.ClassName}> {classInfo.PluralName}' is missing.");
+                }
               }
             } else {
               if (enums.TryGetValue(memberInfo.ParentType!, out memberInfo.EnumInfo)) {
@@ -305,7 +310,7 @@ namespace Storage {
 
 
     private bool allParentsAreAddedToParentChildTree(ClassInfo childClass) {
-      foreach (var parentClass in childClass.Parents) {
+      foreach (var parentClass in childClass.ParentsAll) {
         if (!parentClass.IsAddedToParentChildTree) return false;
 
         //if (!allParentsAreAddedToParentChildTree(parentClass)) return false;
@@ -469,7 +474,7 @@ namespace Storage {
         streamWriter.WriteLine($"          {classInfo.ClassName}.Headers,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Create,");
-        if (classInfo.Parents.Count>0) {
+        if (classInfo.ParentsWithList.Count>0) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Verify,");
         } else {
           streamWriter.WriteLine("          null,");

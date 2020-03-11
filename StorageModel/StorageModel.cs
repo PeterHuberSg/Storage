@@ -47,7 +47,7 @@ namespace StorageModel {
     /// Some Text comment
     /// </summary>
     public string Text;
-    
+
     /// <summary>
     /// Some Samples comment
     /// </summary>
@@ -169,7 +169,16 @@ namespace StorageModel {
 
   [StorageClass(areItemsUpdatable: false, areItemsDeletable: false)]
   public class Minimal {
-    public readonly int SomeNumber;
+    public int SomeNumber;
     public int AnotherNumber;
   }
+
+
+  [StorageClass(areItemsUpdatable: false, areItemsDeletable: false)]
+  public class MinimalRef {
+    public int Number;
+    [StorageProperty(isLookupOnly: true)] //parent Minimal does not have a collection for MinimalRef
+    public Minimal MinimalLookup;
+  }
+
 }

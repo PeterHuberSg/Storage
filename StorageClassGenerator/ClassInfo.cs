@@ -36,7 +36,8 @@ namespace Storage {
     public readonly bool AreItemsDeletable;
     public readonly bool IsCompactDuringDispose;
     public readonly Dictionary<string, MemberInfo> Members;
-    public readonly HashSet<ClassInfo> Parents;
+    public readonly HashSet<ClassInfo> ParentsAll;
+    public readonly HashSet<ClassInfo> ParentsWithList;
     public readonly List<ClassInfo> Children;
 
     public int EstimatedMaxByteSize;
@@ -62,19 +63,21 @@ namespace Storage {
       AreItemsDeletable = areItemsDeletable;
       IsCompactDuringDispose = isCompactDuringDispose;
       Members = new Dictionary<string, MemberInfo>();
-      Parents = new HashSet<ClassInfo>();
+      ParentsAll = new HashSet<ClassInfo>();
+      ParentsWithList = new HashSet<ClassInfo>();
       Children = new List<ClassInfo>();
       EstimatedMaxByteSize = 0;
       IsAddedToParentChildTree = false;
     }
 
 
-    public void AddMember(string name, string memberTypeString, string? propertyComment, string ? defaultValue) {
-      MemberInfo member;
+    public void AddMember(string name, string memberTypeString, string? propertyComment, string ? defaultValue, bool? isLookupOnly) {
+      var isLookUp = false;
       var isNullable = memberTypeString[^1]=='?';
       if (isNullable) {
         memberTypeString = memberTypeString[..^1];
       }
+      MemberInfo member;
       switch (memberTypeString.ToLowerInvariant()) {
       case "date": member = new MemberInfo(name, MemberTypeEnum.Date, this, isNullable, propertyComment, defaultValue); break;
       case "time": member = new MemberInfo(name, MemberTypeEnum.Time, this, isNullable, propertyComment, defaultValue); break;
@@ -97,8 +100,15 @@ namespace Storage {
           }
           throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {memberTypeString} not support. Should it be a List<> ?");
         }
-        /*Parent*/member = new MemberInfo(name, this, memberTypeString, isNullable, propertyComment, defaultValue);
+        /*Parent*/
+        member = new MemberInfo(name, this, memberTypeString, isNullable, propertyComment, defaultValue, isLookupOnly??false);
+        isLookUp = true;
         break;
+      }
+
+      if (!isLookUp && isLookupOnly.HasValue) {
+        throw new GeneratorException($"Class '{ClassName}.{name}': Remove [StorageProperty(isLookupOnly: {isLookupOnly.Value})], " +
+            "it can only be applied when referencing a parent.");
       }
       Members.Add(member.MemberName, member);
       EstimatedMaxByteSize +=member.MaxStorageSize;
@@ -446,7 +456,7 @@ namespace Storage {
       streamWriter.WriteLine($"    /// Constructor for {ClassName} read from CSV file");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write($"    private {ClassName}(int key, CsvReader csvReader, {context} ");
-      if (Parents.Count>0) {
+      if (ParentsAll.Count>0) {
         streamWriter.Write("context");
       } else {
         streamWriter.Write("_");
@@ -467,7 +477,9 @@ namespace Storage {
             streamWriter.WriteLine($"        if (context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, " + 
               $"out var {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"          {mi.MemberName}.AddTo{PluralName}(this);");
+            if (!mi.IsLookupOnly) {
+              streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
+            }
             streamWriter.WriteLine("        } else {");
             streamWriter.WriteLine($"          {mi.MemberName} = {mi.ParentType}.No{mi.ParentType};");
             streamWriter.WriteLine("        }");
@@ -475,7 +487,9 @@ namespace Storage {
           } else {
             streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
+            if (!mi.IsLookupOnly) {
+              streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
+            }
             streamWriter.WriteLine("      } else {");
             streamWriter.WriteLine($"        {mi.MemberName} = {mi.ParentType}.No{mi.ParentType};");
             streamWriter.WriteLine("      }");
@@ -544,7 +558,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.Write($"    /// Adds {ClassName} to {context}.Data.{PluralName}");
       var parts = new List<string>();
-      foreach (var parent in Parents) {
+      foreach (var parent in ParentsWithList) {
         parts.Add($"{parent.ClassName}.{PluralName}");
       }
       if (parts.Count>0) {
@@ -567,7 +581,7 @@ namespace Storage {
       streamWriter.WriteLine("      onStore();");
       streamWriter.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.Parent) {
+        if (mi.MemberType==MemberTypeEnum.Parent && !mi.IsLookupOnly) {
           if (mi.IsNullable) {
             //streamWriter.WriteLine($"      if ({mi.Name}!=null) {{");
             streamWriter.WriteLine($"      {mi.MemberName}?.AddTo{PluralName}(this);");
@@ -700,7 +714,7 @@ namespace Storage {
         streamWriter.WriteLine($"    /// Updates this {ClassName} with values from CSV file");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.Write($"    internal static void Update({ClassName} {LowerClassName}, CsvReader csvReader, {context} ");
-        if (Parents.Count>0) {
+        if (ParentsWithList.Count>0) {
           streamWriter.Write("context");
         } else {
           streamWriter.Write("_");

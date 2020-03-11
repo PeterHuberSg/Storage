@@ -47,17 +47,14 @@ namespace Storage {
     /// adding all code needed for object oriented data storage. A corresponding.cs file gets created, if it doesn't exist yet, where
     /// more code can get added manually. The generator will not overwrite these changes.<para/>
     /// 
-    /// The following constants can be used in a class to configure its behavior:<para/>
+    /// The following arguments can be used in the class attribute StorageClass to configure its behavior:<para/>
     /// 
-    /// MaxLineLenght: Number of UTF8 bytes needed to store longest class instance in a CVS file<para/>
+    /// maxLineLength: Maximum number of UTF8 bytes needed to write class to CSV file.<para/>
+    /// pluralName: used if class name has an irregular plural. Example: Activity => Activities<para/>
+    /// areItemsUpdatable: Can the properties of the class change ?<para/>
+    /// areItemsDeletable: Can class instance be deleted from StorageDirectory ?<para/>
+    /// isCompactDuringDispose: Should during StorageDirectory.Dispose the CSV file get overwritten without deleted or old values ?<para/>
     /// 
-    /// AreItemsUpdatable, default true: Can the property values be changed once an instance is created ?<para/>
-    /// 
-    /// AreItemsDeletable, default true: Can an created instance get removed from its StorageDirectory ?<para/>
-    /// 
-    /// IsCompactDuringDispose, default true: When property values get changed or an instance deleted, this activity gets written 
-    /// immediately to the CVS file. IsCompactDuringDispose is true, a new CSV file gets written containing only the still existing
-    /// instances with their updated values.
     /// </summary>
     /// <param name="sourceDirectoryString">Source directory from where the .cs files get read.</param>
     /// <param name="targetDirectoryString">Target directory where the new .cs files get written.</param>

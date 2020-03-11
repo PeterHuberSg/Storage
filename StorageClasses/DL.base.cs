@@ -64,6 +64,11 @@ namespace StorageModel  {
     public StorageDictionary<Minimal, DL> Minimals { get; private set; }
 
     /// <summary>
+    /// Directory of all MinimalRefs
+    /// </summary>
+    public StorageDictionary<MinimalRef, DL> MinimalRefs { get; private set; }
+
+    /// <summary>
     /// Directory of all SampleX
     /// </summary>
     public StorageDictionary<Sample, DL> SampleX { get; private set; }
@@ -117,6 +122,12 @@ namespace StorageModel  {
         Minimals = new StorageDictionary<Minimal, DL>(
           this,
           Minimal.SetKey,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false);
+        MinimalRefs = new StorageDictionary<MinimalRef, DL>(
+          this,
+          MinimalRef.SetKey,
           null,
           areItemsUpdatable: false,
           areItemsDeletable: false);
@@ -177,6 +188,20 @@ namespace StorageModel  {
           areItemsUpdatable: false,
           areItemsDeletable: false,
           isCompactDuringDispose: true);
+        MinimalRefs = new StorageDictionaryCSV<MinimalRef, DL>(
+          this,
+          csvConfig!,
+          MinimalRef.MaxLineLength,
+          MinimalRef.Headers,
+          MinimalRef.SetKey,
+          MinimalRef.Create,
+          null,
+          null,
+          MinimalRef.Write,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false,
+          isCompactDuringDispose: true);
       }
       onConstruct();
     }
@@ -206,6 +231,7 @@ namespace StorageModel  {
 
       if (disposing) {
         onDispose();
+        MinimalRefs.Dispose();
         Minimals.Dispose();
         SampleDetails.Dispose();
         SampleX.Dispose();

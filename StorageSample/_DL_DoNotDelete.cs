@@ -47,6 +47,12 @@ namespace StorageModel {
           null,
           areItemsUpdatable: false,
           areItemsDeletable: false);
+        MinimalRefs = new StorageDictionary<MinimalRef, DL>(
+          this,
+          MinimalRef.SetKey,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -100,6 +106,20 @@ namespace StorageModel {
           null,
           null,
           Minimal.Write,
+          null,
+          areItemsUpdatable: false,
+          areItemsDeletable: false,
+          isCompactDuringDispose: isCompactDuringDispose);
+        MinimalRefs = new StorageDictionaryCSV<MinimalRef, DL>(
+          this,
+          csvConfig!,
+          MinimalRef.MaxLineLength,
+          MinimalRef.Headers,
+          MinimalRef.SetKey,
+          MinimalRef.Create,
+          null,
+          null,
+          MinimalRef.Write,
           null,
           areItemsUpdatable: false,
           areItemsDeletable: false,

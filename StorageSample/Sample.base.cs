@@ -249,7 +249,7 @@ namespace StorageModel  {
       if (oneMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
           OneMaster = oneMaster;
-          OneMaster.AddToSampleX(this);
+        OneMaster.AddToSampleX(this);
         } else {
           OneMaster = SampleMaster.NoSampleMaster;
         }
@@ -258,7 +258,7 @@ namespace StorageModel  {
       if (otherMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(otherMasterKey.Value, out var otherMaster)) {
           OtherMaster = otherMaster;
-          OtherMaster.AddToSampleX(this);
+        OtherMaster.AddToSampleX(this);
         } else {
           OtherMaster = SampleMaster.NoSampleMaster;
         }
