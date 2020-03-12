@@ -103,10 +103,10 @@ namespace Storage {
 
       delimiter = (int)csvConfig.Delimiter;
 
-      MaxLineByteLenght = CsvConfig.BufferSize/Csv.LineToBufferRatio;
+      MaxLineByteLenght = CsvConfig.BufferSize/Csv.ByteBufferToReserveRatio;
       if (maxLineCharLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
         throw new Exception($"CsvReader constructor: BufferSize {CsvConfig.BufferSize} should be at least " + 
-          $"{Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+          $"{Csv.ByteBufferToReserveRatio*Csv.Utf8BytesPerChar} times bigger than MaxLineCharLenght {maxLineCharLenght} for file {fileName}.");
 
       MaxLineCharLenght = maxLineCharLenght;
       if (existingFileStream is null) {
@@ -551,6 +551,19 @@ namespace Storage {
         }
       }
     }
+    
+    
+    /// <summary>
+    /// Read date without time from UTF8 FileStream including delimiter.
+    /// </summary>
+    public DateTime? ReadDateNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      return ReadDate();
+    }
 
 
     /// <summary>
@@ -721,8 +734,8 @@ namespace Storage {
       }
       var presentPos = readIndex - fromPos;
 
-      int toPos = readIndex + 30;
-      toPos = Math.Max(toPos, endIndex);
+      int toPos = readIndex + 100;
+      toPos = Math.Min(toPos, endIndex);
       var byteString = UTF8Encoding.UTF8.GetString(byteArray, fromPos, toPos-fromPos+1).Replace(CsvConfig.Delimiter, '|');
       return byteString[..presentPos] + '^' + byteString[presentPos..];
     }

@@ -618,7 +618,7 @@ namespace Storage {
         if (mi.MemberType==MemberTypeEnum.Parent) {
           if (mi.IsNullable) {
             streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
-            streamWriter.WriteLine("        csvWriter.Write(\"\");");
+            streamWriter.WriteLine("        csvWriter.WriteNull();");
             streamWriter.WriteLine("      } else {");
             streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write" +
               $" {LowerClassName} '{{{LowerClassName}}}' to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");

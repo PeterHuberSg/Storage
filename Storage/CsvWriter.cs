@@ -116,10 +116,10 @@ namespace Storage {
           $"{csvConfig.Encoding.EncodingName} for file {fileName}.");
       
       delimiter = (byte)csvConfig.Delimiter;
-      MaxLineByteLenght = CsvConfig.BufferSize/Csv.LineToBufferRatio;
+      MaxLineByteLenght = CsvConfig.BufferSize/Csv.ByteBufferToReserveRatio;
       if (maxLineCharLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
         throw new Exception($"CsvWriter constructor: BufferSize {CsvConfig.BufferSize} should be at least " + 
-          $"{Csv.LineToBufferRatio} times bigger than MaxLineCharLenght {MaxLineCharLenght} for file {fileName}.");
+          $"{Csv.ByteBufferToReserveRatio*Csv.Utf8BytesPerChar} times bigger than MaxLineCharLenght {maxLineCharLenght} for file {fileName}.");
 
       MaxLineCharLenght = maxLineCharLenght;
       tempChars = new char[50]; //tempChars is only used for formating decimals, which needs maybe 10-30 chars
@@ -304,6 +304,14 @@ namespace Storage {
       } finally {
         Monitor.Exit(byteArray);
       }
+    }
+
+
+    /// <summary>
+    /// Write null, i.e. write only delimiter.
+    /// </summary>
+    public void WriteNull() {
+      byteArray[writePos++] = delimiter;
     }
 
 
@@ -566,6 +574,19 @@ namespace Storage {
             break;
           }
         }
+      }
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    /// <summary>
+    /// Writes a date without time to the CSV file, including delimiter.
+    /// </summary>
+    public void WriteDate(DateTime? date) {
+      if (date.HasValue) {
+        if (date!=date.Value.Date) throw new Exception($"CsvWriter.WriteDate() '{FileName}':does not support storing time '{date}'." + Environment.NewLine + GetPresentContent());
+
+        writeDate(date.Value);
       }
       byteArray[writePos++] = delimiter;
     }

@@ -51,7 +51,7 @@ namespace Storage {
     /// <summary>
     /// CsvConfig.BufferSize should be at least 16 bigger than the number of characters in the longest expected line to write
     /// </summary>
-    public const int LineToBufferRatio = 4 * ByteBufferToReserveRatio;
+    public const int LineToBufferRatio = Utf8BytesPerChar * ByteBufferToReserveRatio;
     #endregion
 
 

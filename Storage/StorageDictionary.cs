@@ -616,6 +616,11 @@ namespace Storage {
     }
 
 
+    public override string ToString() {
+      return
+        $"Count: {Count};{(AreItemsUpdatable ? " Upd" : "")}{(AreItemsDeletable ? " Del" : "")}{(IsReadOnly ? " ReadOnly" : "")}" +
+        $"{(AreKeysContinous ? " Cont" : "")}";
+    }
     #endregion
 
     #region Private Methods

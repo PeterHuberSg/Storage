@@ -375,7 +375,12 @@ namespace Storage {
         CsvConfig.ReportException?.Invoke(ex);
       }
     }
-#endregion
-#endregion
+
+
+    public override string ToString() {
+      return base.ToString() + $"; MaxLine: {this.MaxLineLenght};";
+    }
+    #endregion
+    #endregion
   }
 }

@@ -332,14 +332,14 @@ namespace StorageModel  {
       csvWriter.WriteDateTimeTicks(sample.DateTimeMinute);
       csvWriter.WriteDateTimeTicks(sample.DateTimeSecond);
       if (sample.OneMaster is null) {
-        csvWriter.Write("");
+        csvWriter.WriteNull();
       } else {
         if (sample.OneMaster.Key<0) throw new Exception($"Cannot write sample '{sample}' to CSV File, because OneMaster is not stored in DL.Data.SampleMasters.");
 
         csvWriter.Write(sample.OneMaster.Key.ToString());
       }
       if (sample.OtherMaster is null) {
-        csvWriter.Write("");
+        csvWriter.WriteNull();
       } else {
         if (sample.OtherMaster.Key<0) throw new Exception($"Cannot write sample '{sample}' to CSV File, because OtherMaster is not stored in DL.Data.SampleMasters.");
 

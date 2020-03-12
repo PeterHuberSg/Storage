@@ -89,10 +89,16 @@ namespace Storage {
       case MemberTypeEnum.Date:
         TypeString = "DateTime";
         MaxStorageSize = "12.12.1234\t".Length;
-        CsvReaderRead = "ReadDate()";
         CsvWriterWrite = "WriteDate";
-        NoValue = "DateTime.MinValue.Date";
-        ToStringFunc = ".ToShortDateString()";
+        if (isNullable) {
+          CsvReaderRead = "ReadDateNull()";
+          NoValue = "null";
+          ToStringFunc = "?.ToShortDateString()";
+        } else {
+          CsvReaderRead = "ReadDate()";
+          NoValue = "DateTime.MinValue.Date";
+          ToStringFunc = ".ToShortDateString()";
+        }
         PrecissionComment = "Stores only dates but no times.";
         Rounding = ".Floor(Rounding.Days)";
         break;

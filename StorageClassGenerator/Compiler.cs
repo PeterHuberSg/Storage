@@ -187,7 +187,7 @@ namespace Storage {
                 try {
                   var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
                   switch (name) {
-                  case "defaultValue": defaultValue = value[1..^1]; break;
+                  case "defaultValue": defaultValue = value[1..^1]; isPropertyWithDefaultValueFound = true; break;
                   case "isLookupOnly": isLookupOnly = bool.Parse(value); break;
                   default: throw new Exception();
                   }
@@ -204,7 +204,7 @@ namespace Storage {
                 //  new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
                 //}
               }
-              isPropertyWithDefaultValueFound = true;
+              
               ///////////////////////////////////
             }
             classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly);
@@ -237,52 +237,56 @@ namespace Storage {
 
     public void AnalyzeDependencies() {
       var topClasses = classes.Values.ToDictionary(c=>c.ClassName);
-      foreach (var classInfo in classes.Values) {
-        foreach (var memberInfo in classInfo.Members.Values) {
-          if (memberInfo.MemberType==MemberTypeEnum.Parent) {
-            if (classes.TryGetValue(memberInfo.ParentType!, out memberInfo.ParentClassInfo)) {
-              classInfo.ParentsAll.Add(memberInfo.ParentClassInfo);
-              topClasses.Remove(classInfo.ClassName);
-              memberInfo.ParentClassInfo.Children.Add(classInfo);
-              if (!memberInfo.IsLookupOnly) {
-                classInfo.ParentsWithList.Add(memberInfo.ParentClassInfo);
+      foreach (var ci in classes.Values) {
+        foreach (var mi in ci.Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.Parent) {
+            if (classes.TryGetValue(mi.ParentType!, out mi.ParentClassInfo)) {
+              ci.ParentsAll.Add(mi.ParentClassInfo);
+              topClasses.Remove(ci.ClassName);
+              mi.ParentClassInfo.Children.Add(ci);
+              if (!mi.IsLookupOnly) {
+                ci.ParentsWithList.Add(mi.ParentClassInfo);
                 var isfound = false;
-                foreach (var parentMember in memberInfo.ParentClassInfo.Members.Values) {
-                  if (parentMember.MemberName==classInfo.PluralName) {
+                foreach (var parentMember in mi.ParentClassInfo.Members.Values) {
+                  if (parentMember.MemberName==ci.PluralName) {
                     isfound = true;
                     parentMember.ChildCount++;
                     break;
                   }
                 }
                 if (!isfound) {
-                  throw new GeneratorException($"Class {memberInfo.ParentClassInfo.ClassName}: property 'List<{classInfo.ClassName}> {classInfo.PluralName}' is missing.");
+                  throw new GeneratorException(
+                    $"Class {mi.ParentClassInfo.ClassName}: property 'List<{ci.ClassName}> {ci.PluralName}' is missing." + Environment.NewLine + 
+                    $"Normally if a child class {ci.ClassName} references a parent class {mi.ParentClassInfo.ClassName}, the child class {ci.ClassName} " + Environment.NewLine +
+                    $"should be added to {mi.ParentClassInfo.ClassName}.{ci.PluralName}. If no such list should be generated in parent {mi.ParentClassInfo.ClassName}," + Environment.NewLine +
+                    $"then add [StorageProperty(isLookupOnly: true)] to {ci.ClassName}.{mi.MemberName}.");
                 }
               }
             } else {
-              if (enums.TryGetValue(memberInfo.ParentType!, out memberInfo.EnumInfo)) {
-                memberInfo.MemberType = MemberTypeEnum.Enum;
-                memberInfo.ToStringFunc = "";
+              if (enums.TryGetValue(mi.ParentType!, out mi.EnumInfo)) {
+                mi.MemberType = MemberTypeEnum.Enum;
+                mi.ToStringFunc = "";
               } else {
-                throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class or enum '{memberInfo.MemberName}'.");
+                throw new GeneratorException($"{ci} '{mi}': can not find class or enum '{mi.MemberName}'.");
               }
             }
-          } else if (memberInfo.MemberType==MemberTypeEnum.List) {
-            if (!classes.TryGetValue(memberInfo.ChildTypeName!, out memberInfo.ChildClassInfo))
-              throw new GeneratorException($"{classInfo} '{memberInfo}': can not find class {memberInfo.ChildTypeName}.");
+          } else if (mi.MemberType==MemberTypeEnum.List) {
+            if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
+              throw new GeneratorException($"{ci} '{mi}': can not find class {mi.ChildTypeName}.");
 
             bool isFound = false;
-            foreach (var childMI in memberInfo.ChildClassInfo.Members.Values) {
-              if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==classInfo.ClassName) {
+            foreach (var childMI in mi.ChildClassInfo.Members.Values) {
+              if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==ci.ClassName) {
                 isFound = true;
-                if (memberInfo.MemberName!=childMI.ClassInfo.PluralName) {
-                  throw new GeneratorException($"{classInfo} '{memberInfo}': name {memberInfo.MemberName} should be {childMI.ClassInfo.PluralName}.");
+                if (mi.MemberName!=childMI.ClassInfo.PluralName) {
+                  throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}.");
                 }
               }
             }
             if (!isFound) {
               //guarantee that there is a property linking to the parent for each child class.
-              throw new GeneratorException($"{classInfo} '{memberInfo}': has a List<{memberInfo.ChildTypeName}>. The corresponding " +
-                $"property with type {classInfo.ClassName} is missing in the class {memberInfo.ChildTypeName}.");
+              throw new GeneratorException($"{ci} '{mi}': has a List<{mi.ChildTypeName}>. The corresponding " +
+                $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
             }
           }
         }
