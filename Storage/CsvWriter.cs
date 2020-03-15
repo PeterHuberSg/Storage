@@ -476,6 +476,22 @@ namespace Storage {
 
 
     /// <summary>
+    /// Writes at most 4 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// </summary>
+    public void WriteDecimal5(decimal d) {
+      Write(d, 5);
+    }
+
+
+    /// <summary>
+    /// Writes at most 4 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// </summary>
+    public void WriteDecimal5(decimal? d) {
+      Write(d, 5);
+    }
+
+
+    /// <summary>
     /// Writes at most number of digitsAfterComma, if they are not zero, including delimiter. Trailing zeros get truncated.
     /// </summary>
     public void Write(decimal d, int digitsAfterComma = int.MaxValue) {

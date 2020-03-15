@@ -721,24 +721,219 @@ namespace Storage {
     }
 
 
+    const int maxCharsDisplayed = 150;//maximal number of characters displayed before error location. The same number of characters
+                                      //get maximally displayed after the error location. Only 1 complete line before the error
+                                      //is displayed, which is normally more restrictive then maxCharsDisplayed.
+
+
     /// <summary>
     /// Returns some characters around the position presently red in the buffer
     /// </summary>
     /// <returns></returns>
     public string GetPresentContent() {
-      int fromPos;
-      if (readIndex>100) {
-        fromPos = readIndex - 100;
-      } else {
-        fromPos = 0;
+      if (readIndex>endIndex) {
+        return $"Cannot display part of byteArray, readIndex {readIndex} should be smaller than endIndex {endIndex}.";
       }
-      var presentPos = readIndex - fromPos;
-
-      int toPos = readIndex + 100;
-      toPos = Math.Min(toPos, endIndex);
-      var byteString = UTF8Encoding.UTF8.GetString(byteArray, fromPos, toPos-fromPos+1).Replace(CsvConfig.Delimiter, '|');
-      return byteString[..presentPos] + '^' + byteString[presentPos..];
+      var maxBytesDisplayed = maxCharsDisplayed*4;
+      int fromPos = Math.Max(0, readIndex - maxBytesDisplayed);
+      //fromPos = GetCharStart(ref byteArray, fromPos);
+      int toPos = Math.Min(readIndex + maxBytesDisplayed, endIndex);
+      //toPos = GetCharEnd(ref byteArray, toPos, lastReadByte);
+      //var splitPos = GetCharStart(ref byteArray, readIndex);
+      var splitPos = readIndex;
+      var startString = UTF8Encoding.UTF8.GetString(byteArray, fromPos, splitPos-fromPos).Replace(CsvConfig.Delimiter, '|');
+      var isLineFeedFound = false;
+      var linesCount = 0;
+      int startIndex = startString.Length-1;
+      var limit = Math.Max(0, startString.Length-maxCharsDisplayed);
+      for (; startIndex >= limit; startIndex--) {
+        var c = startString[startIndex];
+        if (isLineFeedFound) {
+          if (c==Environment.NewLine[0]) {
+            linesCount++;
+            if (linesCount==2) {
+              startIndex +=1;//should be +2, but another +1 is done in startString = startString[(startIndex+1)..]
+              break;
+            }
+          }
+          isLineFeedFound = false;
+        } else {
+          isLineFeedFound = c==Environment.NewLine[1];
+        }
+      }
+      startString = startString[(startIndex+1)..];//correct +1, because when for loop terminates normally, it has subtracted 1 
+                                                  //once too often
+      var endString = UTF8Encoding.UTF8.GetString(byteArray, splitPos, toPos-splitPos+1).Replace(CsvConfig.Delimiter, '|');
+      isLineFeedFound = false;
+      linesCount = 0;
+      var end1Index = 0;
+      limit = Math.Min(maxCharsDisplayed, endString.Length);
+      for (; end1Index<limit; end1Index++) {
+        var c = endString[end1Index];
+        if (isLineFeedFound) {
+          if (c==Environment.NewLine[1]) {
+            linesCount++;
+            if (linesCount==2) {
+              end1Index -= 1;//actually, 2 should be subtracted, but it should also be endString = endString[..(endIndex+1)];, which
+                            // gives a problem when for loop terminates normally and endIndex is 1 too high
+              break;
+            }
+          }
+          isLineFeedFound = false;
+        } else {
+          isLineFeedFound = c==Environment.NewLine[0];
+        }
+      }
+      endString = endString[..(end1Index)];
+      return startString + '^' + endString;
     }
+    //public string GetPresentContent() {
+    //  int fromPos;
+    //  if (readIndex>bytesDisplayed) {
+    //    fromPos = readIndex - bytesDisplayed;
+    //  } else {
+    //    fromPos = 0;
+    //  }
+    //  var presentPos = readIndex - fromPos;
+
+    //  int toPos = readIndex + bytesDisplayed;
+    //  toPos = Math.Min(toPos, endIndex);
+    //  var byteString1 = UTF8Encoding.UTF8.GetString(byteArray, fromPos, readIndex-fromPos).Replace(CsvConfig.Delimiter, '|');
+    //  var byteString2 = UTF8Encoding.UTF8.GetString(byteArray, readIndex, toPos-fromPos+1).Replace(CsvConfig.Delimiter, '|');
+    //  var byteString3 = UTF8Encoding.UTF8.GetString(byteArray, fromPos, toPos-fromPos+1).Replace(CsvConfig.Delimiter, '|');
+    //  return byteString1 + '^' + byteString2;
+    //}
+    /**********************************************************************************
+private static void testUtf8() {
+  var testString = "😍1🤐ä😶ã😷😎😱💀👻";
+  var testBytes = UTF8Encoding.UTF8.GetBytes(testString);
+  string hex = BitConverter.ToString(testBytes);
+  //0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19
+  //😍          1  🤐         ä     😶          ã     😷         😎          😱         💀          👻
+  //F0-9F-98-8D 31 F0-9F-A4-90 C3-A4 F0-9F-98-B6 C3-A3 F0-9F-98-B7 F0-9F-98-8E-F0-9F-98-B1-F0-9F-92-80-F0-9F-91-BB
+  var p0 = GetCharStart(ref testBytes, 0);
+  var p1 = GetCharStart(ref testBytes, 1);
+  var p2 = GetCharStart(ref testBytes, 2);
+  var p3 = GetCharStart(ref testBytes, 3);
+  var p4 = GetCharStart(ref testBytes, 4);
+  var p5 = GetCharStart(ref testBytes, 5);
+  var p6 = GetCharStart(ref testBytes, 6);
+  var p7 = GetCharStart(ref testBytes, 7);
+  var p8 = GetCharStart(ref testBytes, 8);
+  var p9 = GetCharStart(ref testBytes, 9);
+  var p10 = GetCharStart(ref testBytes, 10);
+  var p11 = GetCharStart(ref testBytes, 11);
+  var p12 = GetCharStart(ref testBytes, 12);
+  var p13 = GetCharStart(ref testBytes, 13);
+  var p14 = GetCharStart(ref testBytes, 14);
+  var p15 = GetCharStart(ref testBytes, 15);
+  var p16 = GetCharStart(ref testBytes, 16);
+  var p17 = GetCharStart(ref testBytes, 17);
+  var p18 = GetCharStart(ref testBytes, 18);
+  var p19 = GetCharStart(ref testBytes, 19);
+
+  var s0 = GetPresentContent(ref testBytes, 21, 100, testBytes.Length-1);
+  for (int byteIndex = 0; byteIndex < testBytes.Length; byteIndex++) {
+    //0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21
+    //😍          1  🤐         ä     😶          ã     😷         😎          😱         💀          👻
+    var s1 = GetPresentContent(ref testBytes, byteIndex, 100, testBytes.Length-1);
+  }
+
+  var crlf = Environment.NewLine;
+  testString = "😍1" + crlf + "🤐Ö" + crlf + "😶ã" + crlf + "😷😎" + crlf + "😱💀" + crlf + "👻";
+  testBytes = UTF8Encoding.UTF8.GetBytes(testString);
+  hex = BitConverter.ToString(testBytes);
+  //0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+  //😍          1 crlf  🤐          Ö     crlf  😶          ã     crlf  😷         😎          crlf  😱         💀          crlf  👻
+  //F0-9F-98-8D-31-0D-0A-F0-9F-A4-90-C3-96-0D-0A-F0-9F-98-B6-C3-A3-0D-0A-F0-9F-98-B7-F0-9F-98-8E-0D-0A-F0-9F-98-B1-F0-9F-92-80-0D-0A-F0-9F-91-BB
+  for (int byteIndex = 0; byteIndex < testBytes.Length; byteIndex++) {
+    var s1 = GetPresentContent(ref testBytes, byteIndex, 100, testBytes.Length-1);
+  }
+}
+
+
+public static int GetCharStart(ref byte[] arr, int index) {
+  var step = index>3 ? -1 : 1;
+  while ((arr[index] & 0xC0)==0x80) {
+    index += step;
+  }
+  return index;
+}
+
+
+public static int GetCharEnd(ref byte[] arr, int index, int end) {
+  var step = index<end-3 ? 1 : -1;
+  while ((arr[index] & 0xC0)==0x80) {
+    index += step;
+  }
+  return index;
+}
+
+
+public const char CsvConfigDelimiter = '\t';
+
+
+
+public static string GetPresentContent(ref byte[] byteArray, int readIndex, int maxCharsDisplayed, int lastReadByte) {
+  var maxBytesDisplayed = maxCharsDisplayed*4;
+  int fromPos = Math.Max(0, readIndex - maxBytesDisplayed);
+  //fromPos = GetCharStart(ref byteArray, fromPos);
+  int toPos = Math.Min(readIndex + maxBytesDisplayed, lastReadByte);
+  //toPos = GetCharEnd(ref byteArray, toPos, lastReadByte);
+  //var splitPos = GetCharStart(ref byteArray, readIndex);
+  var splitPos = readIndex;
+  var ss = byteArray[fromPos..(splitPos-fromPos)];
+  var startString = UTF8Encoding.UTF8.GetString(byteArray, fromPos, splitPos-fromPos).Replace(CsvConfigDelimiter, '|');
+  var isLineFeedFound = false;
+  var linesCount = 0;
+  int startIndex = startString.Length-1;
+  var limit = Math.Max(0, startString.Length-maxCharsDisplayed);
+  for (; startIndex >= limit; startIndex--) {
+    var c = startString[startIndex];
+    if (isLineFeedFound) {
+      if (c==Environment.NewLine[0]) {
+        linesCount++;
+        if (linesCount==2) {
+          startIndex +=1;//should be +2, but another +1 is done in startString = startString[(startIndex+1)..]
+          break;
+        }
+      }
+      isLineFeedFound = false;
+    } else {
+      isLineFeedFound = c==Environment.NewLine[1];
+    }
+  }
+  startString = startString[(startIndex+1)..];//correct +1, because when for loop terminates normally, it has subtracted 1 
+                                              //once too often
+  var sss = byteArray[splitPos..(toPos+1)];
+  var endString = UTF8Encoding.UTF8.GetString(byteArray, splitPos, toPos-splitPos+1).Replace(CsvConfigDelimiter, '|');
+  isLineFeedFound = false;
+  linesCount = 0;
+  var endIndex = 0;
+  limit = Math.Min(maxCharsDisplayed, endString.Length);
+  for (; endIndex<limit; endIndex++) {
+    var c = endString[endIndex];
+    if (isLineFeedFound) {
+      if (c==Environment.NewLine[1]) {
+        linesCount++;
+        if (linesCount==2) {
+          endIndex -= 1;//actually, 2 should be subtracted, but it should also be endString = endString[..(endIndex+1)];, which
+                        // gives a problem when for loop terminates normally and endIndex is 1 too high
+          break;
+        }
+      }
+      isLineFeedFound = false;
+    } else {
+      isLineFeedFound = c==Environment.NewLine[0];
+    }
+  }
+  endString = endString[..(endIndex)];
+  return startString + '^' + endString;
+}
+
+****************************************************************************/
+
+
     #endregion
   }
 }

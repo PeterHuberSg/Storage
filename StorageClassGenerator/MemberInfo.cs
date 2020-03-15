@@ -34,6 +34,7 @@ namespace Storage {
     Decimal,
     Decimal2,
     Decimal4,
+    Decimal5,
     Bool,
     Int,
     List,
@@ -191,6 +192,22 @@ namespace Storage {
         ToStringFunc = "";
         PrecissionComment = "Stores decimal with 4 digits after comma.";
         Rounding = ".Round(4)";
+        break;
+
+      case MemberTypeEnum.Decimal5:
+        TypeString = "decimal";
+        MaxStorageSize = "-1234.56789\t".Length;//reasonable limit, but could be as long as decimal.MinValue
+        if (isNullable) {
+          CsvReaderRead = "ReadDecimalNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadDecimal()";
+          NoValue = "Decimal.MinValue";
+        }
+        CsvWriterWrite = "WriteDecimal5";
+        ToStringFunc = "";
+        PrecissionComment = "Stores decimal with 5 digits after comma.";
+        Rounding = ".Round(5)";
         break;
 
       case MemberTypeEnum.Bool:

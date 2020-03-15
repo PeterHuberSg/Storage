@@ -92,4 +92,10 @@ namespace Storage {
   /// Stores only 4 digits after comma
   /// </summary>
   public class Decimal4 { }
+
+
+  /// <summary>
+  /// Stores only 5 digits after comma
+  /// </summary>
+  public class Decimal5 { }
 }

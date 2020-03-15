@@ -87,6 +87,7 @@ namespace Storage {
       case "decimal": member = new MemberInfo(name, MemberTypeEnum.Decimal, this, isNullable, propertyComment, defaultValue); break;
       case "decimal2": member = new MemberInfo(name, MemberTypeEnum.Decimal2, this, isNullable, propertyComment, defaultValue); break;
       case "decimal4": member = new MemberInfo(name, MemberTypeEnum.Decimal4, this, isNullable, propertyComment, defaultValue); break;
+      case "decimal5": member = new MemberInfo(name, MemberTypeEnum.Decimal5, this, isNullable, propertyComment, defaultValue); break;
       case "bool": member = new MemberInfo(name, MemberTypeEnum.Bool, this, isNullable, propertyComment, defaultValue); break;
       case "int": member = new MemberInfo(name, MemberTypeEnum.Int, this, isNullable, propertyComment, defaultValue); break;
       case "string": member = new MemberInfo(name, MemberTypeEnum.String, this, isNullable, propertyComment, defaultValue); break;

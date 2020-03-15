@@ -64,6 +64,13 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Nullable amount with 5 digits after comma comment
+    /// Stores decimal with 5 digits after comma.
+    /// </summary>
+    public decimal? Amount5 { get; private set; }
+
+
+    /// <summary>
     /// PreciseDecimal with about 20 digits precision, takes a lot of storage space
     /// Stores date and time with maximum precision.
     /// </summary>
@@ -146,6 +153,7 @@ namespace StorageModel  {
       "Number", 
       "Amount", 
       "Amount4", 
+      "Amount5", 
       "PreciseDecimal", 
       "SampleState", 
       "DateOnly", 
@@ -162,7 +170,7 @@ namespace StorageModel  {
     /// <summary>
     /// None existing Sample
     /// </summary>
-    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, DateTime.MinValue, DateTime.MinValue, null, null, null, isStoring: false);
+    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, null, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, DateTime.MinValue, DateTime.MinValue, null, null, null, isStoring: false);
     #endregion
 
 
@@ -190,6 +198,7 @@ namespace StorageModel  {
       int number, 
       decimal amount, 
       decimal amount4, 
+      decimal? amount5, 
       decimal preciseDecimal, 
       SampleStateEnum sampleState, 
       DateTime dateOnly, 
@@ -208,6 +217,7 @@ namespace StorageModel  {
       Number = number;
       Amount = amount.Round(2);
       Amount4 = amount4.Round(4);
+      Amount5 = amount5.Round(5);
       PreciseDecimal = preciseDecimal;
       SampleState = sampleState;
       DateOnly = dateOnly.Floor(Rounding.Days);
@@ -238,6 +248,7 @@ namespace StorageModel  {
       Number = csvReader.ReadInt();
       Amount = csvReader.ReadDecimal();
       Amount4 = csvReader.ReadDecimal();
+      Amount5 = csvReader.ReadDecimalNull();
       PreciseDecimal = csvReader.ReadDecimal();
       SampleState = (SampleStateEnum)csvReader.ReadInt();
       DateOnly = csvReader.ReadDate();
@@ -324,6 +335,7 @@ namespace StorageModel  {
       csvWriter.Write(sample.Number);
       csvWriter.WriteDecimal2(sample.Amount);
       csvWriter.WriteDecimal4(sample.Amount4);
+      csvWriter.WriteDecimal5(sample.Amount5);
       csvWriter.Write(sample.PreciseDecimal);
       csvWriter.Write((int)sample.SampleState);
       csvWriter.WriteDate(sample.DateOnly);
@@ -359,6 +371,7 @@ namespace StorageModel  {
       int number, 
       decimal amount, 
       decimal amount4, 
+      decimal? amount5, 
       decimal preciseDecimal, 
       SampleStateEnum sampleState, 
       DateTime dateOnly, 
@@ -391,6 +404,11 @@ namespace StorageModel  {
       var amount4Rounded = amount4.Round(4);
       if (Amount4!=amount4Rounded) {
         Amount4 = amount4Rounded;
+        isChangeDetected = true;
+      }
+      var amount5Rounded = amount5.Round(5);
+      if (Amount5!=amount5Rounded) {
+        Amount5 = amount5Rounded;
         isChangeDetected = true;
       }
       if (PreciseDecimal!=preciseDecimal) {
@@ -488,6 +506,7 @@ namespace StorageModel  {
       sample.Number = csvReader.ReadInt();
       sample.Amount = csvReader.ReadDecimal();
       sample.Amount4 = csvReader.ReadDecimal();
+      sample.Amount5 = csvReader.ReadDecimalNull();
       sample.PreciseDecimal = csvReader.ReadDecimal();
       sample.SampleState = (SampleStateEnum)csvReader.ReadInt();
       sample.DateOnly = csvReader.ReadDate();
@@ -652,6 +671,7 @@ namespace StorageModel  {
         $" {Number}," +
         $" {Amount}," +
         $" {Amount4}," +
+        $" {Amount5}," +
         $" {PreciseDecimal}," +
         $" {SampleState}," +
         $" {DateOnly.ToShortDateString()}," +
@@ -679,6 +699,7 @@ namespace StorageModel  {
         $" Number: {Number}," +
         $" Amount: {Amount}," +
         $" Amount4: {Amount4}," +
+        $" Amount5: {Amount5}," +
         $" PreciseDecimal: {PreciseDecimal}," +
         $" SampleState: {SampleState}," +
         $" DateOnly: {DateOnly.ToShortDateString()}," +
