@@ -36,7 +36,7 @@ namespace StorageModel  {
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "Number", "MinimalLookup"};
+    internal static readonly string[] Headers = {"Number", "MinimalLookup"};
 
 
     /// <summary>

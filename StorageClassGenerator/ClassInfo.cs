@@ -226,7 +226,7 @@ namespace Storage {
         streamWriter.WriteLine();
         streamWriter.WriteLine();
       }
-      if (this.AreItemsDeletable) {
+      if (AreItemsDeletable) {
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine("    /// Called before removal gets executed");
         streamWriter.WriteLine("    /// </summary>");
@@ -322,9 +322,10 @@ namespace Storage {
       streamWriter.WriteLine("    /// Headers written to first line in CSV file");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write("    internal static readonly string[] Headers = {");
-      var lines = new List<string> {
-        "\"Key\""
-      };
+      var lines = new List<string>();
+      if (AreItemsDeletable || AreItemsUpdatable) {
+        lines.Add("\"Key\"");
+      }
       foreach (var mi in Members.Values) {
         if (mi.MemberType!=MemberTypeEnum.List) {
           lines.Add($"\"{mi.MemberName}\"");

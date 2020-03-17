@@ -291,7 +291,12 @@ namespace Storage {
 
 
     private void addItem(CsvReader csvReader, StringBuilder errorStringBuilder) {
-      var item = create(csvReader.ReadInt(), csvReader, Context!);
+      TItemCSV? item;
+      if (IsReadOnly) {
+        item = create(LastItemIndex+1, csvReader, Context!);
+      } else {
+        item = create(csvReader.ReadInt(), csvReader, Context!);
+      }
       if (errorStringBuilder.Length==0) {
         AddProtected(item!);
       }
@@ -310,8 +315,8 @@ namespace Storage {
             csvWriter.StartNewLine();
           } else {
             csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+            csvWriter.Write(item.Key);
           }
-          csvWriter.Write(item.Key);
           write!(item, csvWriter);
           csvWriter.WriteEndOfLine();
         }
@@ -331,8 +336,8 @@ namespace Storage {
             csvWriter.StartNewLine();
           } else {
             csvWriter.WriteFirstLineChar(CsvConfig.LineCharAdd);
+            csvWriter.Write(item.Key);
           }
-          csvWriter.Write(item.Key);
           write!(item, csvWriter);
           csvWriter.WriteEndOfLine();
         }

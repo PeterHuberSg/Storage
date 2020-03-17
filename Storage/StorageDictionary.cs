@@ -63,7 +63,7 @@ namespace Storage {
         if (count==0) return keys;
 
         var keyIndex = 0;
-        for (int itemsIndex = firstItemIndex; itemsIndex<=lastItemIndex; itemsIndex++) {
+        for (int itemsIndex = FirstItemIndex; itemsIndex<=LastItemIndex; itemsIndex++) {
           var item = items[itemsIndex];
           if (item!=null) {
             keys[keyIndex++] = item.Key;
@@ -83,7 +83,7 @@ namespace Storage {
         if (count==0) return values;
 
         var keyIndex = 0;
-        for (int itemsIndex = firstItemIndex; itemsIndex<=lastItemIndex; itemsIndex++) {
+        for (int itemsIndex = FirstItemIndex; itemsIndex<=LastItemIndex; itemsIndex++) {
           var item = items[itemsIndex];
           if (item!=null) {
             values[keyIndex++] = item;
@@ -136,10 +136,10 @@ namespace Storage {
     /// </summary>
     public bool AreKeysContinous { get; private set; }
     internal void UpdateAreKeysContinous() {
-      if (count==0) {
+      if (IsReadOnly || count==0) {
         AreKeysContinous = true;
       } else {
-        AreKeysContinous = keys[lastItemIndex] - keys[firstItemIndex] + 1 == count;
+        AreKeysContinous = keys[LastItemIndex] - keys[FirstItemIndex] + 1 == count;
       }
     }
 
@@ -174,6 +174,18 @@ namespace Storage {
     /// Parent holding all StorageDictionaries of the application
     /// </summary>
     public TContext? Context { get; }
+
+
+    /// <summary>
+    /// Index of first item, usually 0, not really used by inheritors
+    /// </summary>
+    protected int FirstItemIndex { get; private set; }
+
+
+    /// <summary>
+    /// Index of last item stored. Used by readonly StorageDictionaryCSV to create key for new item.
+    /// </summary>
+    protected int LastItemIndex { get; private set; }
     #endregion
 
 
@@ -211,8 +223,6 @@ namespace Storage {
     static readonly TItem?[] emptyItems = new TItem[0];
     int[] keys; //keys don't get deleted when an item gets removed, because the key of the removed item is still needed for binary search
     static readonly int[] emptyKeys = new int[0];
-    int firstItemIndex;
-    int lastItemIndex;
     int count;
     int version;
 
@@ -268,8 +278,8 @@ namespace Storage {
 
 
     private void initialiseItemsParamertes() {
-      firstItemIndex = -1;
-      lastItemIndex = -1;
+      FirstItemIndex = -1;
+      LastItemIndex = -1;
       AreKeysContinous = true; // is true for empty collection
       count = 0;
     }
@@ -344,7 +354,7 @@ namespace Storage {
         throw new ArgumentException($"Array with Length {array.Length} is too small to add {count} items at Index {index}.");
       }
 
-      for (int itemIndex = firstItemIndex; itemIndex<=lastItemIndex; itemIndex++) {
+      for (int itemIndex = FirstItemIndex; itemIndex<=LastItemIndex; itemIndex++) {
         var item = items[itemIndex];
         if (item!=null) {
           array[index++] = new KeyValuePair<int, TItem>(item.Key, item);
@@ -405,30 +415,30 @@ namespace Storage {
 #endif
 
         if (count<=0) {
-          firstItemIndex = -1;
-          lastItemIndex = -1;
+          FirstItemIndex = -1;
+          LastItemIndex = -1;
           AreKeysContinous = true;
         } else if (count==1) {
-          if (index==firstItemIndex) {
-            firstItemIndex = lastItemIndex;
+          if (index==FirstItemIndex) {
+            FirstItemIndex = LastItemIndex;
 #if DEBUG
-          } else if (index!=lastItemIndex) {
+          } else if (index!=LastItemIndex) {
             //we should never arrive here.
             throw new Exception();
 #endif
           } else {
-            lastItemIndex = firstItemIndex;
+            LastItemIndex = FirstItemIndex;
           }
           AreKeysContinous = true;
         } else {
-          if (firstItemIndex==index) {
+          if (FirstItemIndex==index) {
             do {
-              firstItemIndex++;
-            } while (items[firstItemIndex]==null);//since there are at least 2 items left, firstItemKey will always be smaller than lastItemkey
-          } else if (lastItemIndex==index) {
+              FirstItemIndex++;
+            } while (items[FirstItemIndex]==null);//since there are at least 2 items left, firstItemKey will always be smaller than lastItemkey
+          } else if (LastItemIndex==index) {
             do {
-              lastItemIndex--;
-            } while (items[lastItemIndex]==null);//since there are at least 2 items left, lastItemkey will always be bigger than firstItemKey
+              LastItemIndex--;
+            } while (items[LastItemIndex]==null);//since there are at least 2 items left, lastItemkey will always be bigger than firstItemKey
           }
           UpdateAreKeysContinous();
         }
@@ -552,19 +562,19 @@ namespace Storage {
       if (IsDisposed) throw new ObjectDisposedException("StorageDictionary");
 
       lock (itemsLock) {
-        var lastItemKey = lastItemIndex==-1 ? -1 : items[lastItemIndex]!.Key;//throws exception if indexed item is null
+        var lastItemKey = LastItemIndex==-1 ? -1 : items[LastItemIndex]!.Key;//throws exception if indexed item is null
         if (item.Key==StorageExtensions.NoKey) {
           setKey(item, ++lastItemKey);
         } else {
           if (item.Key<=lastItemKey) throw new Exception($"Cannot add {typeof(TItem).Name} '{item}' to StorageDictionary, because its key should be greater that lastItemKey {lastItemKey}.");
         }
-        lastItemIndex++;
+        LastItemIndex++;
         if (count==0) {
-          firstItemIndex = lastItemIndex;
+          FirstItemIndex = LastItemIndex;
         }
 
         //ensure there is enough space
-        if (lastItemIndex>=items.Length) {
+        if (LastItemIndex>=items.Length) {
           uint itemsLength = (uint)items.Length;
           uint newCapacityUInt = itemsLength == 0 ? defaultCapacity : itemsLength * 2;
           if (newCapacityUInt > maxArrayLength) newCapacityUInt = maxArrayLength;
@@ -574,16 +584,16 @@ namespace Storage {
           var newItems = new TItem[newCapacity];
           var newKeys = new int[newCapacity];
           if (items!=emptyItems) {
-            Array.Copy(items, 0, newItems, 0, lastItemIndex);
-            Array.Copy(keys, 0, newKeys, 0, lastItemIndex);
+            Array.Copy(items, 0, newItems, 0, LastItemIndex);
+            Array.Copy(keys, 0, newKeys, 0, LastItemIndex);
           }
           items = newItems;
           keys = newKeys;
         }
 
         item.HasChanged += item_HasChanged;
-        items[lastItemIndex] = item;
-        keys[lastItemIndex] = item.Key;
+        items[LastItemIndex] = item;
+        keys[LastItemIndex] = item.Key;
         count++;
         version++;
       }
@@ -629,17 +639,17 @@ namespace Storage {
     int binarySearch(int key) {
       if (count==0) return -1;// StorageDictionary is empty
 
-      var firstItemKey = items[firstItemIndex]!.Key;//throws exception if firstItemIndex invalid or indexed item is null
+      var firstItemKey = items[FirstItemIndex]!.Key;//throws exception if firstItemIndex invalid or indexed item is null
       if (firstItemKey>key) return -1;// item is missing, key is too small
 
-      var lastItemKey = items[lastItemIndex]!.Key;
+      var lastItemKey = items[LastItemIndex]!.Key;
       if (lastItemKey<key) return -1;// item is missing, key is too big
 
       if (AreKeysContinous) {
-        return firstItemIndex + key - firstItemKey;
+        return FirstItemIndex + key - firstItemKey;
       }
 
-      return binarySearch(key, firstItemIndex, lastItemIndex);
+      return binarySearch(key, FirstItemIndex, LastItemIndex);
     }
 
 
@@ -706,8 +716,8 @@ namespace Storage {
           index = -1;
           maxIndex = -1;
         } else {
-          index = storageDictionary.firstItemIndex - 1;
-          maxIndex = storageDictionary.lastItemIndex;
+          index = storageDictionary.FirstItemIndex - 1;
+          maxIndex = storageDictionary.LastItemIndex;
         }
         current = null;
       }
