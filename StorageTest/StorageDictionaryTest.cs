@@ -27,8 +27,8 @@ namespace StorageTest {
         null,
         TestItem.SetKey,
         TestItem.Disconnect, 
-        areItemsUpdatable: true, 
-        areItemsDeletable: true);
+        areInstancesUpdatable: true, 
+        areInstancesDeletable: true);
       dictionary.Added += dictionary_Added;
       dictionary.Changed += dictionary_Changed;
       dictionary.Removed += dictionary_Deleted;

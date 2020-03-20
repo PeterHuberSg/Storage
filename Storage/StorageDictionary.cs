@@ -104,7 +104,7 @@ namespace Storage {
     /// Returns true if items are not updatable nor deletable
     /// </summary>
     public bool IsReadOnly {
-      get { return !AreItemsUpdatable && !AreItemsDeletable; }
+      get { return !AreInstancesUpdatable && !AreInstancesDeletable; }
     }
 
 
@@ -147,7 +147,7 @@ namespace Storage {
     /// <summary>
     /// Can content of an items be changed ? If yes, a change item gets written to the CVS file
     /// </summary>
-    public bool AreItemsUpdatable { get; }
+    public bool AreInstancesUpdatable { get; }
 
 
     /// <summary>
@@ -160,7 +160,7 @@ namespace Storage {
     /// <summary>
     /// Can stored items be removed ? If yes, a delete item gets written to the CVS file
     /// </summary>
-    public bool AreItemsDeletable { get; }
+    public bool AreInstancesDeletable { get; }
 
 
     /// <summary>
@@ -191,6 +191,12 @@ namespace Storage {
 
     #region Events
     //      ------
+
+    /// <summary>
+    /// A new StorageDictionary got created.
+    /// </summary>
+    public static event Action<string>? Created;
+
 
     /// <summary>
     /// An item was added to dictionary
@@ -245,15 +251,15 @@ namespace Storage {
     /// <param name="setKey">Called when an item gets added without a key (=-1)</param>
     /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
     /// items linked to this item and/or to remove item from parent(s)</param>
-    /// <param name="areItemsUpdatable">Can the property of an item change ?</param>
-    /// <param name="areItemsDeletable">Can an item be removed from StorageDictionary</param>
+    /// <param name="areInstancesUpdatable">Can the property of an item change ?</param>
+    /// <param name="areInstancesDeletable">Can an item be removed from StorageDictionary</param>
     /// <param name="capacity">How many items should StorageDictionary by able to hold initially ?</param>
     public StorageDictionary(
       TContext? context,
       Action<TItem, int> setKey,
       Action<TItem>? disconnect,
-      bool areItemsUpdatable = false,
-      bool areItemsDeletable = false,
+      bool areInstancesUpdatable = false,
+      bool areInstancesDeletable = false,
       int capacity = 0) 
     {
       Context = context;
@@ -269,11 +275,12 @@ namespace Storage {
         keys = new int[capacity];
       }
 
-      AreItemsUpdatable = areItemsUpdatable;
+      AreInstancesUpdatable = areInstancesUpdatable;
       AreItemsUpdated = false;
-      AreItemsDeletable = areItemsDeletable;
+      AreInstancesDeletable = areInstancesDeletable;
       AreItemsDeleted = false;
       initialiseItemsParamertes();
+      Created?.Invoke(typeof(TItem).Name);
     }
 
 
@@ -393,7 +400,7 @@ namespace Storage {
     /// Provided for compatibility with IDictionary. Use Remove(TItem item) instead;
     /// </summary>
     public bool Remove(int key) {
-      if (!AreItemsDeletable) throw new NotSupportedException($"StorageDictionary for {typeof(TItem).Name} does not allow key '{key}' to be deleted.");
+      if (!AreInstancesDeletable) throw new NotSupportedException($"StorageDictionary for {typeof(TItem).Name} does not allow key '{key}' to be deleted.");
 
       int index;
       TItem? item;
@@ -610,7 +617,7 @@ namespace Storage {
 
 
     private void item_HasChanged(TItem item) {
-      if (!AreItemsUpdatable) throw new NotSupportedException($"StorageDictionary for {typeof(TItem).Name} does not allow item '{item}' to be updated.");
+      if (!AreInstancesUpdatable) throw new NotSupportedException($"StorageDictionary for {typeof(TItem).Name} does not allow item '{item}' to be updated.");
 
       AreItemsUpdated = true;
       version++;
@@ -628,7 +635,7 @@ namespace Storage {
 
     public override string ToString() {
       return
-        $"Count: {Count};{(AreItemsUpdatable ? " Upd" : "")}{(AreItemsDeletable ? " Del" : "")}{(IsReadOnly ? " ReadOnly" : "")}" +
+        $"Count: {Count};{(AreInstancesUpdatable ? " Upd" : "")}{(AreInstancesDeletable ? " Del" : "")}{(IsReadOnly ? " ReadOnly" : "")}" +
         $"{(AreKeysContinous ? " Cont" : "")}";
     }
     #endregion

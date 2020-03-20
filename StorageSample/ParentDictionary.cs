@@ -7,10 +7,9 @@ namespace StorageModel  {
 
 
   /// <summary>
-  /// Some comment for SampleMaster.
-  /// With an additional line.
+  /// Example of a Parent child relationship using a Dictionary.
   /// </summary>
-  public partial class SampleMaster: IStorage<SampleMaster> {
+  public partial class ParentDictionary: IStorage<ParentDictionary> {
 
 
     #region Properties
@@ -77,16 +76,16 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a sample gets added to SampleX.
+    /// Called after a dictionaryChild gets added to DictionaryChildren.
     /// </summary>
-    //partial void onAddedToSampleX(Sample sample){
+    //partial void onAddedToDictionaryChildren(DictionaryChild dictionaryChild){
     //}
 
 
     /// <summary>
-    /// Called after a sample gets removed from SampleX.
+    /// Called after a dictionaryChild gets removed from DictionaryChildren.
     /// </summary>
-    //partial void onRemovedFromSampleX(Sample sample){
+    //partial void onRemovedFromDictionaryChildren(DictionaryChild dictionaryChild){
     //}
 
 

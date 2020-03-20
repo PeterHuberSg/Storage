@@ -18,7 +18,6 @@ namespace StorageTest {
     List<string> expectedMinimalRef= new List<string>();
 
 
-
     [TestMethod]
     public void TestMinimal() {
       try {
@@ -93,6 +92,5 @@ namespace StorageTest {
       initDL();
       assertDL();
     }
-
   }
 }

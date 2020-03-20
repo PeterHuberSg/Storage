@@ -59,20 +59,6 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    //partial void onUpdate() {
-    //}
-
-
-    /// <summary>
-    /// Called after an update is read from a CSV file
-    /// </summary>
-    //partial void onCsvUpdate() {
-    //}
-
-
-    /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>
     //partial void onToShortString(ref string returnString) {

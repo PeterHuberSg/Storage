@@ -7,10 +7,9 @@ namespace StorageModel  {
 
 
   /// <summary>
-  /// Some comment for SampleMaster.
-  /// With an additional line.
+  /// DictionaryChild has some information for ParentDictionary, where it gets stored in a Dictionary by Date
   /// </summary>
-  public partial class SampleMaster: IStorage<SampleMaster> {
+  public partial class DictionaryChild: IStorage<DictionaryChild> {
 
 
     #region Properties
@@ -77,16 +76,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a sample gets added to SampleX.
+    /// Called before removal gets executed
     /// </summary>
-    //partial void onAddedToSampleX(Sample sample){
-    //}
-
-
-    /// <summary>
-    /// Called after a sample gets removed from SampleX.
-    /// </summary>
-    //partial void onRemovedFromSampleX(Sample sample){
+    //partial void onRemove() {
     //}
 
 

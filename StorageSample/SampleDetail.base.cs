@@ -93,9 +93,11 @@ namespace StorageModel  {
       Text = csvReader.ReadString()!;
       if (context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
         Sample = sample;
-        Sample.AddToSampleDetails(this);
       } else {
         Sample = Sample.NoSample;
+      }
+      if (Sample!=Sample.NoSample) {
+      Sample.AddToSampleDetails(this);
       }
       onCsvConstruct();
     }

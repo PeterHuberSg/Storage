@@ -35,7 +35,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called once the Csv-constructor who reads the data from a CSV file has filled all the properties
+    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
     //partial void onCsvConstruct() {
     //}
@@ -72,6 +72,13 @@ namespace StorageModel  {
     /// Called after an update is read from a CSV file
     /// </summary>
     //partial void onCsvUpdate() {
+    //}
+
+
+    /// <summary>
+    /// Called before removal gets executed
+    /// </summary>
+    //partial void onRemove() {
     //}
 
 

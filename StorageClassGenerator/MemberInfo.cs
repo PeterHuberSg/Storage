@@ -21,29 +21,6 @@ using System.IO;
 
 namespace Storage {
 
-  /// <summary>
-  /// Data types supported by storage compiler
-  /// </summary>
-  public enum MemberTypeEnum {
-    Undefined = 0,
-    Date,
-    Time,
-    DateMinutes,
-    DateSeconds,
-    DateTime,
-    Decimal,
-    Decimal2,
-    Decimal4,
-    Decimal5,
-    Bool,
-    Int,
-    List,
-    Parent,
-    String,
-    Enum,
-    Lenght
-  }
-
 
   /// <summary>
   /// Some info for each class defined in data model
@@ -53,7 +30,8 @@ namespace Storage {
     public readonly string LowerMemberName;
     public MemberTypeEnum MemberType;
     public readonly ClassInfo ClassInfo;
-    public readonly string TypeString;
+    public string? CsvTypeString;
+    public string TypeString;
     public readonly bool IsNullable;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
@@ -62,7 +40,9 @@ namespace Storage {
     public readonly bool IsLookupOnly = false;
     public readonly int MaxStorageSize;
     public readonly string? ChildTypeName;
-    public readonly string? LowerChildTypeName;
+    public readonly string? LowerChildTypeName; //used by List and Dictionary
+    public readonly string? ChildKeyPropertyName; //used by Dictionary
+    public readonly string? KeyTypeString;
     public readonly string? ParentType;//is only different from TypeString when IsNullable
     public readonly string? LowerParentType;
     public readonly string? CsvReaderRead;
@@ -76,11 +56,12 @@ namespace Storage {
     public int ChildCount = 0;
 
 
-    public MemberInfo(string name, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment, string? defaultValue) {
-      if (memberType==MemberTypeEnum.List) throw new Exception();
+    public MemberInfo(string name, string csvTypeString, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment, string? defaultValue) {
+      if (memberType==MemberTypeEnum.List || memberType==MemberTypeEnum.Dictionary) throw new Exception();
 
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
+      CsvTypeString = csvTypeString;
       MemberType = memberType;
       ClassInfo = classInfo;
       IsNullable = isNullable;
@@ -249,6 +230,8 @@ namespace Storage {
 
       case MemberTypeEnum.List:
         throw new Exception("List uses its own constructor.");
+      case MemberTypeEnum.Dictionary:
+        throw new Exception("Dictionary uses its own constructor.");
       case MemberTypeEnum.Parent:
         throw new Exception("Parent uses its own constructor.");
       case MemberTypeEnum.Enum:
@@ -275,6 +258,28 @@ namespace Storage {
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
       IsNullable = false;
       TypeString = listType;
+      CsvReaderRead = null;
+      CsvWriterWrite = null;
+      Comment = comment;
+      DefaultValue = defaultValue;
+    }
+
+
+    /// <summary>
+    /// constructor for Dictionary
+    /// </summary>
+    public MemberInfo(string name, ClassInfo classInfo, string memberTypeString, string childType, string childKeyPropertyName, string keyTypeString, string? comment, string? defaultValue) {
+      MemberType = MemberTypeEnum.Dictionary;
+      MaxStorageSize = 0;//a reference is only stored in the child, not the parent
+      MemberName = name;
+      LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
+      ClassInfo = classInfo;
+      ChildTypeName = childType;
+      LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
+      ChildKeyPropertyName = childKeyPropertyName;
+      KeyTypeString = keyTypeString;
+      IsNullable = false;
+      TypeString = memberTypeString; //will be overwritten in Compiler.AnalyzeDependencies()
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
@@ -323,8 +328,8 @@ namespace Storage {
       string isNullableString = IsNullable ? "?" : "";
       if (MemberType==MemberTypeEnum.List) {
         return $"List<{ChildTypeName}> {MemberName}";
-      }else if (MemberType==MemberTypeEnum.List) {
-        return $"{MemberName}{isNullableString} {MemberName}";
+      }else if (MemberType==MemberTypeEnum.Dictionary) {
+        return $"{MemberName} {TypeString}";
       } else {
         return $"{MemberType}{isNullableString} {MemberName}";
       }
@@ -358,10 +363,14 @@ namespace Storage {
         } else if (ChildCount==1) {
           streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} => {LowerMemberName};");
           streamWriter.WriteLine($"    readonly List<{ChildTypeName}> {LowerMemberName};");
-        } else { 
+        } else {
           streamWriter.WriteLine($"    public ICollection<{ChildTypeName}> {MemberName} => {LowerMemberName};");
           streamWriter.WriteLine($"    readonly HashSet<{ChildTypeName}> {LowerMemberName};");
         }
+      } else if (MemberType==MemberTypeEnum.Dictionary) {
+        streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} => {LowerMemberName};");
+        streamWriter.WriteLine($"    readonly {TypeString} {LowerMemberName};");
+
       } else {
         streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
       }

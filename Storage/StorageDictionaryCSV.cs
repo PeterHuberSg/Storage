@@ -140,8 +140,8 @@ namespace Storage {
     /// <param name="write">Writes item to CSV file</param>
     /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
     /// items linked to this item and/or to remove item from parent(s)</param>
-    /// <param name="areItemsUpdatable">Can the property of an item change ?</param>
-    /// <param name="areItemsDeletable">Can an item be removed from StorageDictionaryCSV</param>
+    /// <param name="areInstancesUpdatable">Can the property of an item change ?</param>
+    /// <param name="areInstancesDeletable">Can an item be removed from StorageDictionaryCSV</param>
     /// <param name="isCompactDuringDispose">Should during dispose the CSV file get deleted and a more compact version written ?</param>
     /// <param name="capacity">How many items should StorageDictionaryCSV by able to hold initially ?</param>
     /// <param name="flushDelay">When the items in StorageDictionaryCSV are not changed for flushDelay milliseconds, the internal
@@ -157,11 +157,11 @@ namespace Storage {
       Action<TItemCSV, CsvReader, TContext>? update,
       Action<TItemCSV, CsvWriter> write,
       Action<TItemCSV>? disconnect,
-      bool areItemsUpdatable = false,
-      bool areItemsDeletable = false,
+      bool areInstancesUpdatable = false,
+      bool areInstancesDeletable = false,
       bool isCompactDuringDispose = true,
       int capacity = 0,
-      int flushDelay = 200) : base(context, setKey, disconnect, areItemsUpdatable, areItemsDeletable, capacity) 
+      int flushDelay = 200) : base(context, setKey, disconnect, areInstancesUpdatable, areInstancesDeletable, capacity) 
     {
       CsvConfig = csvConfig;
       MaxLineLenght = maxLineLenght;

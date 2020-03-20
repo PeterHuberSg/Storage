@@ -59,6 +59,11 @@ namespace StorageModel  {
     //      ----------
 
     /// <summary>
+    /// Directory of all DictionaryChildren
+    /// </summary>
+    public StorageDictionary<DictionaryChild, DL> DictionaryChildren { get; private set; }
+
+    /// <summary>
     /// Directory of all Minimals
     /// </summary>
     public StorageDictionary<Minimal, DL> Minimals { get; private set; }
@@ -67,6 +72,11 @@ namespace StorageModel  {
     /// Directory of all MinimalRefs
     /// </summary>
     public StorageDictionary<MinimalRef, DL> MinimalRefs { get; private set; }
+
+    /// <summary>
+    /// Directory of all ParentDictionarys
+    /// </summary>
+    public StorageDictionary<ParentDictionary, DL> ParentDictionarys { get; private set; }
 
     /// <summary>
     /// Directory of all SampleX
@@ -105,32 +115,44 @@ namespace StorageModel  {
           this,
           SampleMaster.SetKey,
           null,
-          areItemsUpdatable: true,
-          areItemsDeletable: false);
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false);
         SampleX = new StorageDictionary<Sample, DL>(
           this,
           Sample.SetKey,
           Sample.Disconnect,
-          areItemsUpdatable: true,
-          areItemsDeletable: true);
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
         SampleDetails = new StorageDictionary<SampleDetail, DL>(
           this,
           SampleDetail.SetKey,
           SampleDetail.Disconnect,
-          areItemsUpdatable: true,
-          areItemsDeletable: true);
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
         Minimals = new StorageDictionary<Minimal, DL>(
           this,
           Minimal.SetKey,
           null,
-          areItemsUpdatable: false,
-          areItemsDeletable: false);
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
         MinimalRefs = new StorageDictionary<MinimalRef, DL>(
           this,
           MinimalRef.SetKey,
           null,
-          areItemsUpdatable: false,
-          areItemsDeletable: false);
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ParentDictionarys = new StorageDictionary<ParentDictionary, DL>(
+          this,
+          ParentDictionary.SetKey,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false);
+        DictionaryChildren = new StorageDictionary<DictionaryChild, DL>(
+          this,
+          DictionaryChild.SetKey,
+          DictionaryChild.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -143,8 +165,8 @@ namespace StorageModel  {
           SampleMaster.Update,
           SampleMaster.Write,
           null,
-          areItemsUpdatable: true,
-          areItemsDeletable: false,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false,
           isCompactDuringDispose: false);
         SampleX = new StorageDictionaryCSV<Sample, DL>(
           this,
@@ -157,8 +179,8 @@ namespace StorageModel  {
           Sample.Update,
           Sample.Write,
           Sample.Disconnect,
-          areItemsUpdatable: true,
-          areItemsDeletable: true,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true,
           isCompactDuringDispose: false);
         SampleDetails = new StorageDictionaryCSV<SampleDetail, DL>(
           this,
@@ -171,8 +193,8 @@ namespace StorageModel  {
           SampleDetail.Update,
           SampleDetail.Write,
           SampleDetail.Disconnect,
-          areItemsUpdatable: true,
-          areItemsDeletable: true,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true,
           isCompactDuringDispose: false);
         Minimals = new StorageDictionaryCSV<Minimal, DL>(
           this,
@@ -185,8 +207,8 @@ namespace StorageModel  {
           null,
           Minimal.Write,
           null,
-          areItemsUpdatable: false,
-          areItemsDeletable: false,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
           isCompactDuringDispose: true);
         MinimalRefs = new StorageDictionaryCSV<MinimalRef, DL>(
           this,
@@ -199,8 +221,36 @@ namespace StorageModel  {
           null,
           MinimalRef.Write,
           null,
-          areItemsUpdatable: false,
-          areItemsDeletable: false,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: true);
+        ParentDictionarys = new StorageDictionaryCSV<ParentDictionary, DL>(
+          this,
+          csvConfig!,
+          ParentDictionary.MaxLineLength,
+          ParentDictionary.Headers,
+          ParentDictionary.SetKey,
+          ParentDictionary.Create,
+          null,
+          ParentDictionary.Update,
+          ParentDictionary.Write,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: false);
+        DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
+          this,
+          csvConfig!,
+          DictionaryChild.MaxLineLength,
+          DictionaryChild.Headers,
+          DictionaryChild.SetKey,
+          DictionaryChild.Create,
+          DictionaryChild.Verify,
+          DictionaryChild.Update,
+          DictionaryChild.Write,
+          DictionaryChild.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true,
           isCompactDuringDispose: true);
       }
       onConstruct();
@@ -231,6 +281,8 @@ namespace StorageModel  {
 
       if (disposing) {
         onDispose();
+        DictionaryChildren.Dispose();
+        ParentDictionarys.Dispose();
         MinimalRefs.Dispose();
         Minimals.Dispose();
         SampleDetails.Dispose();

@@ -38,7 +38,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some Samples comment
+    /// List representing parent child relationship
     /// </summary>
     public ICollection<Sample> SampleX => sampleX;
     readonly HashSet<Sample> sampleX;
@@ -205,7 +205,7 @@ namespace StorageModel  {
       if (countLinks==0) throw new Exception();
       if (!sampleX.Remove(sample)) throw new Exception();
 #else
-        sampleX.Remove(sample));
+        sampleX.Remove(sample);
 #endif
       onRemovedFromSampleX(sample);
     }

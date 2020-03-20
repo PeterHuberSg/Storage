@@ -165,8 +165,8 @@ namespace StorageTest {
         TestItemCsv.Update,
         TestItemCsv.Write,
         TestItemCsv.Disconnect,
-        areItemsUpdatable: true,
-        areItemsDeletable: true,
+        areInstancesUpdatable: true,
+        areInstancesDeletable: true,
         isCompactDuringDispose: isCompactDuringDispose);
       Assert.IsFalse(dictionary.IsReadOnly);
       dictionary.Added += dictionary_Added;

@@ -51,8 +51,8 @@ namespace Storage {
     /// 
     /// maxLineLength: Maximum number of UTF8 bytes needed to write class to CSV file.<para/>
     /// pluralName: used if class name has an irregular plural. Example: Activity => Activities<para/>
-    /// areItemsUpdatable: Can the properties of the class change ?<para/>
-    /// areItemsDeletable: Can class instance be deleted from StorageDirectory ?<para/>
+    /// areInstancesUpdatable: Can the properties of the class change ?<para/>
+    /// areInstancesDeletable: Can class instance be deleted from StorageDirectory ?<para/>
     /// isCompactDuringDispose: Should during StorageDirectory.Dispose the CSV file get overwritten without deleted or old values ?<para/>
     /// 
     /// </summary>

@@ -40,7 +40,7 @@ namespace StorageModel {
   /// Some comment for SampleMaster.
   /// With an additional line.
   /// </summary>
-  [StorageClass(areItemsDeletable: false, isCompactDuringDispose: false)]
+  [StorageClass(areInstancesDeletable: false, isCompactDuringDispose: false)]
   public class SampleMaster {
 
     /// <summary>
@@ -49,7 +49,7 @@ namespace StorageModel {
     public string Text;
 
     /// <summary>
-    /// Some Samples comment
+    /// List representing parent child relationship
     /// </summary>
     public List<Sample> SampleX;
 
@@ -172,18 +172,57 @@ namespace StorageModel {
   }
 
 
-  [StorageClass(areItemsUpdatable: false, areItemsDeletable: false)]
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
   public class Minimal {
     public int SomeNumber;
     public int AnotherNumber;
   }
 
 
-  [StorageClass(areItemsUpdatable: false, areItemsDeletable: false)]
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
   public class MinimalRef {
     public int Number;
     [StorageProperty(isLookupOnly: true)] //parent Minimal does not have a collection for MinimalRef
     public Minimal MinimalLookup;
   }
 
+
+  /// <summary>
+  /// Example of a Parent child relationship using a Dictionary.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, isCompactDuringDispose: false)]
+  public class ParentDictionary {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Dictionary used instead of List. Comment is required and indicates with DictionaryChild property to use as key
+    /// </summary>
+    public Dictionary<Date /*DateKey*/, DictionaryChild> DictionaryChildren;
+  }
+
+
+  /// <summary>
+  /// DictionaryChild has some information for ParentDictionary, where it gets stored in a Dictionary by Date
+  /// </summary>
+  [StorageClass(areInstancesDeletable: true, pluralName: "DictionaryChildren")]
+  public class DictionaryChild {
+    /// <summary>
+    /// Parent
+    /// </summary>
+    public ParentDictionary ParentDictionary;
+
+    /// <summary>
+    /// Key field used in ParentDictionary.DictionaryChildren Dictionary
+    /// </summary>
+    public Date DateKey;
+
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+  }
 }

@@ -260,7 +260,6 @@ namespace StorageModel  {
       if (oneMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
           OneMaster = oneMaster;
-        OneMaster.AddToSampleX(this);
         } else {
           OneMaster = SampleMaster.NoSampleMaster;
         }
@@ -269,13 +268,18 @@ namespace StorageModel  {
       if (otherMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(otherMasterKey.Value, out var otherMaster)) {
           OtherMaster = otherMaster;
-        OtherMaster.AddToSampleX(this);
         } else {
           OtherMaster = SampleMaster.NoSampleMaster;
         }
       }
       Optional = csvReader.ReadString()!;
       sampleDetails = new List<SampleDetail>();
+      if (oneMasterKey.HasValue && OneMaster!=SampleMaster.NoSampleMaster) {
+        OneMaster.AddToSampleX(this);
+      }
+      if (otherMasterKey.HasValue && OtherMaster!=SampleMaster.NoSampleMaster) {
+        OtherMaster.AddToSampleX(this);
+      }
       onCsvConstruct();
     }
     partial void onCsvConstruct();
@@ -597,7 +601,7 @@ namespace StorageModel  {
 #if DEBUG
       if (!sampleDetails.Remove(sampleDetail)) throw new Exception();
 #else
-        sampleDetails.Remove(sampleDetail));
+        sampleDetails.Remove(sampleDetail);
 #endif
       onRemovedFromSampleDetails(sampleDetail);
     }

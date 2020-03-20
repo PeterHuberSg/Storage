@@ -46,7 +46,7 @@ namespace Storage {
 
     string? nameSpaceString;
     const string onlyAcceptableConsts = "should only contain properties and configuration constants for " +
-            "MaxLineLenght, AreItemsUpdatable, AreItemsDeletable and IsCompactDuringDispose , but not";
+            "MaxLineLenght, AreInstancesUpdatable, AreInstancesDeletable and IsCompactDuringDispose , but not";
 
 
     public void Parse(NamespaceDeclarationSyntax namespaceDeclaration, string fileName) {
@@ -69,8 +69,8 @@ namespace Storage {
         string? classComment = getComment(classDeclaration.GetLeadingTrivia());
         int? maxLineLength = null;
         string? pluralName = className + 's';
-        bool areItemsUpdatable = true;
-        bool areItemsDeletable = true;
+        bool areInstancesUpdatable = true;
+        bool areInstancesDeletable = true;
         bool isCompactDuringDispose = true;
         if (classDeclaration.AttributeLists.Count==0) {
           //use the default values
@@ -86,7 +86,7 @@ namespace Storage {
             throw new GeneratorException($"Class {className} should contain only a StorageClass attribute, but has: '{classDeclaration.AttributeLists}'");
           }
           foreach (var argument in attribute.ArgumentList!.Arguments) {
-            if (argument.NameColon is null) throw new GeneratorException($"Class {className} Attribute{attribute}: the argument name is missing, like 'areItemsUpdatable: true'.");
+            if (argument.NameColon is null) throw new GeneratorException($"Class {className} Attribute{attribute}: the argument name is missing, like 'areInstancesUpdatable: true'.");
 
             var name = argument.NameColon.Name.Identifier.Text;
             try {
@@ -94,8 +94,8 @@ namespace Storage {
               switch (name) {
               case "maxLineLength": maxLineLength = int.Parse(value); break;
               case "pluralName": pluralName = value[1..^1]; break;
-              case "areItemsUpdatable": areItemsUpdatable = value=="true"; break;
-              case "areItemsDeletable": areItemsDeletable = value=="true"; break;
+              case "areInstancesUpdatable": areInstancesUpdatable = value=="true"; break;
+              case "areInstancesDeletable": areInstancesDeletable = value=="true"; break;
               case "isCompactDuringDispose": isCompactDuringDispose = value=="true"; break;
               default: throw new Exception();
               }
@@ -105,7 +105,7 @@ namespace Storage {
           }
 
         }
-        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areItemsUpdatable, areItemsDeletable, isCompactDuringDispose);
+        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable, isCompactDuringDispose);
         classes.Add(className, classInfo);
         var isPropertyWithDefaultValueFound = false;
         foreach (var classMember in classDeclaration.Members) {
@@ -138,14 +138,14 @@ namespace Storage {
           //          classInfo.SetMaxLineLength(int.Parse(constValue.Token.Text));
           //          continue;
           //        }
-          //      } else if (variableDeclarator.Identifier.Text=="AreItemsUpdatable") {
+          //      } else if (variableDeclarator.Identifier.Text=="AreInstancesUpdatable") {
           //        if (constValue!=null) {
-          //          classInfo.SetAreItemsUpdatable(bool.Parse(constValue.Token.Text));
+          //          classInfo.SetAreInstancesUpdatable(bool.Parse(constValue.Token.Text));
           //          continue;
           //        }
-          //      } else if (variableDeclarator.Identifier.Text=="AreItemsDeletable") {
+          //      } else if (variableDeclarator.Identifier.Text=="AreInstancesDeletable") {
           //        if (constValue!=null) {
-          //          classInfo.SetAreItemsDeletable(bool.Parse(constValue.Token.Text));
+          //          classInfo.SetAreInstancesDeletable(bool.Parse(constValue.Token.Text));
           //          continue;
           //        }
           //      } else if (variableDeclarator.Identifier.Text=="IsCompactDuringDispose") {
@@ -256,7 +256,7 @@ namespace Storage {
                 }
                 if (!isfound) {
                   throw new GeneratorException(
-                    $"Class {mi.ParentClassInfo.ClassName}: property 'List<{ci.ClassName}> {ci.PluralName}' is missing." + Environment.NewLine + 
+                    $"Class {mi.ParentClassInfo.ClassName}: property 'List<{ci.ClassName}> {ci.PluralName}' is missing." + Environment.NewLine +
                     $"Normally if a child class {ci.ClassName} references a parent class {mi.ParentClassInfo.ClassName}, the child class {ci.ClassName} " + Environment.NewLine +
                     $"should be added to {mi.ParentClassInfo.ClassName}.{ci.PluralName}. If no such list should be generated in parent {mi.ParentClassInfo.ClassName}," + Environment.NewLine +
                     $"then add [StorageProperty(isLookupOnly: true)] to {ci.ClassName}.{mi.MemberName}.");
@@ -270,6 +270,8 @@ namespace Storage {
                 throw new GeneratorException($"{ci} '{mi}': can not find class or enum '{mi.MemberName}'.");
               }
             }
+
+          //List
           } else if (mi.MemberType==MemberTypeEnum.List) {
             if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
               throw new GeneratorException($"{ci} '{mi}': can not find class {mi.ChildTypeName}.");
@@ -281,6 +283,7 @@ namespace Storage {
                 if (mi.MemberName!=childMI.ClassInfo.PluralName) {
                   throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}.");
                 }
+                //no break here, because child can have 2 properties belonging to the same Parent
               }
             }
             if (!isFound) {
@@ -288,13 +291,50 @@ namespace Storage {
               throw new GeneratorException($"{ci} '{mi}': has a List<{mi.ChildTypeName}>. The corresponding " +
                 $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
             }
+
+          //Dictionary
+          } else if (mi.MemberType==MemberTypeEnum.Dictionary) {
+            if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
+              throw new GeneratorException($"{ci} '{mi}': can not find class {mi.ChildTypeName}.");
+
+            bool isFound = false;
+            bool isKeyFound = false;
+            foreach (var childMI in mi.ChildClassInfo.Members.Values) {
+              if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==ci.ClassName) {
+                isFound = true;
+                if (mi.MemberName!=childMI.ClassInfo.PluralName) {
+                  throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}.");
+                }
+                foreach (var childKeyMI in mi.ChildClassInfo.Members.Values) {
+                  if (mi.ChildKeyPropertyName==childKeyMI.MemberName) {
+                    if (mi.KeyTypeString!=childKeyMI.CsvTypeString) {
+                      throw new GeneratorException($"{ci}.{mi.MemberName} {mi.TypeString}: found {childKeyMI.ClassInfo.ClassName}.{childKeyMI.MemberName}, but it has wrong type: {childKeyMI.CsvTypeString}.");
+                    }
+                    isKeyFound = true;
+                    //memberTypeString = $"Dictionary<{keyTypeName}, {itemTypeName}>";
+                    mi.TypeString = $"Dictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
+                    break;
+                  }
+                }
+              }
+            }
+            if (!isFound) {
+              //guarantee that there is a property linking to the parent for each child class.
+              throw new GeneratorException($"{ci} '{mi}': has a List<{mi.ChildTypeName}>. The corresponding " +
+                $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
+            }
+            if (!isKeyFound) {
+              //guarantee that there is a property that can be used as key into parent's Dictionary
+              throw new GeneratorException($"{ci} '{mi}': has a Dictionary<{mi.ChildTypeName}>. The corresponding " +
+                $" key property '{mi.ChildKeyPropertyName}' with type {mi.KeyTypeString} is missing in the class {mi.ChildTypeName}.");
+            }
           }
         }
-      };
+      }
 
       //create parent child tree
       foreach (var classInfo in topClasses.Values) {
-        addPparentChildTree(classInfo);
+        addParentChildTree(classInfo);
       }
       foreach (var classInfo in classes.Values) {
         if (!classInfo.IsAddedToParentChildTree) throw new Exception();
@@ -302,12 +342,12 @@ namespace Storage {
     }
 
 
-    private void addPparentChildTree(ClassInfo classInfo) {
+    private void addParentChildTree(ClassInfo classInfo) {
       if (!classInfo.IsAddedToParentChildTree && allParentsAreAddedToParentChildTree(classInfo)) {
         classInfo.IsAddedToParentChildTree = true;
         parentChildTree.Add(classInfo);
         foreach (var child in classInfo.Children) {
-          addPparentChildTree(child);
+          addParentChildTree(child);
         }
       }
     }
@@ -461,13 +501,13 @@ namespace Storage {
         streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionary<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
-        if (classInfo.AreItemsDeletable) {
+        if (classInfo.AreInstancesDeletable) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
         } else {
           streamWriter.WriteLine($"          null,");
         }
-        streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable.ToString().ToLowerInvariant()},");
-        streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable.ToString().ToLowerInvariant()});");
+        streamWriter.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
+        streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      } else {");
       foreach (var classInfo in parentChildTree) {
@@ -483,19 +523,19 @@ namespace Storage {
         } else {
           streamWriter.WriteLine("          null,");
         }
-        if (classInfo.AreItemsUpdatable) {
+        if (classInfo.AreInstancesUpdatable) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Update,");
         } else {
           streamWriter.WriteLine($"          null,");
         }
         streamWriter.WriteLine($"          {classInfo.ClassName}.Write,");
-        if (classInfo.AreItemsDeletable) {
+        if (classInfo.AreInstancesDeletable) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
         } else {
           streamWriter.WriteLine($"          null,");
         }
-        streamWriter.WriteLine($"          areItemsUpdatable: {classInfo.AreItemsUpdatable.ToString().ToLowerInvariant()},");
-        streamWriter.WriteLine($"          areItemsDeletable: {classInfo.AreItemsDeletable.ToString().ToLowerInvariant()},");
+        streamWriter.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
+        streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()},");
         streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      }");

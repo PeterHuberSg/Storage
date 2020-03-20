@@ -36,7 +36,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called once the Csv-constructor who reads the data from a CSV file has filled all the properties
+    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
     //partial void onCsvConstruct() {
     //}
