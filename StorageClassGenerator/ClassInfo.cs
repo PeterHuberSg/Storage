@@ -976,7 +976,7 @@ namespace Storage {
         streamWriter.WriteLine($"    /// Removing {ClassName} from {context}.Data.{PluralName} is not supported.");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine("    public void Remove() {");
-        streamWriter.WriteLine("      throw new NotSupportedException();");
+        streamWriter.WriteLine("      throw new NotSupportedException(\"Attribute AreInstancesDeletable is false.\");");
         streamWriter.WriteLine("    }");
         streamWriter.WriteLine();
         streamWriter.WriteLine();

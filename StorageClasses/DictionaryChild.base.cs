@@ -106,7 +106,7 @@ namespace StorageModel  {
       DateKey = csvReader.ReadDate();
       Text = csvReader.ReadString()!;
       if (ParentDictionary!=ParentDictionary.NoParentDictionary) {
-      ParentDictionary.AddToDictionaryChildren(this);
+        ParentDictionary.AddToDictionaryChildren(this);
       }
       onCsvConstruct();
     }

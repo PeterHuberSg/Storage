@@ -149,7 +149,7 @@ namespace StorageModel  {
     /// Removing MinimalRef from DL.Data.MinimalRefs is not supported.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException();
+      throw new NotSupportedException("Attribute AreInstancesDeletable is false.");
     }
 
 

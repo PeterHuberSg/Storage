@@ -14,8 +14,8 @@ namespace StorageTest {
 
 
     CsvConfig? csvConfig;
-    List<string> expectedParentDictionary = new List<string>();
-    List<string> expectedDictionaryChild= new List<string>();
+    readonly Dictionary<int, string> expectedParentDictionary = new Dictionary<int, string>();
+    readonly Dictionary<int, string> expectedDictionaryChild= new Dictionary<int, string>();
 
 
     [TestMethod]
@@ -40,6 +40,10 @@ namespace StorageTest {
         addParentDictionary("2");
         addDictionaryChild(1, now, "21");
         addDictionaryChild(1, now.AddDays(1), "22");
+
+        removeParentDictionary(0);
+
+        removeDictionaryChild(1);
 
       } finally {
         DL.DisposeData();
@@ -73,7 +77,7 @@ namespace StorageTest {
 
     private void addParentDictionary(string someText) {
       var newParentDictionary = new ParentDictionary(someText, isStoring: true);
-      expectedParentDictionary.Add(newParentDictionary.ToString());
+      expectedParentDictionary.Add(newParentDictionary.Key, newParentDictionary.ToString());
       assertData();
     }
 
@@ -81,7 +85,28 @@ namespace StorageTest {
     private void addDictionaryChild(int parentDictionaryKey, DateTime date, string text) {
       var parentDictionary = DL.Data.ParentDictionarys[parentDictionaryKey];
       var newDictionaryChild = new DictionaryChild(parentDictionary, date, text, isStoring: true);
-      expectedDictionaryChild.Add(newDictionaryChild.ToString());
+      expectedDictionaryChild.Add(newDictionaryChild.Key, newDictionaryChild.ToString());
+      expectedParentDictionary[parentDictionary.Key] = parentDictionary.ToString();
+      assertData();
+    }
+
+
+    private void removeParentDictionary(int parentDictionaryKey) {
+      var parent = DL.Data.ParentDictionarys[parentDictionaryKey];
+      foreach (var child in parent.DictionaryChildren.Values) {
+        expectedDictionaryChild.Remove(child.Key);
+      }
+      expectedParentDictionary.Remove(parentDictionaryKey);
+      parent.Remove();
+      assertData();
+    }
+
+
+    private void removeDictionaryChild(int dictionaryChildKey) {
+      var child = DL.Data.DictionaryChildren[dictionaryChildKey];
+      expectedDictionaryChild.Remove(child.Key);
+      var parentDictionary = child.ParentDictionary;
+      child.Remove();
       expectedParentDictionary[parentDictionary.Key] = parentDictionary.ToString();
       assertData();
     }

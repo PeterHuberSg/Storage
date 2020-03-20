@@ -97,7 +97,7 @@ namespace StorageModel  {
         Sample = Sample.NoSample;
       }
       if (Sample!=Sample.NoSample) {
-      Sample.AddToSampleDetails(this);
+        Sample.AddToSampleDetails(this);
       }
       onCsvConstruct();
     }

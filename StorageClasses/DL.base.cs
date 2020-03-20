@@ -144,9 +144,9 @@ namespace StorageModel  {
         ParentDictionarys = new StorageDictionary<ParentDictionary, DL>(
           this,
           ParentDictionary.SetKey,
-          null,
+          ParentDictionary.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: false);
+          areInstancesDeletable: true);
         DictionaryChildren = new StorageDictionary<DictionaryChild, DL>(
           this,
           DictionaryChild.SetKey,
@@ -234,9 +234,9 @@ namespace StorageModel  {
           null,
           ParentDictionary.Update,
           ParentDictionary.Write,
-          null,
+          ParentDictionary.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: false,
+          areInstancesDeletable: true,
           isCompactDuringDispose: false);
         DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
           this,

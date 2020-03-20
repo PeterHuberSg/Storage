@@ -190,10 +190,28 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removing ParentDictionary from DL.Data.ParentDictionarys is not supported.
+    /// Removes ParentDictionary from DL.Data.ParentDictionarys and 
+    /// deletes all DictionaryChild where DictionaryChild.ParentDictionary links to this ParentDictionary.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException();
+      if (Key<0) {
+        throw new Exception($"ParentDictionary.Remove(): ParentDictionary 'Class ParentDictionary' is not stored in DL.Data, key is {Key}.");
+      }
+      onRemove();
+      DL.Data.ParentDictionarys.Remove(Key);
+    }
+    partial void onRemove();
+
+
+    /// <summary>
+    /// Deletes all DictionaryChild where DictionaryChild.ParentDictionary links to this ParentDictionary.
+    /// </summary>
+    internal static void Disconnect(ParentDictionary parentDictionary) {
+      foreach (var dictionaryChild in parentDictionary.DictionaryChildren.Values) {
+         if (dictionaryChild.Key>=0) {
+           dictionaryChild.Remove();
+         }
+      }
     }
 
 

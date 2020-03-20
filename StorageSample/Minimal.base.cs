@@ -133,7 +133,7 @@ namespace StorageModel  {
     /// Removing Minimal from DL.Data.Minimals is not supported.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException();
+      throw new NotSupportedException("Attribute AreInstancesDeletable is false.");
     }
 
 

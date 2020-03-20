@@ -190,7 +190,7 @@ namespace StorageModel {
   /// <summary>
   /// Example of a Parent child relationship using a Dictionary.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, isCompactDuringDispose: false)]
+  [StorageClass(areInstancesDeletable: true, isCompactDuringDispose: false)]
   public class ParentDictionary {
 
     /// <summary>
