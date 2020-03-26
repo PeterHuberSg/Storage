@@ -32,6 +32,7 @@ namespace Storage {
     public readonly ClassInfo ClassInfo;
     public string? CsvTypeString;
     public string TypeString;
+    public string? ReadOnlyTypeString; //used by Dictionary and SortedList: IReadOnlyDictionary<DateTime, DictionaryChild>
     public readonly bool IsNullable;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
@@ -39,10 +40,11 @@ namespace Storage {
     public readonly string? DefaultValue;
     public readonly bool IsLookupOnly = false;
     public readonly int MaxStorageSize;
-    public readonly string? ChildTypeName;
-    public readonly string? LowerChildTypeName; //used by List and Dictionary
-    public readonly string? ChildKeyPropertyName; //used by Dictionary
-    public readonly string? KeyTypeString;
+    public readonly string? ChildTypeName; //used by List, Dictionary and SortedList
+    public readonly string? LowerChildTypeName; //used by List, Dictionary and SortedList
+    public readonly string? ChildKeyPropertyName; //used by Dictionary and SortedList
+    public readonly string? KeyTypeString; //used by Dictionary and SortedList
+    public readonly bool? IsSortedList; //to differentiate between Dictionary and SortedList, which both use MemberTypeEnum.Dictionary
     public readonly string? ParentType;//is only different from TypeString when IsNullable
     public readonly string? LowerParentType;
     public readonly string? CsvReaderRead;
@@ -222,9 +224,14 @@ namespace Storage {
       case MemberTypeEnum.String: 
         TypeString = "string";
         MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and corrects this number for CsvReader
-        CsvReaderRead = "ReadString()!";
+        if (isNullable) {
+          CsvReaderRead = "ReadStringNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadString()";
+          NoValue = $"\"No{name}\"";
+        }
         CsvWriterWrite = "Write";
-        NoValue = isNullable ? "null" : $"\"No{name}\"";
         ToStringFunc = "";
         break;
 
@@ -268,7 +275,18 @@ namespace Storage {
     /// <summary>
     /// constructor for Dictionary
     /// </summary>
-    public MemberInfo(string name, ClassInfo classInfo, string memberTypeString, string childType, string childKeyPropertyName, string keyTypeString, string? comment, string? defaultValue) {
+    public MemberInfo(
+      string name, 
+      ClassInfo classInfo, 
+      string memberTypeString, 
+      string childType,
+      bool isSortedList,
+      string childKeyPropertyName, 
+      string keyTypeString, 
+      string? comment, 
+      string? 
+      defaultValue) 
+    {
       MemberType = MemberTypeEnum.Dictionary;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
@@ -280,6 +298,7 @@ namespace Storage {
       KeyTypeString = keyTypeString;
       IsNullable = false;
       TypeString = memberTypeString; //will be overwritten in Compiler.AnalyzeDependencies()
+      IsSortedList = isSortedList;
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
@@ -368,7 +387,8 @@ namespace Storage {
           streamWriter.WriteLine($"    readonly HashSet<{ChildTypeName}> {LowerMemberName};");
         }
       } else if (MemberType==MemberTypeEnum.Dictionary) {
-        streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} => {LowerMemberName};");
+        //streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} => {LowerMemberName};");
+        streamWriter.WriteLine($"    public {ReadOnlyTypeString} {MemberName} => {LowerMemberName};");
         streamWriter.WriteLine($"    readonly {TypeString} {LowerMemberName};");
 
       } else {

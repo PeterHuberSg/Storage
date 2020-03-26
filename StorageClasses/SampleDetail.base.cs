@@ -15,9 +15,9 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// Some comment for SampleDetail
-  /// </summary>
+    /// <summary>
+    /// Some comment for SampleDetail
+    /// </summary>
   public partial class SampleDetail: IStorage<SampleDetail> {
 
     #region Properties
@@ -90,7 +90,7 @@ namespace StorageModel  {
     /// </summary>
     private SampleDetail(int key, CsvReader csvReader, DL context) {
       Key = key;
-      Text = csvReader.ReadString()!;
+      Text = csvReader.ReadString();
       if (context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
         Sample = sample;
       } else {
@@ -99,9 +99,9 @@ namespace StorageModel  {
       if (Sample!=Sample.NoSample) {
         Sample.AddToSampleDetails(this);
       }
-      onCsvConstruct();
+      onCsvConstruct(context);
     }
-    partial void onCsvConstruct();
+    partial void onCsvConstruct(DL context);
 
 
     /// <summary>
@@ -185,7 +185,7 @@ namespace StorageModel  {
     /// Updates this SampleDetail with values from CSV file
     /// </summary>
     internal static void Update(SampleDetail sampleDetail, CsvReader csvReader, DL context) {
-      sampleDetail.Text = csvReader.ReadString()!;
+      sampleDetail.Text = csvReader.ReadString();
       if (!context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
         sample = Sample.NoSample;
       }

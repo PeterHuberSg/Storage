@@ -9,7 +9,8 @@ namespace StorageModel {
 
   public partial class DL {
     /// <summary>
-    /// Special static "constructor" for testing purpose. All or no StorageDirectory are set to isCompactDuringDispose. All are udateable and deletable.
+    /// Special static "constructor" for testing purpose. All or no StorageDirectory are set to isCompactDuringDispose. All 
+    /// are updatable and deletable.
     /// </summary>
     public static void Init(CsvConfig? csvConfig, bool isCompactDuringDispose) {
       if (data!=null) throw new Exception();
@@ -19,9 +20,14 @@ namespace StorageModel {
 
 
     /// <summary>
-    /// Special "constructor" for testing purpose. All or no StorageDirectory are set to isCompactDuringDispose. All are udateable and deletable.
+    /// Special "constructor" for testing purpose. All or no StorageDirectory are set to isCompactDuringDispose. All are 
+    /// updatable and deletable.
     /// </summary>
     public DL(CsvConfig? csvConfig, bool isCompactDuringDispose) {
+      if (!IsDisposed) {
+        throw new Exception("Dispose old DL before creating a new one.");
+      }
+      isDisposed = 0;
       if (csvConfig==null) {
         SampleMasters = new StorageDictionary<SampleMaster, DL>(
           this,
@@ -41,28 +47,40 @@ namespace StorageModel {
           SampleDetail.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
-        Minimals = new StorageDictionary<Minimal, DL>(
+        LookupParents = new StorageDictionary<LookupParent, DL>(
           this,
-          Minimal.SetKey,
+          LookupParent.SetKey,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        MinimalRefs = new StorageDictionary<MinimalRef, DL>(
+        LookupChildren = new StorageDictionary<LookupChild, DL>(
           this,
-          MinimalRef.SetKey,
+          LookupChild.SetKey,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ParentDictionarys = new StorageDictionary<ParentDictionary, DL>(
+        ParentsWithDictionary = new StorageDictionary<ParentWithDictionary, DL>(
           this,
-          ParentDictionary.SetKey,
+          ParentWithDictionary.SetKey,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: false);
-        DictionaryChildren = new StorageDictionary<DictionaryChild, DL>(
+        SortedListyChildren = new StorageDictionary<DictionaryChild, DL>(
           this,
           DictionaryChild.SetKey,
           DictionaryChild.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        ParentsWithSortedList = new StorageDictionary<ParentWithSortedList, DL>(
+          this,
+          ParentWithSortedList.SetKey,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false);
+        SortedListChildren = new StorageDictionary<SortedListChild, DL>(
+          this,
+          SortedListChild.SetKey,
+          SortedListChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
       } else {
@@ -108,49 +126,49 @@ namespace StorageModel {
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
           isCompactDuringDispose: isCompactDuringDispose);
-        Minimals = new StorageDictionaryCSV<Minimal, DL>(
+        LookupParents = new StorageDictionaryCSV<LookupParent, DL>(
           this,
           csvConfig!,
-          Minimal.MaxLineLength,
-          Minimal.Headers,
-          Minimal.SetKey,
-          Minimal.Create,
+          LookupParent.MaxLineLength,
+          LookupParent.Headers,
+          LookupParent.SetKey,
+          LookupParent.Create,
           null,
           null,
-          Minimal.Write,
+          LookupParent.Write,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false,
           isCompactDuringDispose: isCompactDuringDispose);
-        MinimalRefs = new StorageDictionaryCSV<MinimalRef, DL>(
+        LookupChildren = new StorageDictionaryCSV<LookupChild, DL>(
           this,
           csvConfig!,
-          MinimalRef.MaxLineLength,
-          MinimalRef.Headers,
-          MinimalRef.SetKey,
-          MinimalRef.Create,
+          LookupChild.MaxLineLength,
+          LookupChild.Headers,
+          LookupChild.SetKey,
+          LookupChild.Create,
           null,
           null,
-          MinimalRef.Write,
+          LookupChild.Write,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false,
           isCompactDuringDispose: isCompactDuringDispose);
-        ParentDictionarys = new StorageDictionaryCSV<ParentDictionary, DL>(
+        ParentsWithDictionary = new StorageDictionaryCSV<ParentWithDictionary, DL>(
           this,
           csvConfig!,
-          ParentDictionary.MaxLineLength,
-          ParentDictionary.Headers,
-          ParentDictionary.SetKey,
-          ParentDictionary.Create,
+          ParentWithDictionary.MaxLineLength,
+          ParentWithDictionary.Headers,
+          ParentWithDictionary.SetKey,
+          ParentWithDictionary.Create,
           null,
-          ParentDictionary.Update,
-          ParentDictionary.Write,
+          ParentWithDictionary.Update,
+          ParentWithDictionary.Write,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: false,
           isCompactDuringDispose: isCompactDuringDispose);
-        DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
+        SortedListyChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
           this,
           csvConfig!,
           DictionaryChild.MaxLineLength,
@@ -161,6 +179,34 @@ namespace StorageModel {
           DictionaryChild.Update,
           DictionaryChild.Write,
           DictionaryChild.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true,
+          isCompactDuringDispose: isCompactDuringDispose);
+        ParentsWithSortedList = new StorageDictionaryCSV<ParentWithSortedList, DL>(
+          this,
+          csvConfig!,
+          ParentWithSortedList.MaxLineLength,
+          ParentWithSortedList.Headers,
+          ParentWithSortedList.SetKey,
+          ParentWithSortedList.Create,
+          null,
+          ParentWithSortedList.Update,
+          ParentWithSortedList.Write,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: isCompactDuringDispose);
+        SortedListChildren = new StorageDictionaryCSV<SortedListChild, DL>(
+          this,
+          csvConfig!,
+          SortedListChild.MaxLineLength,
+          SortedListChild.Headers,
+          SortedListChild.SetKey,
+          SortedListChild.Create,
+          SortedListChild.Verify,
+          SortedListChild.Update,
+          SortedListChild.Write,
+          SortedListChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
           isCompactDuringDispose: isCompactDuringDispose);

@@ -224,7 +224,7 @@ namespace StorageTest {
 
         //string?
         Assert.AreEqual(csvConfig.LineCharAdd, csvReader.ReadFirstLineChar());
-        Assert.IsNull(csvReader.ReadString());
+        Assert.IsNull(csvReader.ReadStringNull());
         Assert.AreEqual("a", csvReader.ReadString());
         Assert.AreEqual("abc", csvReader.ReadString());
         Assert.AreEqual("Ä", csvReader.ReadString());

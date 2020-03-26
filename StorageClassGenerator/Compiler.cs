@@ -66,7 +66,7 @@ namespace Storage {
           throw new GeneratorException($"{fileName} contains not only class and enum declarations in namespace '{nameSpaceString}'.");
         }
         var className = classDeclaration.Identifier.Text;
-        string? classComment = getComment(classDeclaration.GetLeadingTrivia());
+        string? classComment = getXmlComment(classDeclaration.GetLeadingTrivia());
         int? maxLineLength = null;
         string? pluralName = className + 's';
         bool areInstancesUpdatable = true;
@@ -216,7 +216,52 @@ namespace Storage {
 
 
     private void parseEnum(EnumDeclarationSyntax enumDeclaration) {
-      enums.Add(enumDeclaration.Identifier.Text, new EnumInfo(enumDeclaration.Identifier.Text, enumDeclaration.ToFullString()));
+      var enumLeadingComment = getXmlComment(enumDeclaration.GetLeadingTrivia());
+      //var enumDeclarationWithLeadingComment = enumDeclaration.ToFullString();
+      //var enumDeclarationOnly = removeRegionAndLeadingSimpleComments(enumDeclarationWithLeadingComment);
+      var indentation = enumDeclaration.GetLastToken().LeadingTrivia.ToString();
+      enums.Add(enumDeclaration.Identifier.Text, 
+        new EnumInfo(enumDeclaration.Identifier.Text, enumLeadingComment + indentation + enumDeclaration.ToString()));
+    }
+
+
+    //private string removeRegionAndLeadingSimpleComments(string declaration) {
+    //  var pos1 = declaration.IndexOf("///");
+    //  if (pos1>=0) {
+    //    return addLeadingSpaces(declaration, pos1);
+    //  }
+    //  var pos2 = declaration.IndexOf("public enum ");
+    //  if (pos2>=0) {
+    //    return addLeadingSpaces(declaration, pos1);
+    //  }
+    //  return declaration;
+    //}
+
+
+    private string addLeadingSpaces(string declaration, int pos) {
+      pos--;
+      while (pos>0) {
+        var c = declaration[pos];
+        if (c!=' ') {
+          break;
+        }
+        pos--;
+      }
+      pos++;
+      return declaration[pos..];
+    }
+
+
+    private string? getXmlComment(SyntaxTriviaList syntaxTriviaList) {
+      string? comment = null;
+      var leadingTrivia = syntaxTriviaList.ToString();
+      var lines = leadingTrivia.Split(Environment.NewLine);
+      foreach (var line in lines) {
+        if (line.Contains("///")) {
+          comment += line + Environment.NewLine;
+        }
+      }
+      return comment;
     }
 
 
@@ -258,7 +303,7 @@ namespace Storage {
                   throw new GeneratorException(
                     $"Class {mi.ParentClassInfo.ClassName}: property 'List<{ci.ClassName}> {ci.PluralName}' is missing." + Environment.NewLine +
                     $"Normally if a child class {ci.ClassName} references a parent class {mi.ParentClassInfo.ClassName}, the child class {ci.ClassName} " + Environment.NewLine +
-                    $"should be added to {mi.ParentClassInfo.ClassName}.{ci.PluralName}. If no such list should be generated in parent {mi.ParentClassInfo.ClassName}," + Environment.NewLine +
+                    $"should be added to {mi.ParentClassInfo.ClassName}.{ci.PluralName}. If no such collection should be generated in parent {mi.ParentClassInfo.ClassName}," + Environment.NewLine +
                     $"then add [StorageProperty(isLookupOnly: true)] to {ci.ClassName}.{mi.MemberName}.");
                 }
               }
@@ -311,8 +356,16 @@ namespace Storage {
                       throw new GeneratorException($"{ci}.{mi.MemberName} {mi.TypeString}: found {childKeyMI.ClassInfo.ClassName}.{childKeyMI.MemberName}, but it has wrong type: {childKeyMI.CsvTypeString}.");
                     }
                     isKeyFound = true;
-                    //memberTypeString = $"Dictionary<{keyTypeName}, {itemTypeName}>";
-                    mi.TypeString = $"Dictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
+                    if (mi.IsSortedList!.Value) {
+                      //memberTypeString = $"SortedList<{keyTypeName}, {itemTypeName}>";
+                      mi.TypeString = $"SortedList<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
+                      mi.ReadOnlyTypeString = $"IReadOnlyDictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
+                    } else {
+                      //Dictionary
+                      //memberTypeString = $"Dictionary<{keyTypeName}, {itemTypeName}>";
+                      mi.TypeString = $"Dictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
+                      mi.ReadOnlyTypeString = $"IReadOnlyDictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
+                    }
                     break;
                   }
                 }
@@ -471,6 +524,11 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine("    #region Properties");
       streamWriter.WriteLine("    //      ----------");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Configuration parameters if data gets stored in .csv files");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    public CsvConfig? CsvConfig { get; }");
       foreach (var classInfo in classes.Values.OrderBy(ci => ci.ClassName)) {
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
@@ -496,6 +554,11 @@ namespace Storage {
       streamWriter.WriteLine("    /// when written and Dispose() ensures by flushing that all data is permanently stored.");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine($"    public {context}(CsvConfig? csvConfig) {{");
+      streamWriter.WriteLine("      if (!IsDisposed) {");
+      streamWriter.WriteLine($"        throw new Exception(\"Dispose old {context} before creating a new one.\");");
+      streamWriter.WriteLine("      }");
+      streamWriter.WriteLine("      isDisposed = 0;");
+      streamWriter.WriteLine("      CsvConfig = csvConfig;");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
         streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionary<{classInfo.ClassName}, {context}>(");
@@ -558,7 +621,7 @@ namespace Storage {
       streamWriter.WriteLine("    public bool IsDisposed {");
       streamWriter.WriteLine("      get { return isDisposed==1; }");
       streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    int isDisposed = 0;");
+      streamWriter.WriteLine("    int isDisposed = 1;");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    protected virtual void Dispose(bool disposing) {");

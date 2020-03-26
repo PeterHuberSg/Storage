@@ -23,6 +23,10 @@ using Storage;
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 namespace StorageModel {
 
+  #region SampleMaster -> Sample -> SampleDetail, using List for children
+  //      ---------------------------------------------------------------
+
+  //shows also all data types supported
 
   /// <summary>
   /// Some SampleStateEnum comment
@@ -170,28 +174,47 @@ namespace StorageModel {
     /// </summary>
     public Sample Sample;
   }
+  #endregion
 
 
+  #region LookupParent -> LookupChild, parent has no collection for children
+  //      ------------------------------------------------------------------
+
+  //an example for lookup, only the child linking to parent but the parent having no child collection
+  //this can be useful for example if parent holds exchange rates for every day. The child links to
+  //one particular exchange rate, but the exchange rate does not know which child links to it. In this
+  //scenario, the parent can never be deleted.
+
+    /// <summary>
+    /// Parent of children who uses lookup, i.e. parent has no children collection
+    /// </summary>
   [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
-  public class Minimal {
-    public int SomeNumber;
-    public int AnotherNumber;
+  public class LookupParent {
+    public DateTime Date;
+    public Decimal2 SomeValue;
   }
 
 
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
-  public class MinimalRef {
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false, pluralName: "LookupChildren")]
+  public class LookupChild {
     public int Number;
-    [StorageProperty(isLookupOnly: true)] //parent Minimal does not have a collection for MinimalRef
-    public Minimal MinimalLookup;
+    [StorageProperty(isLookupOnly: true)] //parent LookupParent does not have a collection for LookupChild
+    public LookupParent LookupParent;
   }
+  #endregion
 
+
+  #region ParentWithDictionary -> DictionaryChild, using Dictionary for children
+  //      ----------------------------------------------------------------------
+
+  //Example where parent has a Dictionary instead a List for its children. The child needs an additional field which
+  //can be used as Key for the Dictionary. 
 
   /// <summary>
   /// Example of a Parent child relationship using a Dictionary.
   /// </summary>
-  [StorageClass(areInstancesDeletable: true, isCompactDuringDispose: false)]
-  public class ParentDictionary {
+  [StorageClass(areInstancesDeletable: true, isCompactDuringDispose: false, pluralName: "ParentsWithDictionary")]
+  public class ParentWithDictionary {
 
     /// <summary>
     /// Some Text
@@ -199,24 +222,25 @@ namespace StorageModel {
     public string Text;
 
     /// <summary>
-    /// Dictionary used instead of List. Comment is required and indicates with DictionaryChild property to use as key
+    /// Dictionary used instead of List. Comment is required and indicates which property of the DictionaryChild to 
+    /// use as key
     /// </summary>
     public Dictionary<Date /*DateKey*/, DictionaryChild> DictionaryChildren;
   }
 
 
   /// <summary>
-  /// DictionaryChild has some information for ParentDictionary, where it gets stored in a Dictionary by Date
+  /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
   /// </summary>
   [StorageClass(areInstancesDeletable: true, pluralName: "DictionaryChildren")]
   public class DictionaryChild {
     /// <summary>
     /// Parent
     /// </summary>
-    public ParentDictionary ParentDictionary;
+    public ParentWithDictionary ParentWithDictionary;
 
     /// <summary>
-    /// Key field used in ParentDictionary.DictionaryChildren Dictionary
+    /// Key field used in ParentWithDictionary.DictionaryChildren Dictionary
     /// </summary>
     public Date DateKey;
 
@@ -225,4 +249,58 @@ namespace StorageModel {
     /// </summary>
     public string Text;
   }
+  #endregion
+
+
+  #region ParentWithSortedList -> SortedListChild, using SortedList for children
+  //      ----------------------------------------------------------------------
+
+  //Example where parent has a SortedList instead a List for its children. The child needs an additional field which
+  //can be used as Key for the SortedList.
+  
+  //It's better to use a SortedList than a SortedDictionary, because in a SortedList, an item can be accessed
+  //by its place in the SortedList like the last item:
+  //key = sortedList.Keys[sortedList.Lenght];
+  //item = sortedList[key];
+
+  /// <summary>
+  /// Example of a Parent child relationship using a SortedList.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: true, isCompactDuringDispose: false, pluralName: "ParentsWithSortedList")]
+  public class ParentWithSortedList {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
+    /// use as key
+    /// </summary>
+    public SortedList<Date /*DateKey*/, SortedListChild> SortedListChildren;
+  }
+
+
+  /// <summary>
+  /// SortedListChild has a member providing the key value needed to add SortedListChild to the ParentWithSortedList.SortedListChildren
+  /// </summary>
+  [StorageClass(areInstancesDeletable: true, pluralName: "SortedListChildren")]
+  public class SortedListChild {
+    /// <summary>
+    /// Parent
+    /// </summary>
+    public ParentWithSortedList ParentWithSortedList;
+
+    /// <summary>
+    /// Key field used in ParentWithSortedList.SortedListChildren SortedList
+    /// </summary>
+    public Date DateKey;
+
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+  }
+  #endregion
 }

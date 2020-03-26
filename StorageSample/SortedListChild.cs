@@ -6,10 +6,10 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// Example of a Parent child relationship using a Dictionary.
-  /// </summary>
-  public partial class ParentDictionary: IStorage<ParentDictionary> {
+    /// <summary>
+    /// SortedListChild has a member providing the key value needed to add SortedListChild to the ParentWithSortedList.SortedListChildren
+    /// </summary>
+  public partial class SortedListChild: IStorage<SortedListChild> {
 
 
     #region Properties
@@ -37,7 +37,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
-    //partial void onCsvConstruct() {
+    //partial void onCsvConstruct(DL context) {
     //}
 
 
@@ -76,16 +76,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a dictionaryChild gets added to DictionaryChildren.
+    /// Called before removal gets executed
     /// </summary>
-    //partial void onAddedToDictionaryChildren(DictionaryChild dictionaryChild){
-    //}
-
-
-    /// <summary>
-    /// Called after a dictionaryChild gets removed from DictionaryChildren.
-    /// </summary>
-    //partial void onRemovedFromDictionaryChildren(DictionaryChild dictionaryChild){
+    //partial void onRemove() {
     //}
 
 

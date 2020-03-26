@@ -93,19 +93,23 @@ namespace Storage {
       case "string": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.String, this, isNullable, propertyComment, defaultValue); break;
       default:
         if (csvTypeString.Contains("<")) {
+          //a parent having a collection for its children
           if (csvTypeString.StartsWith("List<") && csvTypeString.EndsWith(">")) {
             if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
 
             /*List*/member = new MemberInfo(name, this, csvTypeString, csvTypeString[5..^1], propertyComment, defaultValue);
             break;
-          } else if (csvTypeString.StartsWith("Dictionary<") && csvTypeString.EndsWith(">")) {
+          } else if ((csvTypeString.StartsWith("Dictionary<") || csvTypeString.StartsWith("SortedList<")) && 
+            csvTypeString.EndsWith(">")) 
+          {
             if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
 
-            /*Dictionary*/
+            //Dictionary or SortedList
+            // memberTypeString: SortedList<DateTime /*DateOnly*/, Sample>
             // memberTypeString: Dictionary<DateTime /*DateOnly*/, Sample>
             var startCommentPos = csvTypeString.IndexOf("/*");
             if (startCommentPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} is " +
-              "missing a comment '/* */' indicating which child-property to use as key.");
+              "missing a comment '/* */' after the key type, indicating which child-property to use for that key.");
             var endCommentPos = csvTypeString.IndexOf("*/");
             if (endCommentPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} is " +
               "missing the comment closing '*/'.");
@@ -129,13 +133,24 @@ namespace Storage {
               "Coma ',' should come before '>'.");
             var keyTypeString = stringWithoutComment[(openBracketPos+1)..(comaPos)].Trim();
             var itemTypeName = stringWithoutComment[(comaPos+1)..(closingBracketPos)].Trim();
-            member = new MemberInfo(name, this, csvTypeString, itemTypeName, childKeyPropertyName, keyTypeString, propertyComment, defaultValue);
+            var isSortedList = csvTypeString.StartsWith("SortedList<");
+            member = new MemberInfo(
+              name, 
+              this, 
+              csvTypeString, 
+              itemTypeName,
+              isSortedList,
+              childKeyPropertyName, 
+              keyTypeString, 
+              propertyComment, 
+              defaultValue);
             break;
           }
 
-          throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} not support. Should it be a List<> ?");
+          throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} not support. Should " +
+            "it be a List<>, SortedList<,> or Dictionary<,> ?");
         }
-        /*Parent*/
+        //a child linking to its parent, i.e. a MemberTypeEnum.Parent
         member = new MemberInfo(name, this, csvTypeString, isNullable, propertyComment, defaultValue, isLookupOnly??false);
         isLookUp = true;
         break;
@@ -220,7 +235,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onCsvConstruct() {");
+      streamWriter.WriteLine("    //partial void onCsvConstruct(DL context) {");
       streamWriter.WriteLine("    //}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
@@ -488,11 +503,12 @@ namespace Storage {
       streamWriter.WriteLine($"    /// Constructor for {ClassName} read from CSV file");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write($"    private {ClassName}(int key, CsvReader csvReader, {context} ");
-      if (ParentsAll.Count>0) {
-        streamWriter.Write("context");
-      } else {
-        streamWriter.Write("_");
-      }
+      //if (ParentsAll.Count>0) {
+      //  streamWriter.Write("context");
+      //} else {
+      //  streamWriter.Write("_");
+      //}
+      streamWriter.Write("context");// context always needed for onCsvConstruct
       streamWriter.WriteLine(") {");
       streamWriter.WriteLine("      Key = key;");
       foreach (var mi in Members.Values) {
@@ -543,9 +559,9 @@ namespace Storage {
           }
         }
       }
-      streamWriter.WriteLine("      onCsvConstruct();");
+      streamWriter.WriteLine("      onCsvConstruct(context);");
       streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onCsvConstruct();");
+      streamWriter.WriteLine("    partial void onCsvConstruct(DL context);");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion

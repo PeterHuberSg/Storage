@@ -6,9 +6,9 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// DictionaryChild has some information for ParentDictionary, where it gets stored in a Dictionary by Date
-  /// </summary>
+    /// <summary>
+    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
+    /// </summary>
   public partial class DictionaryChild: IStorage<DictionaryChild> {
 
 
@@ -37,7 +37,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
-    //partial void onCsvConstruct() {
+    //partial void onCsvConstruct(DL context) {
     //}
 
 

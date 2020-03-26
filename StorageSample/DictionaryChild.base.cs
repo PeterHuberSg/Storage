@@ -15,9 +15,9 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// DictionaryChild has some information for ParentDictionary, where it gets stored in a Dictionary by Date
-  /// </summary>
+    /// <summary>
+    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
+    /// </summary>
   public partial class DictionaryChild: IStorage<DictionaryChild> {
 
     #region Properties
@@ -33,11 +33,11 @@ namespace StorageModel  {
     /// <summary>
     /// Parent
     /// </summary>
-    public ParentDictionary ParentDictionary { get; private set; }
+    public ParentWithDictionary ParentWithDictionary { get; private set; }
 
 
     /// <summary>
-    /// Key field used in ParentDictionary.DictionaryChildren Dictionary
+    /// Key field used in ParentWithDictionary.DictionaryChildren Dictionary
     /// Stores only dates but no times.
     /// </summary>
     public DateTime DateKey { get; private set; }
@@ -52,13 +52,13 @@ namespace StorageModel  {
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "ParentDictionary", "DateKey", "Text"};
+    internal static readonly string[] Headers = {"Key", "ParentWithDictionary", "DateKey", "Text"};
 
 
     /// <summary>
     /// None existing DictionaryChild
     /// </summary>
-    internal static DictionaryChild NoDictionaryChild = new DictionaryChild(ParentDictionary.NoParentDictionary, DateTime.MinValue.Date, "NoText", isStoring: false);
+    internal static DictionaryChild NoDictionaryChild = new DictionaryChild(ParentWithDictionary.NoParentWithDictionary, DateTime.MinValue.Date, "NoText", isStoring: false);
     #endregion
 
 
@@ -77,11 +77,11 @@ namespace StorageModel  {
 
     /// <summary>
     /// DictionaryChild Constructor. If isStoring is true, adds DictionaryChild to DL.Data.DictionaryChildren
-    /// and adds DictionaryChild to parentDictionary.DictionaryChildren.
+    /// and adds DictionaryChild to parentWithDictionary.DictionaryChildren.
     /// </summary>
-    public DictionaryChild(ParentDictionary parentDictionary, DateTime dateKey, string text, bool isStoring = true) {
+    public DictionaryChild(ParentWithDictionary parentWithDictionary, DateTime dateKey, string text, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
-      ParentDictionary = parentDictionary;
+      ParentWithDictionary = parentWithDictionary;
       DateKey = dateKey.Floor(Rounding.Days);
       Text = text;
       onConstruct();
@@ -98,19 +98,19 @@ namespace StorageModel  {
     /// </summary>
     private DictionaryChild(int key, CsvReader csvReader, DL context) {
       Key = key;
-      if (context.ParentDictionarys.TryGetValue(csvReader.ReadInt(), out var parentDictionary)) {
-        ParentDictionary = parentDictionary;
+      if (context.ParentsWithDictionary.TryGetValue(csvReader.ReadInt(), out var parentWithDictionary)) {
+        ParentWithDictionary = parentWithDictionary;
       } else {
-        ParentDictionary = ParentDictionary.NoParentDictionary;
+        ParentWithDictionary = ParentWithDictionary.NoParentWithDictionary;
       }
       DateKey = csvReader.ReadDate();
-      Text = csvReader.ReadString()!;
-      if (ParentDictionary!=ParentDictionary.NoParentDictionary) {
-        ParentDictionary.AddToDictionaryChildren(this);
+      Text = csvReader.ReadString();
+      if (ParentWithDictionary!=ParentWithDictionary.NoParentWithDictionary) {
+        ParentWithDictionary.AddToDictionaryChildren(this);
       }
-      onCsvConstruct();
+      onCsvConstruct(context);
     }
-    partial void onCsvConstruct();
+    partial void onCsvConstruct(DL context);
 
 
     /// <summary>
@@ -122,10 +122,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Verify that dictionaryChild.ParentDictionary exists.
+    /// Verify that dictionaryChild.ParentWithDictionary exists.
     /// </summary>
     internal static bool Verify(DictionaryChild dictionaryChild) {
-      if (dictionaryChild.ParentDictionary==ParentDictionary.NoParentDictionary) return false;
+      if (dictionaryChild.ParentWithDictionary==ParentWithDictionary.NoParentWithDictionary) return false;
       return true;
     }
     #endregion
@@ -135,15 +135,15 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds DictionaryChild to DL.Data.DictionaryChildren and ParentDictionary.DictionaryChildren. 
+    /// Adds DictionaryChild to DL.Data.DictionaryChildren and ParentWithDictionary.DictionaryChildren. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
         throw new Exception($"DictionaryChild 'Class DictionaryChild' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
       onStore();
-      DL.Data.DictionaryChildren.Add(this);
-      ParentDictionary.AddToDictionaryChildren(this);
+      DL.Data.SortedListyChildren.Add(this);
+      ParentWithDictionary.AddToDictionaryChildren(this);
     }
     partial void onStore();
 
@@ -159,9 +159,9 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(DictionaryChild dictionaryChild, CsvWriter csvWriter) {
       dictionaryChild.onCsvWrite();
-      if (dictionaryChild.ParentDictionary.Key<0) throw new Exception($"Cannot write dictionaryChild '{dictionaryChild}' to CSV File, because ParentDictionary is not stored in DL.Data.ParentDictionarys.");
+      if (dictionaryChild.ParentWithDictionary.Key<0) throw new Exception($"Cannot write dictionaryChild '{dictionaryChild}' to CSV File, because ParentWithDictionary is not stored in DL.Data.ParentsWithDictionary.");
 
-      csvWriter.Write(dictionaryChild.ParentDictionary.Key.ToString());
+      csvWriter.Write(dictionaryChild.ParentWithDictionary.Key.ToString());
       csvWriter.WriteDate(dictionaryChild.DateKey);
       csvWriter.Write(dictionaryChild.Text);
     }
@@ -171,12 +171,12 @@ namespace StorageModel  {
     /// <summary>
     /// Updates DictionaryChild with the provided values
     /// </summary>
-    public void Update(ParentDictionary parentDictionary, DateTime dateKey, string text) {
+    public void Update(ParentWithDictionary parentWithDictionary, DateTime dateKey, string text) {
       var isChangeDetected = false;
-      if (ParentDictionary!=parentDictionary) {
-        ParentDictionary.RemoveFromDictionaryChildren(this);
-        ParentDictionary = parentDictionary;
-        ParentDictionary.AddToDictionaryChildren(this);
+      if (ParentWithDictionary!=parentWithDictionary) {
+        ParentWithDictionary.RemoveFromDictionaryChildren(this);
+        ParentWithDictionary = parentWithDictionary;
+        ParentWithDictionary.AddToDictionaryChildren(this);
         isChangeDetected = true;
       }
       var dateKeyRounded = dateKey.Floor(Rounding.Days);
@@ -200,18 +200,18 @@ namespace StorageModel  {
     /// Updates this DictionaryChild with values from CSV file
     /// </summary>
     internal static void Update(DictionaryChild dictionaryChild, CsvReader csvReader, DL context) {
-      if (!context.ParentDictionarys.TryGetValue(csvReader.ReadInt(), out var parentDictionary)) {
-        parentDictionary = ParentDictionary.NoParentDictionary;
+      if (!context.ParentsWithDictionary.TryGetValue(csvReader.ReadInt(), out var parentWithDictionary)) {
+        parentWithDictionary = ParentWithDictionary.NoParentWithDictionary;
       }
-      if (dictionaryChild.ParentDictionary!=parentDictionary) {
-        if (dictionaryChild.ParentDictionary!=ParentDictionary.NoParentDictionary) {
-          dictionaryChild.ParentDictionary.RemoveFromDictionaryChildren(dictionaryChild);
+      if (dictionaryChild.ParentWithDictionary!=parentWithDictionary) {
+        if (dictionaryChild.ParentWithDictionary!=ParentWithDictionary.NoParentWithDictionary) {
+          dictionaryChild.ParentWithDictionary.RemoveFromDictionaryChildren(dictionaryChild);
         }
-        dictionaryChild.ParentDictionary = parentDictionary;
-        dictionaryChild.ParentDictionary.AddToDictionaryChildren(dictionaryChild);
+        dictionaryChild.ParentWithDictionary = parentWithDictionary;
+        dictionaryChild.ParentWithDictionary.AddToDictionaryChildren(dictionaryChild);
       }
       dictionaryChild.DateKey = csvReader.ReadDate();
-      dictionaryChild.Text = csvReader.ReadString()!;
+      dictionaryChild.Text = csvReader.ReadString();
       dictionaryChild.onCsvUpdate();
     }
     partial void onCsvUpdate();
@@ -219,24 +219,24 @@ namespace StorageModel  {
 
     /// <summary>
     /// Removes DictionaryChild from DL.Data.DictionaryChildren and 
-    /// disconnects DictionaryChild from ParentDictionary because of ParentDictionary.
+    /// disconnects DictionaryChild from ParentWithDictionary because of ParentWithDictionary.
     /// </summary>
     public void Remove() {
       if (Key<0) {
         throw new Exception($"DictionaryChild.Remove(): DictionaryChild 'Class DictionaryChild' is not stored in DL.Data, key is {Key}.");
       }
       onRemove();
-      DL.Data.DictionaryChildren.Remove(Key);
+      DL.Data.SortedListyChildren.Remove(Key);
     }
     partial void onRemove();
 
 
     /// <summary>
-    /// Disconnects DictionaryChild from ParentDictionary because of ParentDictionary.
+    /// Disconnects DictionaryChild from ParentWithDictionary because of ParentWithDictionary.
     /// </summary>
     internal static void Disconnect(DictionaryChild dictionaryChild) {
-      if (dictionaryChild.ParentDictionary!=ParentDictionary.NoParentDictionary) {
-        dictionaryChild.ParentDictionary.RemoveFromDictionaryChildren(dictionaryChild);
+      if (dictionaryChild.ParentWithDictionary!=ParentWithDictionary.NoParentWithDictionary) {
+        dictionaryChild.ParentWithDictionary.RemoveFromDictionaryChildren(dictionaryChild);
       }
     }
 
@@ -247,7 +247,7 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {ParentDictionary.ToShortString()}," +
+        $" {ParentWithDictionary.ToShortString()}," +
         $" {DateKey.ToShortDateString()}," +
         $" {Text}";
       onToShortString(ref returnString);
@@ -262,7 +262,7 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
-        $" ParentDictionary: {ParentDictionary.ToShortString()}," +
+        $" ParentWithDictionary: {ParentWithDictionary.ToShortString()}," +
         $" DateKey: {DateKey.ToShortDateString()}," +
         $" Text: {Text};";
       onToString(ref returnString);

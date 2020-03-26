@@ -527,7 +527,36 @@ namespace Storage {
     /// <summary>
     /// Read UTF8 characters as Unicode string from  FileStream including delimiter.
     /// </summary>
-    public string? ReadString() {
+    public string ReadString() {
+      var tempCharsIndex = 0;
+      var startReadIndex = readIndex;
+      while (true) {
+        var readByte = byteArray[readIndex++];
+        var readChar = (char)readByte;
+        if (readChar==delimiter) {
+          if (tempCharsIndex==0) {
+           throw new Exception($"CsvReader.ReadDate() '{FileName}': Null found where string is expected: " + Environment.NewLine + GetPresentContent());
+          }
+          return new string(tempChars, 0, tempCharsIndex);
+        }
+        if (readChar<0x80) {
+          tempChars[tempCharsIndex++] = readChar;
+        } else {
+          while (true) {
+            readChar = (char)byteArray[readIndex++];
+            if (readChar==delimiter) {
+              return Encoding.UTF8.GetString(byteArray, startReadIndex, readIndex-startReadIndex-1);
+            }
+          }
+        }
+      }
+    }
+
+
+    /// <summary>
+    /// Read UTF8 characters as Unicode string from  FileStream including delimiter.
+    /// </summary>
+    public string? ReadStringNull() {
       var tempCharsIndex = 0;
       var startReadIndex = readIndex;
       while (true) {
@@ -551,8 +580,8 @@ namespace Storage {
         }
       }
     }
-    
-    
+
+
     /// <summary>
     /// Read date without time from UTF8 FileStream including delimiter.
     /// </summary>

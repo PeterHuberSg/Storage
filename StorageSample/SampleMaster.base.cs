@@ -15,10 +15,10 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// Some comment for SampleMaster.
-  /// With an additional line.
-  /// </summary>
+    /// <summary>
+    /// Some comment for SampleMaster.
+    /// With an additional line.
+    /// </summary>
   public partial class SampleMaster: IStorage<SampleMaster> {
 
     #region Properties
@@ -96,14 +96,14 @@ namespace StorageModel  {
     /// <summary>
     /// Constructor for SampleMaster read from CSV file
     /// </summary>
-    private SampleMaster(int key, CsvReader csvReader, DL _) {
+    private SampleMaster(int key, CsvReader csvReader, DL context) {
       Key = key;
-      Text = csvReader.ReadString()!;
+      Text = csvReader.ReadString();
       sampleX = new HashSet<Sample>();
       NumberWithDefault = csvReader.ReadInt();
-      onCsvConstruct();
+      onCsvConstruct(context);
     }
-    partial void onCsvConstruct();
+    partial void onCsvConstruct(DL context);
 
 
     /// <summary>
@@ -173,7 +173,7 @@ namespace StorageModel  {
     /// Updates this SampleMaster with values from CSV file
     /// </summary>
     internal static void Update(SampleMaster sampleMaster, CsvReader csvReader, DL _) {
-      sampleMaster.Text = csvReader.ReadString()!;
+      sampleMaster.Text = csvReader.ReadString();
       sampleMaster.NumberWithDefault = csvReader.ReadInt();
       sampleMaster.onCsvUpdate();
     }

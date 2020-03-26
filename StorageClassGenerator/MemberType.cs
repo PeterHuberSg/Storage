@@ -20,45 +20,45 @@ namespace Storage {
     Decimal5,
     Bool,
     Int,
-    List,
-    Dictionary,
-    Parent,
+    List, //member of parent being a child collection, is List
+    Dictionary, //member of parent being a child collection, can be Dictionary or SortedList
+    Parent, //member of child linking to parent
     String,
     Enum,
     Lenght
   }
 
 
-  //extension methods for MemberTypeEnum
-  public static class MemberTypeExtensions {
+  ////extension methods for MemberTypeEnum
+  //public static class MemberTypeExtensions {
     
 
-    static string?[] baseTypeStrings = {
-    null, //Undefined
-    "DateTime", //Date,
-    "DateTime", //Time,
-    "DateTime", //DateMinutes,
-    "DateTime", //DateSeconds,
-    "DateTime", //DateTime,
-    "Decimal", //Decimal,
-    "Decimal", //Decimal2,
-    "Decimal", //Decimal4,
-    "Decimal", //Decimal5,
-    "bool", //Bool,
-    "int", //Int,
-    null, //List,
-    null, //Dictionary,
-    null, //Parent,
-    "string", //String,
-    null, //Enum,
-    };
+  //  static readonly string?[] baseTypeStrings = {
+  //  null, //Undefined
+  //  "DateTime", //Date,
+  //  "DateTime", //Time,
+  //  "DateTime", //DateMinutes,
+  //  "DateTime", //DateSeconds,
+  //  "DateTime", //DateTime,
+  //  "Decimal", //Decimal,
+  //  "Decimal", //Decimal2,
+  //  "Decimal", //Decimal4,
+  //  "Decimal", //Decimal5,
+  //  "bool", //Bool,
+  //  "int", //Int,
+  //  null, //List,
+  //  null, //Dictionary,
+  //  null, //Parent,
+  //  "string", //String,
+  //  null, //Enum,
+  //  };
 
 
-    /// <summary>
-    /// Converts a specialised CSV type to a .NET type, like Decimal2 to Decimal or DateMinutes to DateTime
-    /// </summary>
-    public static string? ToBaseType(this MemberTypeEnum memberType) {
-      return baseTypeStrings[(int)memberType];
-    }
-  }
+  //  /// <summary>
+  //  /// Converts a specialised CSV type to a .NET type, like Decimal2 to Decimal or DateMinutes to DateTime
+  //  /// </summary>
+  //  public static string? ToBaseType(this MemberTypeEnum memberType) {
+  //    return baseTypeStrings[(int)memberType];
+  //  }
+  //}
 }

@@ -6,9 +6,9 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// Some comment for SampleDetail
-  /// </summary>
+    /// <summary>
+    /// Some comment for SampleDetail
+    /// </summary>
   public partial class SampleDetail: IStorage<SampleDetail> {
 
 
@@ -37,7 +37,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
-    //partial void onCsvConstruct() {
+    //partial void onCsvConstruct(DL context) {
     //}
 
 

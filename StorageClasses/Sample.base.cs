@@ -15,10 +15,10 @@ using Storage;
 namespace StorageModel  {
 
 
-  /// <summary>
-  /// Some comment for Sample
-  /// </summary>
-  /// 
+    /// <summary>
+    /// Some comment for Sample
+    /// </summary>
+    /// 
   public partial class Sample: IStorage<Sample> {
 
     #region Properties
@@ -243,7 +243,7 @@ namespace StorageModel  {
     /// </summary>
     private Sample(int key, CsvReader csvReader, DL context) {
       Key = key;
-      Text = csvReader.ReadString()!;
+      Text = csvReader.ReadString();
       Flag = csvReader.ReadBool();
       Number = csvReader.ReadInt();
       Amount = csvReader.ReadDecimal();
@@ -272,7 +272,7 @@ namespace StorageModel  {
           OtherMaster = SampleMaster.NoSampleMaster;
         }
       }
-      Optional = csvReader.ReadString()!;
+      Optional = csvReader.ReadStringNull();
       sampleDetails = new List<SampleDetail>();
       if (oneMasterKey.HasValue && OneMaster!=SampleMaster.NoSampleMaster) {
         OneMaster.AddToSampleX(this);
@@ -280,9 +280,9 @@ namespace StorageModel  {
       if (otherMasterKey.HasValue && OtherMaster!=SampleMaster.NoSampleMaster) {
         OtherMaster.AddToSampleX(this);
       }
-      onCsvConstruct();
+      onCsvConstruct(context);
     }
-    partial void onCsvConstruct();
+    partial void onCsvConstruct(DL context);
 
 
     /// <summary>
@@ -505,7 +505,7 @@ namespace StorageModel  {
     /// Updates this Sample with values from CSV file
     /// </summary>
     internal static void Update(Sample sample, CsvReader csvReader, DL context) {
-      sample.Text = csvReader.ReadString()!;
+      sample.Text = csvReader.ReadString();
       sample.Flag = csvReader.ReadBool();
       sample.Number = csvReader.ReadInt();
       sample.Amount = csvReader.ReadDecimal();
@@ -578,7 +578,7 @@ namespace StorageModel  {
           sample.OtherMaster.AddToSampleX(sample);
         }
       }
-      sample.Optional = csvReader.ReadString()!;
+      sample.Optional = csvReader.ReadStringNull();
       sample.onCsvUpdate();
     }
     partial void onCsvUpdate();

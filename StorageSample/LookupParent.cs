@@ -6,7 +6,10 @@ using Storage;
 namespace StorageModel  {
 
 
-  public partial class Minimal: IStorage<Minimal> {
+      /// <summary>
+      /// Parent of children who uses lookup, i.e. parent haa no children collection
+      /// </summary>
+  public partial class LookupParent: IStorage<LookupParent> {
 
 
     #region Properties
@@ -34,7 +37,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
-    //partial void onCsvConstruct() {
+    //partial void onCsvConstruct(DL context) {
     //}
 
 

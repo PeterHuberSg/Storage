@@ -7,10 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleMaster.
-    /// With an additional line.
+    /// Example of a Parent child relationship using a SortedList.
     /// </summary>
-  public partial class SampleMaster: IStorage<SampleMaster> {
+  public partial class ParentWithSortedList: IStorage<ParentWithSortedList> {
 
 
     #region Properties
@@ -77,16 +76,23 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a sample gets added to SampleX.
+    /// Called before removal gets executed
     /// </summary>
-    //partial void onAddedToSampleX(Sample sample){
+    //partial void onRemove() {
     //}
 
 
     /// <summary>
-    /// Called after a sample gets removed from SampleX.
+    /// Called after a sortedListChild gets added to SortedListChildren.
     /// </summary>
-    //partial void onRemovedFromSampleX(Sample sample){
+    //partial void onAddedToSortedListChildren(SortedListChild sortedListChild){
+    //}
+
+
+    /// <summary>
+    /// Called after a sortedListChild gets removed from SortedListChildren.
+    /// </summary>
+    //partial void onRemovedFromSortedListChildren(SortedListChild sortedListChild){
     //}
 
 
