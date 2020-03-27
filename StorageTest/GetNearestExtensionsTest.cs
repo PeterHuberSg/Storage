@@ -41,49 +41,54 @@ namespace StorageTest {
       Assert.ThrowsException<Exception>(() => sortedListStruct.GetEqualGreater(now));
 
       add(now, 0);
-      assert(now, 0);
-      assert(now1, 0);
-      assert(now_1, 0);
+      assertGetEqualGreater(now, 0);
+      assertGetEqualGreater(now1, 0);
+      assertGetEqualGreater(now_1, 0);
+      assertFirstLast(now, 0, now, 0);
 
       add(now1, 1);
-      assert(now, 0);
-      assert(now1, 1);
-      assert(now2, 1);
-      assert(now_1, 0);
+      assertGetEqualGreater(now, 0);
+      assertGetEqualGreater(now1, 1);
+      assertGetEqualGreater(now2, 1);
+      assertGetEqualGreater(now_1, 0);
+      assertFirstLast(now, 0, now1, 1);
 
       add(now_2, -2);
-      assert(now, 0);
-      assert(now1, 1);
-      assert(now2, 1);
-      assert(now_1, 0);
-      assert(now_2, -2);
-      assert(now_3, -2);
+      assertGetEqualGreater(now, 0);
+      assertGetEqualGreater(now1, 1);
+      assertGetEqualGreater(now2, 1);
+      assertGetEqualGreater(now_1, 0);
+      assertGetEqualGreater(now_2, -2);
+      assertGetEqualGreater(now_3, -2);
+      assertFirstLast(now_2, -2, now1, 1);
 
       add(now4, 4);
-      assert(now, 0);
-      assert(now1, 1);
-      assert(now2, 4);
-      assert(now3, 4);
-      assert(now4, 4);
-      assert(now5, 4);
-      assert(now_1, 0);
-      assert(now_2, -2);
-      assert(now_3, -2);
+      assertGetEqualGreater(now, 0);
+      assertGetEqualGreater(now1, 1);
+      assertGetEqualGreater(now2, 4);
+      assertGetEqualGreater(now3, 4);
+      assertGetEqualGreater(now4, 4);
+      assertGetEqualGreater(now5, 4);
+      assertGetEqualGreater(now_1, 0);
+      assertGetEqualGreater(now_2, -2);
+      assertGetEqualGreater(now_3, -2);
+      assertFirstLast(now_2, -2, now4, 4);
 
       add(now_6, -6);
-      assert(now, 0);
-      assert(now1, 1);
-      assert(now2, 4);
-      assert(now3, 4);
-      assert(now4, 4);
-      assert(now5, 4);
-      assert(now_1, 0);
-      assert(now_2, -2);
-      assert(now_3, -2);
-      assert(now_4, -2);
-      assert(now_5, -2);
-      assert(now_6, -6);
-      assert(now_7, -6);
+      assertGetEqualGreater(now, 0);
+      assertGetEqualGreater(now1, 1);
+      assertGetEqualGreater(now2, 4);
+      assertGetEqualGreater(now3, 4);
+      assertGetEqualGreater(now4, 4);
+      assertGetEqualGreater(now5, 4);
+      assertGetEqualGreater(now_1, 0);
+      assertGetEqualGreater(now_2, -2);
+      assertGetEqualGreater(now_3, -2);
+      assertGetEqualGreater(now_4, -2);
+      assertGetEqualGreater(now_5, -2);
+      assertGetEqualGreater(now_6, -6);
+      assertGetEqualGreater(now_7, -6);
+      assertFirstLast(now_6, -6, now4, 4);
     }
 
 
@@ -93,9 +98,21 @@ namespace StorageTest {
     }
 
 
-    private void assert(DateTime key, int value) {
+    private void assertGetEqualGreater(DateTime key, int value) {
       Assert.AreEqual(value, sortedListClass.GetEqualGreater(key)!.Value);
       Assert.AreEqual(value, sortedListStruct.GetEqualGreater(key));
+    }
+
+
+    private void assertFirstLast(DateTime dateFirst, int valueFirst, DateTime dateLast, int valueLast) {
+      Assert.AreEqual(dateFirst, sortedListClass.GetFirstKey());
+      Assert.AreEqual(valueFirst, sortedListClass.GetFirstItem()!.Value);
+      Assert.AreEqual(dateLast, sortedListClass.GetLastKey());
+      Assert.AreEqual(valueLast, sortedListClass.GetLastItem()!.Value);
+      Assert.AreEqual(dateFirst, sortedListStruct.GetFirstKey());
+      Assert.AreEqual(valueFirst, sortedListStruct.GetFirstItem());
+      Assert.AreEqual(dateLast, sortedListStruct.GetLastKey());
+      Assert.AreEqual(valueLast, sortedListStruct.GetLastItem());
     }
   }
 }
