@@ -17,10 +17,12 @@ namespace StorageTest {
       public int Value;
     }
 
+    readonly SortedList<DateTime, itemClass> sortedListClass = new SortedList<DateTime, itemClass>();
+    readonly SortedList<DateTime, int> sortedListStruct = new SortedList<DateTime, int>();
+
 
     [TestMethod]
     public void TestGetNearestExtensions() {
-      var sortedList = new SortedList<DateTime, itemClass>();
       var now = DateTime.Now.Date;
       var now1 = DateTime.Now.Date.AddDays(1);
       var now2 = DateTime.Now.Date.AddDays(2);
@@ -34,62 +36,66 @@ namespace StorageTest {
       var now_5 = DateTime.Now.Date.AddDays(-5);
       var now_6 = DateTime.Now.Date.AddDays(-6);
       var now_7 = DateTime.Now.Date.AddDays(-7);
-      Assert.IsNull(sortedList.GetEqualGreater(now));
 
-      add(sortedList, now, 0);
-      assert(sortedList, now, 0);
-      assert(sortedList, now1, 0);
-      assert(sortedList, now_1, 0);
+      Assert.IsNull(sortedListClass.GetEqualGreater(now));
+      Assert.ThrowsException<Exception>(() => sortedListStruct.GetEqualGreater(now));
 
-      add(sortedList, now1, 1);
-      assert(sortedList, now, 0);
-      assert(sortedList, now1, 1);
-      assert(sortedList, now2, 1);
-      assert(sortedList, now_1, 0);
+      add(now, 0);
+      assert(now, 0);
+      assert(now1, 0);
+      assert(now_1, 0);
 
-      add(sortedList, now_2, -2);
-      assert(sortedList, now, 0);
-      assert(sortedList, now1, 1);
-      assert(sortedList, now2, 1);
-      assert(sortedList, now_1, 0);
-      assert(sortedList, now_2, -2);
-      assert(sortedList, now_3, -2);
+      add(now1, 1);
+      assert(now, 0);
+      assert(now1, 1);
+      assert(now2, 1);
+      assert(now_1, 0);
 
-      add(sortedList, now4, 4);
-      assert(sortedList, now, 0);
-      assert(sortedList, now1, 1);
-      assert(sortedList, now2, 4);
-      assert(sortedList, now3, 4);
-      assert(sortedList, now4, 4);
-      assert(sortedList, now5, 4);
-      assert(sortedList, now_1, 0);
-      assert(sortedList, now_2, -2);
-      assert(sortedList, now_3, -2);
+      add(now_2, -2);
+      assert(now, 0);
+      assert(now1, 1);
+      assert(now2, 1);
+      assert(now_1, 0);
+      assert(now_2, -2);
+      assert(now_3, -2);
 
-      add(sortedList, now_6, -6);
-      assert(sortedList, now, 0);
-      assert(sortedList, now1, 1);
-      assert(sortedList, now2, 4);
-      assert(sortedList, now3, 4);
-      assert(sortedList, now4, 4);
-      assert(sortedList, now5, 4);
-      assert(sortedList, now_1, 0);
-      assert(sortedList, now_2, -2);
-      assert(sortedList, now_3, -2);
-      assert(sortedList, now_4, -2);
-      assert(sortedList, now_5, -2);
-      assert(sortedList, now_6, -6);
-      assert(sortedList, now_7, -6);
+      add(now4, 4);
+      assert(now, 0);
+      assert(now1, 1);
+      assert(now2, 4);
+      assert(now3, 4);
+      assert(now4, 4);
+      assert(now5, 4);
+      assert(now_1, 0);
+      assert(now_2, -2);
+      assert(now_3, -2);
+
+      add(now_6, -6);
+      assert(now, 0);
+      assert(now1, 1);
+      assert(now2, 4);
+      assert(now3, 4);
+      assert(now4, 4);
+      assert(now5, 4);
+      assert(now_1, 0);
+      assert(now_2, -2);
+      assert(now_3, -2);
+      assert(now_4, -2);
+      assert(now_5, -2);
+      assert(now_6, -6);
+      assert(now_7, -6);
     }
 
 
-    private void add(SortedList<DateTime, itemClass> sortedList, DateTime key, int value) {
-      sortedList.Add(key, new itemClass { Key = key, Value = value });
+    private void add(DateTime key, int value) {
+      sortedListClass.Add(key, new itemClass { Key = key, Value = value });
+      sortedListStruct.Add(key, value);
     }
 
 
-    private void assert(SortedList<DateTime, itemClass> sortedList, DateTime key, int value) {
-      Assert.AreEqual(value, sortedList.GetEqualGreater(key)!.Value);
+    private void assert(DateTime key, int value) {
+      Assert.AreEqual(value, sortedListClass.GetEqualGreater(key)!.Value);
+      Assert.AreEqual(value, sortedListStruct.GetEqualGreater(key));
     }
   }
 }
