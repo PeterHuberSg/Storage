@@ -66,7 +66,7 @@ namespace StorageModel  {
     /// <summary>
     /// Directory of all DictionaryChildren
     /// </summary>
-    public StorageDictionary<DictionaryChild, DL> SortedListyChildren { get; private set; }
+    public StorageDictionary<DictionaryChild, DL> DictionaryChildren { get; private set; }
 
     /// <summary>
     /// Directory of all LookupChildren
@@ -87,6 +87,16 @@ namespace StorageModel  {
     /// Directory of all ParentsWithSortedList
     /// </summary>
     public StorageDictionary<ParentWithSortedList, DL> ParentsWithSortedList { get; private set; }
+
+    /// <summary>
+    /// Directory of all ReadOnlyChildren
+    /// </summary>
+    public StorageDictionary<ReadOnlyChild, DL> ReadOnlyChildren { get; private set; }
+
+    /// <summary>
+    /// Directory of all ReadOnlyParents
+    /// </summary>
+    public StorageDictionary<ReadOnlyParent, DL> ReadOnlyParents { get; private set; }
 
     /// <summary>
     /// Directory of all SampleX
@@ -167,7 +177,7 @@ namespace StorageModel  {
           ParentWithDictionary.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
-        SortedListyChildren = new StorageDictionary<DictionaryChild, DL>(
+        DictionaryChildren = new StorageDictionary<DictionaryChild, DL>(
           this,
           DictionaryChild.SetKey,
           DictionaryChild.Disconnect,
@@ -185,6 +195,18 @@ namespace StorageModel  {
           SortedListChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        ReadOnlyParents = new StorageDictionary<ReadOnlyParent, DL>(
+          this,
+          ReadOnlyParent.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ReadOnlyChildren = new StorageDictionary<ReadOnlyChild, DL>(
+          this,
+          ReadOnlyChild.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -270,7 +292,7 @@ namespace StorageModel  {
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
           isCompactDuringDispose: false);
-        SortedListyChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
+        DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
           this,
           csvConfig!,
           DictionaryChild.MaxLineLength,
@@ -312,6 +334,34 @@ namespace StorageModel  {
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
           isCompactDuringDispose: true);
+        ReadOnlyParents = new StorageDictionaryCSV<ReadOnlyParent, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyParent.MaxLineLength,
+          ReadOnlyParent.Headers,
+          ReadOnlyParent.SetKey,
+          ReadOnlyParent.Create,
+          null,
+          null,
+          ReadOnlyParent.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: true);
+        ReadOnlyChildren = new StorageDictionaryCSV<ReadOnlyChild, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyChild.MaxLineLength,
+          ReadOnlyChild.Headers,
+          ReadOnlyChild.SetKey,
+          ReadOnlyChild.Create,
+          ReadOnlyChild.Verify,
+          null,
+          ReadOnlyChild.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: true);
       }
       onConstruct();
     }
@@ -341,9 +391,11 @@ namespace StorageModel  {
 
       if (disposing) {
         onDispose();
+        ReadOnlyChildren.Dispose();
+        ReadOnlyParents.Dispose();
         SortedListChildren.Dispose();
         ParentsWithSortedList.Dispose();
-        SortedListyChildren.Dispose();
+        DictionaryChildren.Dispose();
         ParentsWithDictionary.Dispose();
         LookupChildren.Dispose();
         LookupParents.Dispose();

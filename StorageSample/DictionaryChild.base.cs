@@ -142,7 +142,7 @@ namespace StorageModel  {
         throw new Exception($"DictionaryChild 'Class DictionaryChild' can not be stored in DL.Data, key is {Key} greater equal 0.");
       }
       onStore();
-      DL.Data.SortedListyChildren.Add(this);
+      DL.Data.DictionaryChildren.Add(this);
       ParentWithDictionary.AddToDictionaryChildren(this);
     }
     partial void onStore();
@@ -226,7 +226,7 @@ namespace StorageModel  {
         throw new Exception($"DictionaryChild.Remove(): DictionaryChild 'Class DictionaryChild' is not stored in DL.Data, key is {Key}.");
       }
       onRemove();
-      DL.Data.SortedListyChildren.Remove(Key);
+      DL.Data.DictionaryChildren.Remove(Key);
     }
     partial void onRemove();
 

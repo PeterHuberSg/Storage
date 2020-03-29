@@ -15,9 +15,9 @@ using Storage;
 namespace StorageModel  {
 
 
-      /// <summary>
-      /// Parent of children who uses lookup, i.e. parent has no children collection
-      /// </summary>
+    /// <summary>
+    /// Parent of children who uses lookup, i.e. parent has no children collection
+    /// </summary>
   public partial class LookupParent: IStorage<LookupParent> {
 
     #region Properties
@@ -59,9 +59,11 @@ namespace StorageModel  {
     //      ------
 
     /// <summary>
-    /// Content of LookupParent has changed. Gets only raised for changes occurring after loading DL.Data with previously stored data.
+    /// This event will never be raised, but is needed to comply with IStorage.
     /// </summary>
+#pragma warning disable 67
     public event Action<LookupParent>? HasChanged;
+#pragma warning restore 67
     #endregion
 
 

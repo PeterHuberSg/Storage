@@ -7,9 +7,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Parent of children who uses lookup, i.e. parent has no children collection
+    /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
+    /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
+    /// either.
     /// </summary>
-  public partial class LookupParent: IStorage<LookupParent> {
+  public partial class ReadOnlyChild: IStorage<ReadOnlyChild> {
 
 
     #region Properties

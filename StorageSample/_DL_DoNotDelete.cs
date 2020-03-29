@@ -65,7 +65,7 @@ namespace StorageModel {
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: false);
-        SortedListyChildren = new StorageDictionary<DictionaryChild, DL>(
+        DictionaryChildren = new StorageDictionary<DictionaryChild, DL>(
           this,
           DictionaryChild.SetKey,
           DictionaryChild.Disconnect,
@@ -83,6 +83,18 @@ namespace StorageModel {
           SortedListChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        ReadOnlyParents = new StorageDictionary<ReadOnlyParent, DL>(
+          this,
+          ReadOnlyParent.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ReadOnlyChildren = new StorageDictionary<ReadOnlyChild, DL>(
+          this,
+          ReadOnlyChild.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -168,7 +180,7 @@ namespace StorageModel {
           areInstancesUpdatable: true,
           areInstancesDeletable: false,
           isCompactDuringDispose: isCompactDuringDispose);
-        SortedListyChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
+        DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
           this,
           csvConfig!,
           DictionaryChild.MaxLineLength,
@@ -207,6 +219,34 @@ namespace StorageModel {
           SortedListChild.Update,
           SortedListChild.Write,
           SortedListChild.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true,
+          isCompactDuringDispose: isCompactDuringDispose);
+        ReadOnlyParents = new StorageDictionaryCSV<ReadOnlyParent, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyParent.MaxLineLength,
+          ReadOnlyParent.Headers,
+          ReadOnlyParent.SetKey,
+          ReadOnlyParent.Create,
+          null,
+          null,
+          ReadOnlyParent.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: isCompactDuringDispose);
+        ReadOnlyChildren = new StorageDictionaryCSV<ReadOnlyChild, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyChild.MaxLineLength,
+          ReadOnlyChild.Headers,
+          ReadOnlyChild.SetKey,
+          ReadOnlyChild.Create,
+          ReadOnlyChild.Verify,
+          null,
+          ReadOnlyChild.Write,
+          null,
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
           isCompactDuringDispose: isCompactDuringDispose);

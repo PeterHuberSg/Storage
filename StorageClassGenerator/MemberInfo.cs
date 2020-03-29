@@ -29,6 +29,7 @@ namespace Storage {
     public readonly string MemberName;
     public readonly string LowerMemberName;
     public MemberTypeEnum MemberType;
+    public CollectionTypeEnum CollectionType;
     public readonly ClassInfo ClassInfo;
     public string? CsvTypeString;
     public string TypeString;
@@ -44,7 +45,6 @@ namespace Storage {
     public readonly string? LowerChildTypeName; //used by List, Dictionary and SortedList
     public readonly string? ChildKeyPropertyName; //used by Dictionary and SortedList
     public readonly string? KeyTypeString; //used by Dictionary and SortedList
-    public readonly bool? IsSortedList; //to differentiate between Dictionary and SortedList, which both use MemberTypeEnum.Dictionary
     public readonly string? ParentType;//is only different from TypeString when IsNullable
     public readonly string? LowerParentType;
     public readonly string? CsvReaderRead;
@@ -59,7 +59,7 @@ namespace Storage {
 
 
     public MemberInfo(string name, string csvTypeString, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment, string? defaultValue) {
-      if (memberType==MemberTypeEnum.List || memberType==MemberTypeEnum.Dictionary) throw new Exception();
+      if (memberType==MemberTypeEnum.List || memberType==MemberTypeEnum.CollectionKeyValue) throw new Exception();
 
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -237,8 +237,8 @@ namespace Storage {
 
       case MemberTypeEnum.List:
         throw new Exception("List uses its own constructor.");
-      case MemberTypeEnum.Dictionary:
-        throw new Exception("Dictionary uses its own constructor.");
+      case MemberTypeEnum.CollectionKeyValue:
+        throw new Exception("Dictionary and SortedList uses its own constructor.");
       case MemberTypeEnum.Parent:
         throw new Exception("Parent uses its own constructor.");
       case MemberTypeEnum.Enum:
@@ -257,6 +257,7 @@ namespace Storage {
     /// </summary>
     public MemberInfo(string name, ClassInfo classInfo, string listType, string childType, string? comment, string? defaultValue) {
       MemberType = MemberTypeEnum.List;
+      CollectionType = CollectionTypeEnum.List;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -273,21 +274,22 @@ namespace Storage {
 
 
     /// <summary>
-    /// constructor for Dictionary
+    /// constructor for CollectionKeyValue, i.e. Dictionary&lt;TKey, TValue> or SortedList&lt;TKey, TValue>
     /// </summary>
     public MemberInfo(
       string name, 
       ClassInfo classInfo, 
-      string memberTypeString, 
+      string memberTypeString,
+      CollectionTypeEnum collectionTypeEnum,
       string childType,
-      bool isSortedList,
       string childKeyPropertyName, 
       string keyTypeString, 
       string? comment, 
       string? 
       defaultValue) 
     {
-      MemberType = MemberTypeEnum.Dictionary;
+      MemberType = MemberTypeEnum.CollectionKeyValue;
+      CollectionType = collectionTypeEnum;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -298,7 +300,6 @@ namespace Storage {
       KeyTypeString = keyTypeString;
       IsNullable = false;
       TypeString = memberTypeString; //will be overwritten in Compiler.AnalyzeDependencies()
-      IsSortedList = isSortedList;
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
@@ -347,7 +348,7 @@ namespace Storage {
       string isNullableString = IsNullable ? "?" : "";
       if (MemberType==MemberTypeEnum.List) {
         return $"List<{ChildTypeName}> {MemberName}";
-      }else if (MemberType==MemberTypeEnum.Dictionary) {
+      }else if (MemberType==MemberTypeEnum.CollectionKeyValue) {
         return $"{MemberName} {TypeString}";
       } else {
         return $"{MemberType}{isNullableString} {MemberName}";
@@ -386,7 +387,7 @@ namespace Storage {
           streamWriter.WriteLine($"    public ICollection<{ChildTypeName}> {MemberName} => {LowerMemberName};");
           streamWriter.WriteLine($"    readonly HashSet<{ChildTypeName}> {LowerMemberName};");
         }
-      } else if (MemberType==MemberTypeEnum.Dictionary) {
+      } else if (MemberType==MemberTypeEnum.CollectionKeyValue) {
         //streamWriter.WriteLine($"    public IReadOnly{TypeString} {MemberName} => {LowerMemberName};");
         streamWriter.WriteLine($"    public {ReadOnlyTypeString} {MemberName} => {LowerMemberName};");
         streamWriter.WriteLine($"    readonly {TypeString} {LowerMemberName};");

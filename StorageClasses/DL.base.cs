@@ -89,6 +89,16 @@ namespace StorageModel  {
     public StorageDictionary<ParentWithSortedList, DL> ParentsWithSortedList { get; private set; }
 
     /// <summary>
+    /// Directory of all ReadOnlyChildren
+    /// </summary>
+    public StorageDictionary<ReadOnlyChild, DL> ReadOnlyChildren { get; private set; }
+
+    /// <summary>
+    /// Directory of all ReadOnlyParents
+    /// </summary>
+    public StorageDictionary<ReadOnlyParent, DL> ReadOnlyParents { get; private set; }
+
+    /// <summary>
     /// Directory of all SampleX
     /// </summary>
     public StorageDictionary<Sample, DL> SampleX { get; private set; }
@@ -185,6 +195,18 @@ namespace StorageModel  {
           SortedListChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        ReadOnlyParents = new StorageDictionary<ReadOnlyParent, DL>(
+          this,
+          ReadOnlyParent.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ReadOnlyChildren = new StorageDictionary<ReadOnlyChild, DL>(
+          this,
+          ReadOnlyChild.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
       } else {
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DL>(
           this,
@@ -312,6 +334,34 @@ namespace StorageModel  {
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
           isCompactDuringDispose: true);
+        ReadOnlyParents = new StorageDictionaryCSV<ReadOnlyParent, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyParent.MaxLineLength,
+          ReadOnlyParent.Headers,
+          ReadOnlyParent.SetKey,
+          ReadOnlyParent.Create,
+          null,
+          null,
+          ReadOnlyParent.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: true);
+        ReadOnlyChildren = new StorageDictionaryCSV<ReadOnlyChild, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyChild.MaxLineLength,
+          ReadOnlyChild.Headers,
+          ReadOnlyChild.SetKey,
+          ReadOnlyChild.Create,
+          ReadOnlyChild.Verify,
+          null,
+          ReadOnlyChild.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false,
+          isCompactDuringDispose: true);
       }
       onConstruct();
     }
@@ -341,6 +391,8 @@ namespace StorageModel  {
 
       if (disposing) {
         onDispose();
+        ReadOnlyChildren.Dispose();
+        ReadOnlyParents.Dispose();
         SortedListChildren.Dispose();
         ParentsWithSortedList.Dispose();
         DictionaryChildren.Dispose();

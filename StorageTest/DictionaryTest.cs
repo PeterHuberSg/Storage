@@ -12,7 +12,6 @@ namespace StorageTest {
   [TestClass]
   public class DictionaryTest {
 
-
     CsvConfig? csvConfig;
     readonly Dictionary<int, string> expectedParentDictionary = new Dictionary<int, string>();
     readonly Dictionary<int, string> expectedDictionaryChild= new Dictionary<int, string>();
@@ -68,8 +67,8 @@ namespace StorageTest {
         Assert.AreEqual(expectedParentDictionary[parentDictionary.Key], parentDictionary.ToString());
       }
 
-      Assert.AreEqual(expectedDictionaryChild.Count, DL.Data.SortedListyChildren.Count);
-      foreach (var dictionaryChild in DL.Data.SortedListyChildren) {
+      Assert.AreEqual(expectedDictionaryChild.Count, DL.Data.DictionaryChildren.Count);
+      foreach (var dictionaryChild in DL.Data.DictionaryChildren) {
         Assert.AreEqual(expectedDictionaryChild[dictionaryChild.Key], dictionaryChild.ToString());
       }
     }
@@ -103,7 +102,7 @@ namespace StorageTest {
 
 
     private void removeDictionaryChild(int dictionaryChildKey) {
-      var child = DL.Data.SortedListyChildren[dictionaryChildKey];
+      var child = DL.Data.DictionaryChildren[dictionaryChildKey];
       expectedDictionaryChild.Remove(child.Key);
       var parentDictionary = child.ParentWithDictionary;
       child.Remove();

@@ -26,7 +26,7 @@ namespace StorageModel {
   #region SampleMaster -> Sample -> SampleDetail, using List for children
   //      ---------------------------------------------------------------
 
-  //shows also all data types supported
+  //shows also in Sample most data types supported
 
   /// <summary>
   /// Some SampleStateEnum comment
@@ -69,7 +69,6 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for Sample
   /// </summary>
-  /// 
   [StorageClass(maxLineLength: 200, pluralName: "SampleX", isCompactDuringDispose: false)]
   public class Sample {
     /// <summary>
@@ -185,9 +184,9 @@ namespace StorageModel {
   //one particular exchange rate, but the exchange rate does not know which child links to it. In this
   //scenario, the parent can never be deleted.
 
-    /// <summary>
-    /// Parent of children who uses lookup, i.e. parent has no children collection
-    /// </summary>
+  /// <summary>
+  /// Parent of children who uses lookup, i.e. parent has no children collection
+  /// </summary>
   [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
   public class LookupParent {
     public DateTime Date;
@@ -257,7 +256,7 @@ namespace StorageModel {
 
   //Example where parent has a SortedList instead a List for its children. The child needs an additional field which
   //can be used as Key for the SortedList.
-  
+
   //It's better to use a SortedList than a SortedDictionary, because in a SortedList, an item can be accessed
   //by its place in the SortedList like the last item:
   //key = sortedList.Keys[sortedList.Lenght];
@@ -296,6 +295,51 @@ namespace StorageModel {
     /// Key field used in ParentWithSortedList.SortedListChildren SortedList
     /// </summary>
     public Date DateKey;
+
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+  }
+  #endregion
+
+
+  #region ReadOnlyParent -> ReadOnlyChild, using List for children
+  //      --------------------------------------------------------
+
+  //Example where parent and children are ReadOnly, meaning not updatable and not editable. This should lead to
+  //the smallest amount of generated code.
+
+  /// <summary>
+  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// deleted, but it is still possible to add children, but not to remove them.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
+  public class ReadOnlyParent {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// List of children
+    /// </summary>
+    public List<ReadOnlyChild> ReadOnlyChildren;
+  }
+
+
+  /// <summary>
+  /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
+  /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
+  /// either.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, pluralName: "ReadOnlyChildren")]
+  public class ReadOnlyChild {
+    /// <summary>
+    /// Parent
+    /// </summary>
+    public ReadOnlyParent ReadOnlyParent;
 
     /// <summary>
     /// Some info

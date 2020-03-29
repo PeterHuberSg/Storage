@@ -18,7 +18,6 @@ namespace StorageModel  {
     /// <summary>
     /// Some comment for Sample
     /// </summary>
-    /// 
   public partial class Sample: IStorage<Sample> {
 
     #region Properties
@@ -275,10 +274,10 @@ namespace StorageModel  {
       Optional = csvReader.ReadStringNull();
       sampleDetails = new List<SampleDetail>();
       if (oneMasterKey.HasValue && OneMaster!=SampleMaster.NoSampleMaster) {
-        OneMaster.AddToSampleX(this);
+        OneMaster!.AddToSampleX(this);
       }
       if (otherMasterKey.HasValue && OtherMaster!=SampleMaster.NoSampleMaster) {
-        OtherMaster.AddToSampleX(this);
+        OtherMaster!.AddToSampleX(this);
       }
       onCsvConstruct(context);
     }
@@ -636,7 +635,8 @@ namespace StorageModel  {
       if (sample.OtherMaster!=null && sample.OtherMaster!=SampleMaster.NoSampleMaster) {
         sample.OtherMaster.RemoveFromSampleX(sample);
       }
-      foreach (var sampleDetail in sample.SampleDetails) {
+      for (int sampleDetailIndex = sample.SampleDetails.Count-1; sampleDetailIndex>= 0; sampleDetailIndex--) {
+        var sampleDetail = sample.SampleDetails[sampleDetailIndex];
          if (sampleDetail.Key>=0) {
            sampleDetail.Remove();
          }

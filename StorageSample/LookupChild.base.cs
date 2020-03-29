@@ -50,9 +50,11 @@ namespace StorageModel  {
     //      ------
 
     /// <summary>
-    /// Content of LookupChild has changed. Gets only raised for changes occurring after loading DL.Data with previously stored data.
+    /// This event will never be raised, but is needed to comply with IStorage.
     /// </summary>
+#pragma warning disable 67
     public event Action<LookupChild>? HasChanged;
+#pragma warning restore 67
     #endregion
 
 

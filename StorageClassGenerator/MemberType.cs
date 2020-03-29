@@ -5,7 +5,7 @@ using System.Text;
 namespace Storage {
 
   /// <summary>
-  /// Data types supported by storage compiler
+  /// Data types supported by Storage compiler
   /// </summary>
   public enum MemberTypeEnum {
     Undefined = 0,
@@ -20,8 +20,8 @@ namespace Storage {
     Decimal5,
     Bool,
     Int,
-    List, //member of parent being a child collection, is List
-    Dictionary, //member of parent being a child collection, can be Dictionary or SortedList
+    List, //member of parent being a child collection, is List<TValue>
+    CollectionKeyValue, //member of parent being a child collection<TKey, TValue>, can be Dictionary or SortedList
     Parent, //member of child linking to parent
     String,
     Enum,
@@ -29,9 +29,21 @@ namespace Storage {
   }
 
 
+  /// <summary>
+  /// Collection types supported by Storage compiler
+  /// </summary>
+  public enum CollectionTypeEnum{
+    Undefined = 0,
+    List,
+    Dictionary,
+    SortedList,
+    Lenght
+  }
+
+
   ////extension methods for MemberTypeEnum
   //public static class MemberTypeExtensions {
-    
+
 
   //  static readonly string?[] baseTypeStrings = {
   //  null, //Undefined

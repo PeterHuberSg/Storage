@@ -6,9 +6,9 @@ using Storage;
 namespace StorageModel  {
 
 
-      /// <summary>
-      /// Parent of children who uses lookup, i.e. parent haa no children collection
-      /// </summary>
+    /// <summary>
+    /// Parent of children who uses lookup, i.e. parent has no children collection
+    /// </summary>
   public partial class LookupParent: IStorage<LookupParent> {
 
 

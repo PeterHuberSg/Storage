@@ -337,8 +337,8 @@ namespace Storage {
                 $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
             }
 
-          //Dictionary
-          } else if (mi.MemberType==MemberTypeEnum.Dictionary) {
+          //Dictionary, SortedList
+          } else if (mi.MemberType==MemberTypeEnum.CollectionKeyValue) {
             if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
               throw new GeneratorException($"{ci} '{mi}': can not find class {mi.ChildTypeName}.");
 
@@ -356,7 +356,7 @@ namespace Storage {
                       throw new GeneratorException($"{ci}.{mi.MemberName} {mi.TypeString}: found {childKeyMI.ClassInfo.ClassName}.{childKeyMI.MemberName}, but it has wrong type: {childKeyMI.CsvTypeString}.");
                     }
                     isKeyFound = true;
-                    if (mi.IsSortedList!.Value) {
+                    if (mi.CollectionType==CollectionTypeEnum.SortedList) {
                       //memberTypeString = $"SortedList<{keyTypeName}, {itemTypeName}>";
                       mi.TypeString = $"SortedList<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
                       mi.ReadOnlyTypeString = $"IReadOnlyDictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
@@ -377,9 +377,15 @@ namespace Storage {
                 $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
             }
             if (!isKeyFound) {
-              //guarantee that there is a property that can be used as key into parent's Dictionary
-              throw new GeneratorException($"{ci} '{mi}': has a Dictionary<{mi.ChildTypeName}>. The corresponding " +
-                $" key property '{mi.ChildKeyPropertyName}' with type {mi.KeyTypeString} is missing in the class {mi.ChildTypeName}.");
+              if (mi.CollectionType==CollectionTypeEnum.SortedList) {
+                //guarantee that there is a property that can be used as key into parent's SortedList
+                throw new GeneratorException($"{ci} '{mi}': has a SortedList<{mi.ChildTypeName}>. The corresponding " +
+                  $" key property '{mi.ChildKeyPropertyName}' with type {mi.KeyTypeString} is missing in the class {mi.ChildTypeName}.");
+              } else {
+                //guarantee that there is a property that can be used as key into parent's Dictionary
+                throw new GeneratorException($"{ci} '{mi}': has a Dictionary<{mi.ChildTypeName}>. The corresponding " +
+                  $" key property '{mi.ChildKeyPropertyName}' with type {mi.KeyTypeString} is missing in the class {mi.ChildTypeName}.");
+              }
             }
           }
         }

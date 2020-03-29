@@ -9,7 +9,6 @@ namespace StorageModel  {
     /// <summary>
     /// Some comment for Sample
     /// </summary>
-    /// 
   public partial class Sample: IStorage<Sample> {
 
 

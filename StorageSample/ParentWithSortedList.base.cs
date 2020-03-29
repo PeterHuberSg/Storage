@@ -208,15 +208,12 @@ namespace StorageModel  {
     /// Deletes all SortedListChild where SortedListChild.ParentWithSortedList links to this ParentWithSortedList.
     /// </summary>
     internal static void Disconnect(ParentWithSortedList parentWithSortedList) {
-      var SortedListChildrenCopy = new List<SortedListChild>();
-      //make a copy to avoid an exception in the next foreach when sortedListChild.Remove() changes SortedListChildren
-      foreach (var sortedListChild in parentWithSortedList.SortedListChildren.Values) {
-        SortedListChildrenCopy.Add(sortedListChild);
-      }
-      foreach (var sortedListChild in SortedListChildrenCopy) {
-        if (sortedListChild.Key>=0) {
-          sortedListChild.Remove();
-        }
+      var sortedListChildren = new SortedListChild[parentWithSortedList.SortedListChildren.Count];
+      parentWithSortedList.sortedListChildren.Values.CopyTo(sortedListChildren, 0);
+      foreach (var sortedListChild in sortedListChildren) {
+         if (sortedListChild.Key>=0) {
+           sortedListChild.Remove();
+         }
       }
     }
 
