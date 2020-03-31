@@ -23,6 +23,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 
+// https://csharp-source.net/last-projects: add link to Storage on that website
+// http://prevayler.org/ java oject persitence library
+
 namespace Storage {
 
 
@@ -30,6 +33,8 @@ namespace Storage {
   /// Compiles a Model into a data Context
   /// </summary>
   public class Compiler {
+
+    public const bool IsFullyCommented = true; //set false to create Xxx.cs files where executable code is not commented out
 
     readonly Dictionary<string, ClassInfo> classes;
     readonly List<ClassInfo> parentChildTree;
@@ -116,13 +121,16 @@ namespace Storage {
 
           string? propertyComment = getComment(field.GetLeadingTrivia());
 
-          //var isConst = false;
+          bool isReadOnly = false;
           foreach (var modifierToken in field.Modifiers) {
             if (modifierToken.Text=="const") {
-              //isConst = true;
-              //break;
               throw new GeneratorException($"Class {className} should contain only properties, but has const '{classMember}'.");
+            } else if (modifierToken.Text=="readonly") {
+              isReadOnly = true;
             }
+          }
+          if (!classInfo.AreInstancesUpdatable) {
+            isReadOnly = true; //if a class cannot be updated, all its properties are readonly
           }
 
           if (!(field.Declaration is VariableDeclarationSyntax variableDeclaration)) {
@@ -207,7 +215,7 @@ namespace Storage {
               
               ///////////////////////////////////
             }
-            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly);
+            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly, isReadOnly);
             //}
           }
         }
@@ -325,6 +333,7 @@ namespace Storage {
             foreach (var childMI in mi.ChildClassInfo.Members.Values) {
               if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==ci.ClassName) {
                 isFound = true;
+                mi.IsChildReadOnly |= childMI.IsReadOnly;
                 if (mi.MemberName!=childMI.ClassInfo.PluralName) {
                   throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}.");
                 }
@@ -347,12 +356,13 @@ namespace Storage {
             foreach (var childMI in mi.ChildClassInfo.Members.Values) {
               if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==ci.ClassName) {
                 isFound = true;
+                mi.IsChildReadOnly |= childMI.IsReadOnly;
                 if (mi.MemberName!=childMI.ClassInfo.PluralName) {
                   throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}.");
                 }
                 foreach (var childKeyMI in mi.ChildClassInfo.Members.Values) {
                   if (mi.ChildKeyPropertyName==childKeyMI.MemberName) {
-                    if (mi.KeyTypeString!=childKeyMI.CsvTypeString) {
+                    if (mi.ChildKeyTypeString!=childKeyMI.CsvTypeString) {
                       throw new GeneratorException($"{ci}.{mi.MemberName} {mi.TypeString}: found {childKeyMI.ClassInfo.ClassName}.{childKeyMI.MemberName}, but it has wrong type: {childKeyMI.CsvTypeString}.");
                     }
                     isKeyFound = true;
@@ -380,11 +390,11 @@ namespace Storage {
               if (mi.CollectionType==CollectionTypeEnum.SortedList) {
                 //guarantee that there is a property that can be used as key into parent's SortedList
                 throw new GeneratorException($"{ci} '{mi}': has a SortedList<{mi.ChildTypeName}>. The corresponding " +
-                  $" key property '{mi.ChildKeyPropertyName}' with type {mi.KeyTypeString} is missing in the class {mi.ChildTypeName}.");
+                  $" key property '{mi.ChildKeyPropertyName}' with type {mi.ChildKeyTypeString} is missing in the class {mi.ChildTypeName}.");
               } else {
                 //guarantee that there is a property that can be used as key into parent's Dictionary
                 throw new GeneratorException($"{ci} '{mi}': has a Dictionary<{mi.ChildTypeName}>. The corresponding " +
-                  $" key property '{mi.ChildKeyPropertyName}' with type {mi.KeyTypeString} is missing in the class {mi.ChildTypeName}.");
+                  $" key property '{mi.ChildKeyPropertyName}' with type {mi.ChildKeyTypeString} is missing in the class {mi.ChildTypeName}.");
               }
             }
           }
@@ -457,7 +467,7 @@ namespace Storage {
         if (!new FileInfo(fileNameAndPath).Exists) {
           using var streamWriter = new StreamWriter(fileNameAndPath);
           Console.WriteLine(classInfo.ClassName + ".cs");
-          classInfo.WriteClassFile(streamWriter, nameSpaceString!);
+          classInfo.WriteClassFile(streamWriter, nameSpaceString!, IsFullyCommented);
         }
       }
     }

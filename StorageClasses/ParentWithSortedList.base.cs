@@ -31,9 +31,15 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some Text
+    /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
     /// </summary>
-    public string Text { get; private set; }
+    public string TextReadOnly { get; }
+
+
+    /// <summary>
+    /// This text can be updated
+    /// </summary>
+    public string TextUpdateable { get; private set; }
 
 
     /// <summary>
@@ -47,13 +53,13 @@ namespace StorageModel  {
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "Text"};
+    internal static readonly string[] Headers = {"Key", "TextReadOnly", "TextUpdateable"};
 
 
     /// <summary>
     /// None existing ParentWithSortedList
     /// </summary>
-    internal static ParentWithSortedList NoParentWithSortedList = new ParentWithSortedList("NoText", isStoring: false);
+    internal static ParentWithSortedList NoParentWithSortedList = new ParentWithSortedList("NoTextReadOnly", "NoTextUpdateable", isStoring: false);
     #endregion
 
 
@@ -73,9 +79,10 @@ namespace StorageModel  {
     /// <summary>
     /// ParentWithSortedList Constructor. If isStoring is true, adds ParentWithSortedList to DL.Data.ParentsWithSortedList.
     /// </summary>
-    public ParentWithSortedList(string text, bool isStoring = true) {
+    public ParentWithSortedList(string textReadOnly, string textUpdateable, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
-      Text = text;
+      TextReadOnly = textReadOnly;
+      TextUpdateable = textUpdateable;
       sortedListChildren = new SortedList<DateTime, SortedListChild>();
       onConstruct();
 
@@ -91,7 +98,8 @@ namespace StorageModel  {
     /// </summary>
     private ParentWithSortedList(int key, CsvReader csvReader, DL context) {
       Key = key;
-      Text = csvReader.ReadString();
+      TextReadOnly = csvReader.ReadString();
+      TextUpdateable = csvReader.ReadString();
       sortedListChildren = new SortedList<DateTime, SortedListChild>();
       onCsvConstruct(context);
     }
@@ -126,7 +134,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write ParentWithSortedList to CSV file
     /// </summary>
-    internal const int MaxLineLength = 150;
+    internal const int MaxLineLength = 300;
 
 
     /// <summary>
@@ -134,7 +142,8 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(ParentWithSortedList parentWithSortedList, CsvWriter csvWriter) {
       parentWithSortedList.onCsvWrite();
-      csvWriter.Write(parentWithSortedList.Text);
+      csvWriter.Write(parentWithSortedList.TextReadOnly);
+      csvWriter.Write(parentWithSortedList.TextUpdateable);
     }
     partial void onCsvWrite();
 
@@ -142,10 +151,10 @@ namespace StorageModel  {
     /// <summary>
     /// Updates ParentWithSortedList with the provided values
     /// </summary>
-    public void Update(string text) {
+    public void Update(string textUpdateable) {
       var isChangeDetected = false;
-      if (Text!=text) {
-        Text = text;
+      if (TextUpdateable!=textUpdateable) {
+        TextUpdateable = textUpdateable;
         isChangeDetected = true;
       }
       if (isChangeDetected) {
@@ -160,7 +169,13 @@ namespace StorageModel  {
     /// Updates this ParentWithSortedList with values from CSV file
     /// </summary>
     internal static void Update(ParentWithSortedList parentWithSortedList, CsvReader csvReader, DL _) {
-      parentWithSortedList.Text = csvReader.ReadString();
+      var value = csvReader.ReadString();
+      if (parentWithSortedList.TextReadOnly!=value) {
+        throw new Exception($"ParentWithSortedList.Update(): Property TextReadOnly '{parentWithSortedList.TextReadOnly}' is " +
+          $"readonly, the value '{value}' read from the CSV file should be the same." + Environment.NewLine + 
+          parentWithSortedList.ToString());
+      }
+      parentWithSortedList.TextUpdateable = csvReader.ReadString();
       parentWithSortedList.onCsvUpdate();
     }
     partial void onCsvUpdate();
@@ -224,7 +239,8 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {Text}";
+        $" {TextReadOnly}," +
+        $" {TextUpdateable}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -237,7 +253,8 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
-        $" Text: {Text}," +
+        $" TextReadOnly: {TextReadOnly}," +
+        $" TextUpdateable: {TextUpdateable}," +
         $" SortedListChildren: {SortedListChildren.Count};";
       onToString(ref returnString);
       return returnString;

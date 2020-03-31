@@ -291,7 +291,7 @@ namespace StorageModel  {
           ParentWithDictionary.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
-          isCompactDuringDispose: false);
+          isCompactDuringDispose: true);
         DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
           this,
           csvConfig!,
@@ -319,7 +319,7 @@ namespace StorageModel  {
           ParentWithSortedList.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true,
-          isCompactDuringDispose: false);
+          isCompactDuringDispose: true);
         SortedListChildren = new StorageDictionaryCSV<SortedListChild, DL>(
           this,
           csvConfig!,

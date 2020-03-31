@@ -71,7 +71,14 @@ namespace Storage {
     }
 
 
-    public void AddMember(string name, string csvTypeString, string? propertyComment, string ? defaultValue, bool? isLookupOnly) {
+    public void AddMember(
+      string name, 
+      string csvTypeString, 
+      string? propertyComment, 
+      string ? defaultValue, 
+      bool? isLookupOnly,
+      bool isReadOnly) 
+    {
       var isLookUp = false;
       var isNullable = csvTypeString[^1]=='?';
       if (isNullable) {
@@ -79,18 +86,18 @@ namespace Storage {
       }
       MemberInfo member;
       switch (csvTypeString.ToLowerInvariant()) {
-      case "date": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Date, this, isNullable, propertyComment, defaultValue); break;
-      case "time": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Time, this, isNullable, propertyComment, defaultValue); break;
-      case "dateminutes": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateMinutes, this, isNullable, propertyComment, defaultValue); break;
-      case "dateseconds": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateSeconds, this, isNullable, propertyComment, defaultValue); break;
-      case "datetime": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateTime, this, isNullable, propertyComment, defaultValue); break;
-      case "decimal": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal, this, isNullable, propertyComment, defaultValue); break;
-      case "decimal2": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal2, this, isNullable, propertyComment, defaultValue); break;
-      case "decimal4": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal4, this, isNullable, propertyComment, defaultValue); break;
-      case "decimal5": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal5, this, isNullable, propertyComment, defaultValue); break;
-      case "bool": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Bool, this, isNullable, propertyComment, defaultValue); break;
-      case "int": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Int, this, isNullable, propertyComment, defaultValue); break;
-      case "string": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.String, this, isNullable, propertyComment, defaultValue); break;
+      case "date": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Date, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "time": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Time, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "dateminutes": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateMinutes, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "dateseconds": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateSeconds, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "datetime": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateTime, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "decimal": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "decimal2": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal2, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "decimal4": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal4, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "decimal5": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal5, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "bool": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Bool, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "int": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Int, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
+      case "string": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.String, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
       default:
         if (csvTypeString.Contains("<")) {
           //a parent having a collection for its children
@@ -156,7 +163,7 @@ namespace Storage {
             "it be a List<>, SortedList<,> or Dictionary<,> ?");
         }
         //a child linking to its parent, i.e. a MemberTypeEnum.Parent
-        member = new MemberInfo(name, this, csvTypeString, isNullable, propertyComment, defaultValue, isLookupOnly??false);
+        member = new MemberInfo(name, this, csvTypeString, isNullable, isReadOnly, propertyComment, defaultValue, isLookupOnly??false);
         isLookUp = true;
         break;
       }
@@ -195,7 +202,8 @@ namespace Storage {
     }
 
 
-    internal void WriteClassFile(StreamWriter streamWriter, string nameSpace) {
+    internal void WriteClassFile(StreamWriter streamWriter, string nameSpace, bool isFullyCommented) {
+      var cs = isFullyCommented ? "//" : "";
       streamWriter.WriteLine("using System;");
       streamWriter.WriteLine("using System.Collections.Generic;");
       streamWriter.WriteLine("using Storage;");
@@ -233,15 +241,15 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called once the constructor has filled all the properties");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onConstruct() {");
-      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine($"    {cs}partial void onConstruct() {{");
+      streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onCsvConstruct(DL context) {");
-      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine($"    {cs}partial void onCsvConstruct(DL context) {{");
+      streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    #endregion");
@@ -253,30 +261,30 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called before storing gets executed");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onStore() {");
-      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine($"    {cs}partial void onStore() {{");
+      streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called before the data gets written to a CSV file");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onCsvWrite() {");
-      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine($"    {cs}partial void onCsvWrite() {{");
+      streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       if (this.AreInstancesUpdatable) {
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    //partial void onUpdate() {");
-        streamWriter.WriteLine("    //}");
+        streamWriter.WriteLine($"    {cs}partial void onUpdate() {{");
+        streamWriter.WriteLine($"    {cs}}}");
         streamWriter.WriteLine();
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine("    /// Called after an update is read from a CSV file");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    //partial void onCsvUpdate() {");
-        streamWriter.WriteLine("    //}");
+        streamWriter.WriteLine($"    {cs}partial void onCsvUpdate() {{");
+        streamWriter.WriteLine($"    {cs}}}");
         streamWriter.WriteLine();
         streamWriter.WriteLine();
       }
@@ -284,8 +292,8 @@ namespace Storage {
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine("    /// Called before removal gets executed");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    //partial void onRemove() {");
-        streamWriter.WriteLine("    //}");
+        streamWriter.WriteLine($"    {cs}partial void onRemove() {{");
+        streamWriter.WriteLine($"    {cs}}}");
         streamWriter.WriteLine();
         streamWriter.WriteLine();
       }
@@ -294,31 +302,33 @@ namespace Storage {
           streamWriter.WriteLine("    /// <summary>");
           streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
           streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    //partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
-          streamWriter.WriteLine("    //}");
+          streamWriter.WriteLine($"    {cs}partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+          streamWriter.WriteLine($"    {cs}}}");
           streamWriter.WriteLine();
           streamWriter.WriteLine();
-          streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
-          streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    //partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
-          streamWriter.WriteLine("    //}");
-          streamWriter.WriteLine();
-          streamWriter.WriteLine();
+          if (!mi.IsChildReadOnly) {
+            streamWriter.WriteLine("    /// <summary>");
+            streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
+            streamWriter.WriteLine("    /// </summary>");
+            streamWriter.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+            streamWriter.WriteLine($"    {cs}}}");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine();
+          }
         }
       }
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Updates returnString with additional info for a short description.");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onToShortString(ref string returnString) {");
-      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine($"    {cs}partial void onToShortString(ref string returnString) {{");
+      streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Updates returnString with additional info for a short description.");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    //partial void onToString(ref string returnString) {");
-      streamWriter.WriteLine("    //}");
+      streamWriter.WriteLine($"    {cs}partial void onToString(ref string returnString) {{");
+      streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine("  }");
       streamWriter.WriteLine("}");
@@ -723,10 +733,15 @@ namespace Storage {
         streamWriter.WriteLine($"    /// Updates {ClassName} with the provided values");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.Write("    public void Update(");
-        writeParameters(streamWriter, isConstructor: false);
+        if (!writeParameters(streamWriter, isConstructor: false)) {
+          throw new GeneratorException($"Method '{ClassName}.Update()': has no parameters. Are all properties readonly ?" +
+            " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
+        }
         streamWriter.WriteLine("      var isChangeDetected = false;");
         foreach (var mi in Members.Values) {
-          if (mi.CollectionType==CollectionTypeEnum.Undefined) {//not List, Dictionary nor SortedList
+          if (mi.CollectionType==CollectionTypeEnum.Undefined && //not List, Dictionary nor SortedList
+            !mi.IsReadOnly)
+          {
             if (mi.MemberType==MemberTypeEnum.Parent) {
               if (mi.IsNullable) {
                 streamWriter.WriteLine($"      if ({mi.MemberName} is null) {{");
@@ -795,54 +810,65 @@ namespace Storage {
         }
         streamWriter.WriteLine(") {");
         foreach (var mi in Members.Values) {
-          if (mi.MemberType==MemberTypeEnum.Parent) {
-            if (mi.IsNullable) {
-              streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
-              streamWriter.WriteLine($"      {mi.ParentType}? {mi.LowerMemberName};");
-              streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
-              streamWriter.WriteLine($"        {mi.LowerMemberName} = null;");
-              streamWriter.WriteLine("      } else {");
-              streamWriter.WriteLine($"        if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
-              streamWriter.WriteLine($"          {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
-              streamWriter.WriteLine("        }");
-              streamWriter.WriteLine("      }");
-              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
-              streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-              streamWriter.WriteLine("          //nothing to do");
-              streamWriter.WriteLine("        } else {");
-              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("        }");
-              streamWriter.WriteLine("      } else {");
-              streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-              streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-              streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("          }");
-              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
-              streamWriter.WriteLine("        } else {");
-              streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-              streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("          }");
-              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("        }");
-              streamWriter.WriteLine("      }");
-            } else {
-              streamWriter.WriteLine($"      if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
-              streamWriter.WriteLine($"        {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
-              streamWriter.WriteLine("      }");
-              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
-              streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-              streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("        }");
-              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
-              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("      }");
+          if (mi.IsReadOnly) {
+            streamWriter.WriteLine($"      var value = csvReader.{mi.CsvReaderRead};");
+            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=value) {{");
+            streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Update(): Property {mi.MemberName}" +
+              $" '{{{LowerClassName}.{mi.MemberName}}}' is \" +");
+            streamWriter.WriteLine($"          $\"readonly, the value '{{value}}' read from the CSV file should be the" +
+              " same.\" + Environment.NewLine + "); 
+            streamWriter.WriteLine($"          {LowerClassName}.ToString());");
+            streamWriter.WriteLine("      }");
+          } else {
+            if (mi.MemberType==MemberTypeEnum.Parent) {
+              if (mi.IsNullable) {
+                streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
+                streamWriter.WriteLine($"      {mi.ParentType}? {mi.LowerMemberName};");
+                streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+                streamWriter.WriteLine($"        {mi.LowerMemberName} = null;");
+                streamWriter.WriteLine("      } else {");
+                streamWriter.WriteLine($"        if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
+                streamWriter.WriteLine($"          {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
+                streamWriter.WriteLine("        }");
+                streamWriter.WriteLine("      }");
+                streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
+                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                streamWriter.WriteLine("          //nothing to do");
+                streamWriter.WriteLine("        } else {");
+                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("        }");
+                streamWriter.WriteLine("      } else {");
+                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+                streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("          }");
+                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
+                streamWriter.WriteLine("        } else {");
+                streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+                streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("          }");
+                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("        }");
+                streamWriter.WriteLine("      }");
+              } else {
+                streamWriter.WriteLine($"      if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+                streamWriter.WriteLine($"        {mi.LowerMemberName} = {mi.ParentType}.No{mi.ParentType};");
+                streamWriter.WriteLine("      }");
+                streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
+                streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("        }");
+                streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+                streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("      }");
+              }
+            } else if (mi.MemberType==MemberTypeEnum.Enum) {
+              streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+            } else if (mi.CollectionType==CollectionTypeEnum.Undefined) {//not List, Dictionary nor SortedList
+              streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
             }
-          } else if (mi.MemberType==MemberTypeEnum.Enum) {
-            streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
-          } else if (mi.CollectionType==CollectionTypeEnum.Undefined) {//not List, Dictionary nor SortedList
-            streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
           }
         }
         streamWriter.WriteLine($"      {LowerClassName}.onCsvUpdate();");
@@ -1024,7 +1050,7 @@ namespace Storage {
         streamWriter.WriteLine($"    /// Removing {ClassName} from {context}.Data.{PluralName} is not supported.");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine("    public void Remove() {");
-        streamWriter.WriteLine("      throw new NotSupportedException(\"Attribute AreInstancesDeletable is false.\");");
+        streamWriter.WriteLine("      throw new NotSupportedException(\"StorageClass attribute AreInstancesDeletable is false.\");");
         streamWriter.WriteLine("    }");
         streamWriter.WriteLine();
         streamWriter.WriteLine();
@@ -1096,10 +1122,12 @@ namespace Storage {
     }
 
 
-    private void writeParameters(StreamWriter streamWriter, bool isConstructor) {
+    private bool writeParameters(StreamWriter streamWriter, bool isConstructor) {
       var parts = new List<string>();
       foreach (var mi in Members.Values) {
-        if (mi.CollectionType==CollectionTypeEnum.Undefined) {//not List, Dictionary nor SortedList
+        if (mi.CollectionType==CollectionTypeEnum.Undefined && //not List, Dictionary nor SortedList
+          (isConstructor || !mi.IsReadOnly))
+        {
           var part = $"{mi.TypeString} {mi.LowerMemberName}";
           if (isConstructor && mi.DefaultValue!=null) {
             part += $" = {mi.DefaultValue}";
@@ -1110,6 +1138,8 @@ namespace Storage {
       if (isConstructor) {
         parts.Add("bool isStoring = true");
       }
+      if (parts.Count==0) return false;//update should only be created if it has parameters.
+
       var isNewLines = parts.Count>4;
       for (int partsIndex = 0; partsIndex < parts.Count; partsIndex++) {
         if (isNewLines) {
@@ -1129,6 +1159,7 @@ namespace Storage {
         streamWriter.Write("   ");
       }
       streamWriter.WriteLine(" {");
+      return true;
     }
 
 

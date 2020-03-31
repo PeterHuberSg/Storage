@@ -27,10 +27,10 @@ namespace StorageModel  {
     internal static void SetKey(LookupChild lookupChild, int key) { lookupChild.Key = key; }
 
 
-    public int Number { get; private set; }
+    public int Number { get; }
 
 
-    public LookupParent LookupParent { get; private set; }
+    public LookupParent LookupParent { get; }
 
 
     /// <summary>
@@ -151,7 +151,7 @@ namespace StorageModel  {
     /// Removing LookupChild from DL.Data.LookupChildren is not supported.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException("Attribute AreInstancesDeletable is false.");
+      throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 

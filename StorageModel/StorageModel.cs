@@ -212,7 +212,7 @@ namespace StorageModel {
   /// <summary>
   /// Example of a Parent child relationship using a Dictionary.
   /// </summary>
-  [StorageClass(areInstancesDeletable: true, isCompactDuringDispose: false, pluralName: "ParentsWithDictionary")]
+  [StorageClass(pluralName: "ParentsWithDictionary")]
   public class ParentWithDictionary {
 
     /// <summary>
@@ -231,7 +231,7 @@ namespace StorageModel {
   /// <summary>
   /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
   /// </summary>
-  [StorageClass(areInstancesDeletable: true, pluralName: "DictionaryChildren")]
+  [StorageClass(pluralName: "DictionaryChildren")]
   public class DictionaryChild {
     /// <summary>
     /// Parent
@@ -265,13 +265,18 @@ namespace StorageModel {
   /// <summary>
   /// Example of a Parent child relationship using a SortedList.
   /// </summary>
-  [StorageClass(areInstancesDeletable: true, isCompactDuringDispose: false, pluralName: "ParentsWithSortedList")]
+  [StorageClass(pluralName: "ParentsWithSortedList")]
   public class ParentWithSortedList {
 
     /// <summary>
-    /// Some Text
+    /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
     /// </summary>
-    public string Text;
+    public readonly string TextReadOnly;
+
+    /// <summary>
+    /// This text can be updated
+    /// </summary>
+    public string TextUpdateable;
 
     /// <summary>
     /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
@@ -284,7 +289,7 @@ namespace StorageModel {
   /// <summary>
   /// SortedListChild has a member providing the key value needed to add SortedListChild to the ParentWithSortedList.SortedListChildren
   /// </summary>
-  [StorageClass(areInstancesDeletable: true, pluralName: "SortedListChildren")]
+  [StorageClass(pluralName: "SortedListChildren")]
   public class SortedListChild {
     /// <summary>
     /// Parent
@@ -318,7 +323,7 @@ namespace StorageModel {
   public class ReadOnlyParent {
 
     /// <summary>
-    /// Some Text
+    /// Readonly Text, because class is not updatable
     /// </summary>
     public string Text;
 
@@ -342,7 +347,7 @@ namespace StorageModel {
     public ReadOnlyParent ReadOnlyParent;
 
     /// <summary>
-    /// Some info
+    /// Readonly Text, because class is not updatable
     /// </summary>
     public string Text;
   }

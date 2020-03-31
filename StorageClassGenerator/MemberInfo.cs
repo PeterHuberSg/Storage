@@ -35,6 +35,7 @@ namespace Storage {
     public string TypeString;
     public string? ReadOnlyTypeString; //used by Dictionary and SortedList: IReadOnlyDictionary<DateTime, DictionaryChild>
     public readonly bool IsNullable;
+    public readonly bool IsReadOnly;
     public readonly string? Comment;
     public readonly string? PrecissionComment;
     public readonly string? Rounding;
@@ -44,7 +45,7 @@ namespace Storage {
     public readonly string? ChildTypeName; //used by List, Dictionary and SortedList
     public readonly string? LowerChildTypeName; //used by List, Dictionary and SortedList
     public readonly string? ChildKeyPropertyName; //used by Dictionary and SortedList
-    public readonly string? KeyTypeString; //used by Dictionary and SortedList
+    public readonly string? ChildKeyTypeString; //used by Dictionary and SortedList
     public readonly string? ParentType;//is only different from TypeString when IsNullable
     public readonly string? LowerParentType;
     public readonly string? CsvReaderRead;
@@ -53,13 +54,23 @@ namespace Storage {
     public string? ToStringFunc;
 
     public ClassInfo? ChildClassInfo;
+    public bool IsChildReadOnly;
     public ClassInfo? ParentClassInfo; //not really used
     public EnumInfo? EnumInfo;
     public int ChildCount = 0;
 
 
-    public MemberInfo(string name, string csvTypeString, MemberTypeEnum memberType, ClassInfo classInfo, bool isNullable, string? comment, string? defaultValue) {
-      if (memberType==MemberTypeEnum.List || memberType==MemberTypeEnum.CollectionKeyValue) throw new Exception();
+    public MemberInfo(
+      string name, 
+      string csvTypeString, 
+      MemberTypeEnum memberType, 
+      ClassInfo classInfo, 
+      bool isNullable,
+      bool isReadOnly,
+      string? comment, 
+      string? defaultValue) 
+    {
+      if (CollectionType>CollectionTypeEnum.Undefined) throw new Exception();
 
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -67,6 +78,7 @@ namespace Storage {
       MemberType = memberType;
       ClassInfo = classInfo;
       IsNullable = isNullable;
+      IsReadOnly = isReadOnly;
       Comment = comment;
       DefaultValue = defaultValue;
       switch (memberType) {
@@ -255,7 +267,14 @@ namespace Storage {
     /// <summary>
     /// constructor for List
     /// </summary>
-    public MemberInfo(string name, ClassInfo classInfo, string listType, string childType, string? comment, string? defaultValue) {
+    public MemberInfo(
+      string name, 
+      ClassInfo classInfo, 
+      string listType, 
+      string childType, 
+      string? comment, 
+      string? defaultValue) 
+    {
       MemberType = MemberTypeEnum.List;
       CollectionType = CollectionTypeEnum.List;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
@@ -265,6 +284,7 @@ namespace Storage {
       ChildTypeName = childType;
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
       IsNullable = false;
+      IsReadOnly = false; //List properties are IReadOnlyList, but not need to mark them with ReadOnly
       TypeString = listType;
       CsvReaderRead = null;
       CsvWriterWrite = null;
@@ -297,8 +317,9 @@ namespace Storage {
       ChildTypeName = childType;
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
       ChildKeyPropertyName = childKeyPropertyName;
-      KeyTypeString = keyTypeString;
+      ChildKeyTypeString = keyTypeString;
       IsNullable = false;
+      IsReadOnly = false; //Collection properties are IReadOnlyXXX, but not need to mark them with ReadOnly
       TypeString = memberTypeString; //will be overwritten in Compiler.AnalyzeDependencies()
       CsvReaderRead = null;
       CsvWriterWrite = null;
@@ -314,7 +335,8 @@ namespace Storage {
       string name, 
       ClassInfo classInfo, 
       string memberTypeString, 
-      bool isNullable, 
+      bool isNullable,
+      bool isReadOnly,
       string? comment, 
       string? defaultValue,
       bool isLookupOnly) 
@@ -324,6 +346,7 @@ namespace Storage {
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
       ClassInfo = classInfo;
       IsNullable = isNullable;
+      IsReadOnly = isReadOnly;
       ParentType = memberTypeString;
       LowerParentType = memberTypeString[0..1].ToLowerInvariant() + memberTypeString[1..];
       CsvWriterWrite = "Write";
@@ -393,7 +416,11 @@ namespace Storage {
         streamWriter.WriteLine($"    readonly {TypeString} {LowerMemberName};");
 
       } else {
-        streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
+        if (IsReadOnly) {
+          streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; }}");
+        } else {
+          streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
+        }
       }
     }
   }

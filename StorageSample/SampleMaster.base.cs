@@ -216,7 +216,7 @@ namespace StorageModel  {
     /// Removing SampleMaster from DL.Data.SampleMasters is not supported.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException("Attribute AreInstancesDeletable is false.");
+      throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 

@@ -79,12 +79,14 @@ namespace StorageTest {
         assertDL();
 
         var now = DateTime.Now.Date;
-        addParentSortedList("1");
+        addParentSortedList("1", "1.0");
         addSortedListChild(0, now, "11");
 
-        addParentSortedList("2");
+        addParentSortedList("2", "2.0");
         addSortedListChild(1, now, "21");
         addSortedListChild(1, now.AddDays(1), "22");
+
+        update(1, "2.1");
 
         removeParentSortedList(0);
 
@@ -120,8 +122,8 @@ namespace StorageTest {
     }
 
 
-    private void addParentSortedList(string someText) {
-      var newParentSortedList = new ParentWithSortedList(someText, isStoring: true);
+    private void addParentSortedList(string readOnlyText, string updateableText) {
+      var newParentSortedList = new ParentWithSortedList(readOnlyText, updateableText, isStoring: true);
       expectedParentSortedList.Add(newParentSortedList.Key, newParentSortedList.ToString());
       assertData();
     }
@@ -132,6 +134,17 @@ namespace StorageTest {
       var newSortedListChild = new SortedListChild(parentSortedList, date, text, isStoring: true);
       expectedSortedListChild.Add(newSortedListChild.Key, newSortedListChild.ToString());
       expectedParentSortedList[parentSortedList.Key] = parentSortedList.ToString();
+      assertData();
+    }
+
+
+    private void update(int parentSortedListKey, string textUpdateable) {
+      var parentSortedList = DL.Data.ParentsWithSortedList[parentSortedListKey];
+      parentSortedList.Update(textUpdateable);
+      expectedParentSortedList[parentSortedList.Key] = parentSortedList.ToString();
+      foreach (var sortedListChild in parentSortedList.SortedListChildren.Values) {
+        expectedSortedListChild[sortedListChild.Key] = sortedListChild.ToString();
+      }
       assertData();
     }
 

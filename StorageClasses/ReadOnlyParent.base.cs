@@ -32,9 +32,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some Text
+    /// Readonly Text, because class is not updatable
     /// </summary>
-    public string Text { get; private set; }
+    public string Text { get; }
 
 
     /// <summary>
@@ -155,7 +155,7 @@ namespace StorageModel  {
     /// Removing ReadOnlyParent from DL.Data.ReadOnlyParents is not supported.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException("Attribute AreInstancesDeletable is false.");
+      throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 

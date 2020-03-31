@@ -33,13 +33,13 @@ namespace StorageModel  {
     /// <summary>
     /// Stores date and time with tick precision.
     ///  </summary>
-    public DateTime Date { get; private set; }
+    public DateTime Date { get; }
 
 
     /// <summary>
     /// Stores decimal with 2 digits after comma.
     ///  </summary>
-    public decimal SomeValue { get; private set; }
+    public decimal SomeValue { get; }
 
 
     /// <summary>
@@ -144,7 +144,7 @@ namespace StorageModel  {
     /// Removing LookupParent from DL.Data.LookupParents is not supported.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException("Attribute AreInstancesDeletable is false.");
+      throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 
