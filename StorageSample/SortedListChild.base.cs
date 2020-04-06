@@ -98,10 +98,12 @@ namespace StorageModel  {
     /// </summary>
     private SortedListChild(int key, CsvReader csvReader, DL context) {
       Key = key;
-      if (context.ParentsWithSortedList.TryGetValue(csvReader.ReadInt(), out var parentWithSortedList)) {
-        ParentWithSortedList = parentWithSortedList;
+      var parentWithSortedListKey = csvReader.ReadInt();
+      if (context.ParentsWithSortedList.TryGetValue(parentWithSortedListKey, out var parentWithSortedList)) {
+          ParentWithSortedList = parentWithSortedList;
       } else {
-        ParentWithSortedList = ParentWithSortedList.NoParentWithSortedList;
+        throw new Exception($"Read SortedListChild from CSV file: Cannot find ParentWithSortedList with key {parentWithSortedListKey}." + Environment.NewLine + 
+          csvReader.PresentContent);
       }
       DateKey = csvReader.ReadDate();
       Text = csvReader.ReadString();
@@ -139,7 +141,10 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SortedListChild 'Class SortedListChild' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"SortedListChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+      }
+      if (ParentWithSortedList.Key<0) {
+        throw new Exception($"SortedListChild can not be stored in DL.Data, ParentWithSortedList is missing." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.SortedListChildren.Add(this);

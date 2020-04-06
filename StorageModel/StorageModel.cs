@@ -26,6 +26,8 @@ namespace StorageModel {
   #region SampleMaster -> Sample -> SampleDetail, using List for children
   //      ---------------------------------------------------------------
 
+  //Sample.SampleMaster is nullable
+  //SampleDetail.Sample is NOT nullable, it is not possible to store a SampleDetail without a parent Sample
   //shows also in Sample most data types supported
 
   /// <summary>
@@ -44,7 +46,7 @@ namespace StorageModel {
   /// Some comment for SampleMaster.
   /// With an additional line.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, isCompactDuringDispose: false)]
+  [StorageClass(areInstancesDeletable: false)]
   public class SampleMaster {
 
     /// <summary>
@@ -69,7 +71,7 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for Sample
   /// </summary>
-  [StorageClass(maxLineLength: 200, pluralName: "SampleX", isCompactDuringDispose: false)]
+  [StorageClass(maxLineLength: 200, pluralName: "SampleX")]
   public class Sample {
     /// <summary>
     /// Some Text comment
@@ -161,7 +163,7 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for SampleDetail
   /// </summary>
-  [StorageClass(maxLineLength: 151, isCompactDuringDispose: false)]
+  [StorageClass(maxLineLength: 151)]
   public class SampleDetail {
     /// <summary>
     /// Some Text comment

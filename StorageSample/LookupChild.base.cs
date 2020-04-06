@@ -84,10 +84,12 @@ namespace StorageModel  {
     private LookupChild(int key, CsvReader csvReader, DL context) {
       Key = key;
       Number = csvReader.ReadInt();
-      if (context.LookupParents.TryGetValue(csvReader.ReadInt(), out var lookupParent)) {
-        LookupParent = lookupParent;
+      var lookupParentKey = csvReader.ReadInt();
+      if (context.LookupParents.TryGetValue(lookupParentKey, out var lookupParent)) {
+          LookupParent = lookupParent;
       } else {
-        LookupParent = LookupParent.NoLookupParent;
+        throw new Exception($"Read LookupChild from CSV file: Cannot find LookupParent with key {lookupParentKey}." + Environment.NewLine + 
+          csvReader.PresentContent);
       }
       onCsvConstruct(context);
     }
@@ -120,7 +122,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"LookupChild 'Class LookupChild' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"LookupChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.LookupChildren.Add(this);

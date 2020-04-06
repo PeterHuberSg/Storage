@@ -16,7 +16,6 @@ namespace StorageTest {
 
     CsvConfig? csvConfig;
     StorageDictionary<TestItemCsv, object>? dictionary;
-    bool isCompactDuringDispose;
 
     bool wasAdded = false;
     bool wasChanged = false;
@@ -106,8 +105,7 @@ namespace StorageTest {
     [TestMethod]
     public void TestStorageDictionaryCSV() {
       var directoryInfo = new DirectoryInfo("TestCsv");
-      for (int isCompactDuringDisposeIndex = 0; isCompactDuringDisposeIndex < 2; isCompactDuringDisposeIndex++) {
-        isCompactDuringDispose = isCompactDuringDisposeIndex==0;
+      for (int configurationIndex = 0; configurationIndex < 2; configurationIndex++) {
         try {
           directoryInfo.Refresh();
           if (directoryInfo.Exists) {
@@ -166,8 +164,7 @@ namespace StorageTest {
         TestItemCsv.Write,
         TestItemCsv.Disconnect,
         areInstancesUpdatable: true,
-        areInstancesDeletable: true,
-        isCompactDuringDispose: isCompactDuringDispose);
+        areInstancesDeletable: true);
       Assert.IsFalse(dictionary.IsReadOnly);
       dictionary.Added += dictionary_Added;
       dictionary.Changed += dictionary_Changed;

@@ -312,7 +312,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"Sample 'Class Sample' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"Sample can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.SampleX.Add(this);

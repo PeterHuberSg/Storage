@@ -53,7 +53,6 @@ namespace Storage {
     /// pluralName: used if class name has an irregular plural. Example: Activity => Activities<para/>
     /// areInstancesUpdatable: Can the properties of the class change ?<para/>
     /// areInstancesDeletable: Can class instance be deleted from StorageDirectory ?<para/>
-    /// isCompactDuringDispose: Should during StorageDirectory.Dispose the CSV file get overwritten without deleted or old values ?<para/>
     /// 
     /// </summary>
     /// <param name="sourceDirectoryString">Source directory from where the .cs files get read.</param>

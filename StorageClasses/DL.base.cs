@@ -46,7 +46,7 @@ namespace StorageModel  {
 
     /// <summary>
     /// Flushes all data to permanent storage location if permanent data storage is active. Compacts data storage
-    /// by applying all updates and removing all instances marked as deleted if isCompactDuringDispose==true.
+    /// by applying all updates and removing all instances marked as deleted.
     /// </summary>
     public static void DisposeData() {
       var dataLocal = Interlocked.Exchange(ref data, null);
@@ -139,6 +139,7 @@ namespace StorageModel  {
         throw new Exception("Dispose old DL before creating a new one.");
       }
       isDisposed = 0;
+      data = this;
       CsvConfig = csvConfig;
       if (csvConfig==null) {
         SampleMasters = new StorageDictionary<SampleMaster, DL>(
@@ -220,8 +221,7 @@ namespace StorageModel  {
           SampleMaster.Write,
           null,
           areInstancesUpdatable: true,
-          areInstancesDeletable: false,
-          isCompactDuringDispose: false);
+          areInstancesDeletable: false);
         SampleX = new StorageDictionaryCSV<Sample, DL>(
           this,
           csvConfig!,
@@ -234,8 +234,7 @@ namespace StorageModel  {
           Sample.Write,
           Sample.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: true,
-          isCompactDuringDispose: false);
+          areInstancesDeletable: true);
         SampleDetails = new StorageDictionaryCSV<SampleDetail, DL>(
           this,
           csvConfig!,
@@ -248,8 +247,7 @@ namespace StorageModel  {
           SampleDetail.Write,
           SampleDetail.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: true,
-          isCompactDuringDispose: false);
+          areInstancesDeletable: true);
         LookupParents = new StorageDictionaryCSV<LookupParent, DL>(
           this,
           csvConfig!,
@@ -262,8 +260,7 @@ namespace StorageModel  {
           LookupParent.Write,
           null,
           areInstancesUpdatable: false,
-          areInstancesDeletable: false,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: false);
         LookupChildren = new StorageDictionaryCSV<LookupChild, DL>(
           this,
           csvConfig!,
@@ -276,8 +273,7 @@ namespace StorageModel  {
           LookupChild.Write,
           null,
           areInstancesUpdatable: false,
-          areInstancesDeletable: false,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: false);
         ParentsWithDictionary = new StorageDictionaryCSV<ParentWithDictionary, DL>(
           this,
           csvConfig!,
@@ -290,8 +286,7 @@ namespace StorageModel  {
           ParentWithDictionary.Write,
           ParentWithDictionary.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: true,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: true);
         DictionaryChildren = new StorageDictionaryCSV<DictionaryChild, DL>(
           this,
           csvConfig!,
@@ -304,8 +299,7 @@ namespace StorageModel  {
           DictionaryChild.Write,
           DictionaryChild.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: true,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: true);
         ParentsWithSortedList = new StorageDictionaryCSV<ParentWithSortedList, DL>(
           this,
           csvConfig!,
@@ -318,8 +312,7 @@ namespace StorageModel  {
           ParentWithSortedList.Write,
           ParentWithSortedList.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: true,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: true);
         SortedListChildren = new StorageDictionaryCSV<SortedListChild, DL>(
           this,
           csvConfig!,
@@ -332,8 +325,7 @@ namespace StorageModel  {
           SortedListChild.Write,
           SortedListChild.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: true,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: true);
         ReadOnlyParents = new StorageDictionaryCSV<ReadOnlyParent, DL>(
           this,
           csvConfig!,
@@ -346,8 +338,7 @@ namespace StorageModel  {
           ReadOnlyParent.Write,
           null,
           areInstancesUpdatable: false,
-          areInstancesDeletable: false,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: false);
         ReadOnlyChildren = new StorageDictionaryCSV<ReadOnlyChild, DL>(
           this,
           csvConfig!,
@@ -360,8 +351,7 @@ namespace StorageModel  {
           ReadOnlyChild.Write,
           null,
           areInstancesUpdatable: false,
-          areInstancesDeletable: false,
-          isCompactDuringDispose: true);
+          areInstancesDeletable: false);
       }
       onConstruct();
     }

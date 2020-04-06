@@ -94,10 +94,12 @@ namespace StorageModel  {
     /// </summary>
     private ReadOnlyChild(int key, CsvReader csvReader, DL context) {
       Key = key;
-      if (context.ReadOnlyParents.TryGetValue(csvReader.ReadInt(), out var readOnlyParent)) {
-        ReadOnlyParent = readOnlyParent;
+      var readOnlyParentKey = csvReader.ReadInt();
+      if (context.ReadOnlyParents.TryGetValue(readOnlyParentKey, out var readOnlyParent)) {
+          ReadOnlyParent = readOnlyParent;
       } else {
-        ReadOnlyParent = ReadOnlyParent.NoReadOnlyParent;
+        throw new Exception($"Read ReadOnlyChild from CSV file: Cannot find ReadOnlyParent with key {readOnlyParentKey}." + Environment.NewLine + 
+          csvReader.PresentContent);
       }
       Text = csvReader.ReadString();
       if (ReadOnlyParent!=ReadOnlyParent.NoReadOnlyParent) {
@@ -134,7 +136,10 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ReadOnlyChild 'Class ReadOnlyChild' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"ReadOnlyChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+      }
+      if (ReadOnlyParent.Key<0) {
+        throw new Exception($"ReadOnlyChild can not be stored in DL.Data, ReadOnlyParent is missing." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.ReadOnlyChildren.Add(this);

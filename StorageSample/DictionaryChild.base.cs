@@ -98,10 +98,12 @@ namespace StorageModel  {
     /// </summary>
     private DictionaryChild(int key, CsvReader csvReader, DL context) {
       Key = key;
-      if (context.ParentsWithDictionary.TryGetValue(csvReader.ReadInt(), out var parentWithDictionary)) {
-        ParentWithDictionary = parentWithDictionary;
+      var parentWithDictionaryKey = csvReader.ReadInt();
+      if (context.ParentsWithDictionary.TryGetValue(parentWithDictionaryKey, out var parentWithDictionary)) {
+          ParentWithDictionary = parentWithDictionary;
       } else {
-        ParentWithDictionary = ParentWithDictionary.NoParentWithDictionary;
+        throw new Exception($"Read DictionaryChild from CSV file: Cannot find ParentWithDictionary with key {parentWithDictionaryKey}." + Environment.NewLine + 
+          csvReader.PresentContent);
       }
       DateKey = csvReader.ReadDate();
       Text = csvReader.ReadString();
@@ -139,7 +141,10 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"DictionaryChild 'Class DictionaryChild' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"DictionaryChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+      }
+      if (ParentWithDictionary.Key<0) {
+        throw new Exception($"DictionaryChild can not be stored in DL.Data, ParentWithDictionary is missing." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.DictionaryChildren.Add(this);

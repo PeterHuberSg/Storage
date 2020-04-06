@@ -72,13 +72,6 @@ namespace Storage {
     /// Delay in millisecond before flush gets executed after the last write
     /// </summary>
     public readonly int FlushDelay;
-
-
-    /// <summary>
-    /// Should during Dispose() a new file be written when some items have changed their content or some items were deleted ? 
-    /// This compacts the file.
-    /// </summary>
-    public bool IsCompactDuringDispose { get; }
     #endregion
 
     #region Constructor
@@ -122,7 +115,7 @@ namespace Storage {
       Action<TItemCSV, CsvWriter> write,
       int capacity = 0,
       int flushDelay = 200) : this(context, csvConfig, maxLineLenght, headers, setKey, create, verify, null, write, 
-        null, false, false, false, capacity, flushDelay) {}
+        null, false, false, capacity, flushDelay) {}
 
 
     /// <summary>
@@ -142,7 +135,6 @@ namespace Storage {
     /// items linked to this item and/or to remove item from parent(s)</param>
     /// <param name="areInstancesUpdatable">Can the property of an item change ?</param>
     /// <param name="areInstancesDeletable">Can an item be removed from StorageDictionaryCSV</param>
-    /// <param name="isCompactDuringDispose">Should during dispose the CSV file get deleted and a more compact version written ?</param>
     /// <param name="capacity">How many items should StorageDictionaryCSV by able to hold initially ?</param>
     /// <param name="flushDelay">When the items in StorageDictionaryCSV are not changed for flushDelay milliseconds, the internal
     /// buffer gets written to the CSV file.</param>
@@ -159,13 +151,11 @@ namespace Storage {
       Action<TItemCSV>? disconnect,
       bool areInstancesUpdatable = false,
       bool areInstancesDeletable = false,
-      bool isCompactDuringDispose = true,
       int capacity = 0,
       int flushDelay = 200) : base(context, setKey, disconnect, areInstancesUpdatable, areInstancesDeletable, capacity) 
     {
       CsvConfig = csvConfig;
       MaxLineLenght = maxLineLenght;
-      IsCompactDuringDispose = isCompactDuringDispose;
       CsvHeaderString = Csv.ToCsvHeaderString(headers, csvConfig.Delimiter);
       this.create = create;
       this.verify = verify;
@@ -215,7 +205,7 @@ namespace Storage {
           }
         }
 
-        if (IsCompactDuringDispose && (AreItemsUpdated || AreItemsDeleted)) {
+        if (AreItemsUpdated || AreItemsDeleted) {
           //backup file and create a new one with only the latest items, but no deletions nor updates
           try {
             var backupFileName = PathFileName[..^3] + "bak";
@@ -253,6 +243,11 @@ namespace Storage {
           if (firstLineChar==CsvConfig.LineCharAdd) {
             addItem(csvReader, errorStringBuilder);
 
+          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          //acutally, there should never be the case where deletion or updates get read, since all
+          //CSV files get now compacted on Dispose. Need to detect the case here when the Dispose()
+          //did not work properly
+          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           } else if (firstLineChar==CsvConfig.LineCharDelete) {
             //delete
             int key = csvReader.ReadInt();
@@ -274,7 +269,7 @@ namespace Storage {
         }
       }
 
-      if (verify!=null && !IsCompactDuringDispose) {
+      if (verify!=null) {
         foreach (var item in this) {
           if (!verify(item)) {
             errorStringBuilder.AppendLine($"StorageDictionaryCSV<{typeof(TItemCSV).Name}>: item '{item}' could not be validated in {PathFileName}.");

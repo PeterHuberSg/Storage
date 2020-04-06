@@ -4,6 +4,8 @@ using Storage;
 
 
 namespace StorageModel  {
+
+
   /// <summary>
   /// Some SampleStateEnum comment
   /// </summary>
@@ -13,4 +15,5 @@ namespace StorageModel  {
     /// </summary>
     None,
     Some
-  }}
+  }
+}

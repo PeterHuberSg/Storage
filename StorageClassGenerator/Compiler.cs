@@ -51,7 +51,7 @@ namespace Storage {
 
     string? nameSpaceString;
     const string onlyAcceptableConsts = "should only contain properties and configuration constants for " +
-            "MaxLineLenght, AreInstancesUpdatable, AreInstancesDeletable and IsCompactDuringDispose , but not";
+            "MaxLineLenght, AreInstancesUpdatable and AreInstancesDeletable, but not";
 
 
     public void Parse(NamespaceDeclarationSyntax namespaceDeclaration, string fileName) {
@@ -76,7 +76,6 @@ namespace Storage {
         string? pluralName = className + 's';
         bool areInstancesUpdatable = true;
         bool areInstancesDeletable = true;
-        bool isCompactDuringDispose = true;
         if (classDeclaration.AttributeLists.Count==0) {
           //use the default values
         } else if (classDeclaration.AttributeLists.Count>1) {
@@ -101,7 +100,6 @@ namespace Storage {
               case "pluralName": pluralName = value[1..^1]; break;
               case "areInstancesUpdatable": areInstancesUpdatable = value=="true"; break;
               case "areInstancesDeletable": areInstancesDeletable = value=="true"; break;
-              case "isCompactDuringDispose": isCompactDuringDispose = value=="true"; break;
               default: throw new Exception();
               }
             } catch {
@@ -110,7 +108,7 @@ namespace Storage {
           }
 
         }
-        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable, isCompactDuringDispose);
+        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable);
         classes.Add(className, classInfo);
         var isPropertyWithDefaultValueFound = false;
         foreach (var classMember in classDeclaration.Members) {
@@ -154,11 +152,6 @@ namespace Storage {
           //      } else if (variableDeclarator.Identifier.Text=="AreInstancesDeletable") {
           //        if (constValue!=null) {
           //          classInfo.SetAreInstancesDeletable(bool.Parse(constValue.Token.Text));
-          //          continue;
-          //        }
-          //      } else if (variableDeclarator.Identifier.Text=="IsCompactDuringDispose") {
-          //        if (constValue!=null) {
-          //          classInfo.SetIsCompactDuringDispose(bool.Parse(constValue.Token.Text));
           //          continue;
           //        }
           //      }
@@ -529,7 +522,7 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Flushes all data to permanent storage location if permanent data storage is active. Compacts data storage");
-      streamWriter.WriteLine("    /// by applying all updates and removing all instances marked as deleted if isCompactDuringDispose==true.");
+      streamWriter.WriteLine("    /// by applying all updates and removing all instances marked as deleted.");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    public static void DisposeData() {");
       streamWriter.WriteLine("      var dataLocal = Interlocked.Exchange(ref data, null);");
@@ -574,6 +567,7 @@ namespace Storage {
       streamWriter.WriteLine($"        throw new Exception(\"Dispose old {context} before creating a new one.\");");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      isDisposed = 0;");
+      streamWriter.WriteLine("      data = this;");
       streamWriter.WriteLine("      CsvConfig = csvConfig;");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
@@ -614,8 +608,7 @@ namespace Storage {
           streamWriter.WriteLine($"          null,");
         }
         streamWriter.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
-        streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()},");
-        streamWriter.WriteLine($"          isCompactDuringDispose: {classInfo.IsCompactDuringDispose.ToString().ToLowerInvariant()});");
+        streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onConstruct();");
@@ -691,7 +684,9 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine("namespace " + nameSpaceString + " {");
       foreach (var enumInfo in enums.Values) {
-        streamWriter.Write(enumInfo.CodeLines);
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine(enumInfo.CodeLines);
       }
       streamWriter.WriteLine("}");
     }

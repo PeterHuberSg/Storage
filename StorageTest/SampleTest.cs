@@ -22,18 +22,16 @@ namespace StorageTest {
 
 
     CsvConfig? csvConfig;
-    bool isCompactDuringDispose = false;
 
 
     [TestMethod]
     public void TestSample() {
       var directoryInfo = new DirectoryInfo("TestCsv");
 
-      for (int configurationIndex = 0; configurationIndex < 3; configurationIndex++) {
+      for (int configurationIndex = 0; configurationIndex < 2; configurationIndex++) {
         switch (configurationIndex) {
-        case 0: csvConfig = null; isCompactDuringDispose = false; break;
+        case 0: csvConfig = null; break;
         case 1: csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException); break;
-        case 2: isCompactDuringDispose = true; break;
         }
         try {
           directoryInfo.Refresh();
@@ -78,7 +76,7 @@ namespace StorageTest {
 
 
     private void initDL() {
-      DL.Init(csvConfig, isCompactDuringDispose);
+      new DL(csvConfig);
     }
 
 

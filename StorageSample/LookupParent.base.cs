@@ -115,7 +115,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"LookupParent 'Class LookupParent' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"LookupParent can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.LookupParents.Add(this);

@@ -91,10 +91,12 @@ namespace StorageModel  {
     private SampleDetail(int key, CsvReader csvReader, DL context) {
       Key = key;
       Text = csvReader.ReadString();
-      if (context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
-        Sample = sample;
+      var sampleKey = csvReader.ReadInt();
+      if (context.SampleX.TryGetValue(sampleKey, out var sample)) {
+          Sample = sample;
       } else {
-        Sample = Sample.NoSample;
+        throw new Exception($"Read SampleDetail from CSV file: Cannot find Sample with key {sampleKey}." + Environment.NewLine + 
+          csvReader.PresentContent);
       }
       if (Sample!=Sample.NoSample) {
         Sample.AddToSampleDetails(this);
@@ -130,7 +132,10 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SampleDetail 'Class SampleDetail' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"SampleDetail can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+      }
+      if (Sample.Key<0) {
+        throw new Exception($"SampleDetail can not be stored in DL.Data, Sample is missing." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.SampleDetails.Add(this);

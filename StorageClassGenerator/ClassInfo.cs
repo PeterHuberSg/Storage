@@ -19,6 +19,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// When creating a child instance which is not stored yet, it should get added to its parent's children collection only
+// if the parent is not stored yet neither.
+// When updating a child instance which is not stored yet, it should get added to its parent's children collection  only
+// if the parent is not stored yet neither.
+// During store a child needs to get added to its parent, unless it is added already
+// Should there be an update() just to change the parent ? This is useful when a child was created without parent, but
+// the parent gets added before storing.
+//
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 namespace Storage {
 
@@ -34,7 +45,6 @@ namespace Storage {
     public readonly string LowerPluralName;
     public readonly bool AreInstancesUpdatable;
     public readonly bool AreInstancesDeletable;
-    public readonly bool IsCompactDuringDispose;
     public readonly Dictionary<string, MemberInfo> Members;
     public readonly HashSet<ClassInfo> ParentsAll;
     public readonly HashSet<ClassInfo> ParentsWithList;
@@ -50,8 +60,7 @@ namespace Storage {
       int? maxLineLength, 
       string pluralName, 
       bool areInstancesUpdatable, 
-      bool areInstancesDeletable, 
-      bool isCompactDuringDispose)
+      bool areInstancesDeletable)
     {
       ClassName = name;
       LowerClassName = name[0..1].ToLowerInvariant() + name[1..];
@@ -61,7 +70,6 @@ namespace Storage {
       LowerPluralName = pluralName[0..1].ToLowerInvariant() + pluralName[1..];
       AreInstancesUpdatable = areInstancesUpdatable;
       AreInstancesDeletable = areInstancesDeletable;
-      IsCompactDuringDispose = isCompactDuringDispose;
       Members = new Dictionary<string, MemberInfo>();
       ParentsAll = new HashSet<ClassInfo>();
       ParentsWithList = new HashSet<ClassInfo>();
@@ -189,11 +197,6 @@ namespace Storage {
 
     //internal void SetAreInstancesDeletable(bool areInstancesDeletable) {
     //  AreInstancesDeletable  = areInstancesDeletable.ToString().ToLowerInvariant();
-    //}
-
-
-    //internal void SetIsCompactDuringDispose(bool isCompactDuringDispose) {
-    //  IsCompactDuringDispose = isCompactDuringDispose.ToString().ToLowerInvariant();
     //}
 
 
@@ -557,11 +560,15 @@ namespace Storage {
             streamWriter.WriteLine("        }");
             streamWriter.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
-            streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine("      } else {");
-            streamWriter.WriteLine($"        {mi.MemberName} = {mi.ParentType}.No{mi.ParentType};");
-            streamWriter.WriteLine("      }");
+            streamWriter.WriteLine($"      var {mi.ParentClassInfo!.LowerClassName}Key = csvReader.ReadInt();");
+            streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}." + 
+              $"TryGetValue({mi.ParentClassInfo!.LowerClassName}Key, out var {mi.LowerMemberName})) {{");
+            streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
+            streamWriter.WriteLine($"      }} else {{");
+            streamWriter.WriteLine($"        throw new Exception($\"Read {mi.ClassInfo.ClassName} from CSV file: Cannot find " + 
+              $"{mi.MemberName} with key {{{mi.ParentClassInfo!.LowerClassName}Key}}.\" + Environment.NewLine + ");
+            streamWriter.WriteLine($"          csvReader.PresentContent);");
+            streamWriter.WriteLine($"      }}");
           }
         } else if (mi.MemberType==MemberTypeEnum.Enum) {
           streamWriter.WriteLine($"      {mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
@@ -659,9 +666,17 @@ namespace Storage {
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    public void Store() {");
       streamWriter.WriteLine("      if (Key>=0) {");
-      streamWriter.WriteLine($"        throw new Exception($\"{ClassName} '{this}' can not be stored in {context}.Data, " +
-        $"key is {{Key}} greater equal 0.\");");
+      streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored in {context}.Data, " +
+        $"key is {{Key}} greater equal 0.\" + Environment.NewLine + ToString());");
       streamWriter.WriteLine("      }");
+      foreach (var mi in Members.Values) {
+        if (mi.MemberType==MemberTypeEnum.Parent && !mi.IsLookupOnly && !mi.IsNullable) {
+          streamWriter.WriteLine($"      if ({mi.MemberName}.Key<0) {{");
+          streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored in {context}.Data, " +
+            $"{mi.MemberName} is missing.\" + Environment.NewLine + ToString());");
+          streamWriter.WriteLine("      }");
+        }
+      }
       streamWriter.WriteLine("      onStore();");
       streamWriter.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
@@ -675,7 +690,6 @@ namespace Storage {
           }
         }
       }
-
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine("    partial void onStore();");
       streamWriter.WriteLine();

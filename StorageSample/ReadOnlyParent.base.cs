@@ -117,7 +117,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ReadOnlyParent 'Class ReadOnlyParent' can not be stored in DL.Data, key is {Key} greater equal 0.");
+        throw new Exception($"ReadOnlyParent can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.ReadOnlyParents.Add(this);
