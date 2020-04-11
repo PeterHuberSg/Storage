@@ -34,17 +34,6 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Constructs the StorageDirectories for all auto generated classes
-    /// </summary>
-    /// <param name="csvConfig">null: no permanent data storage, not null: info where to store the data</param>
-    public static void Init(CsvConfig? csvConfig) {
-      if (data!=null) throw new Exception("Dispose old data first before initiating new ones.");
-
-      data = new DL(csvConfig);
-    }
-
-
-    /// <summary>
     /// Flushes all data to permanent storage location if permanent data storage is active. Compacts data storage
     /// by applying all updates and removing all instances marked as deleted.
     /// </summary>

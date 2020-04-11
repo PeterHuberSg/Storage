@@ -43,6 +43,11 @@ Unit tests for Storage
 **StorageSample**  
 The same classes like in StorageClasses, used for unit testing
 
+# Further Documentation
+See file StorageModel.cs in the project StorageModel for a description how to setup your 
+application to define the data model, generate your classes and use them from your 
+application.
+
 # Project Status
 Coding completed and tested  
 Used in one application, a second application is presently in work.

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// Todo: Improvements Storage Compiler
 // When creating a child instance which is not stored yet, it should get added to its parent's children collection only
 // if the parent is not stored yet neither.
 // When updating a child instance which is not stored yet, it should get added to its parent's children collection  only

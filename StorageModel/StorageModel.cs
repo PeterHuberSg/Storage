@@ -15,6 +15,103 @@ the Creative Commons 0 license (details see COPYING.txt file, see also
 
 This software is distributed without any warranty. 
 **************************************************************************************/
+
+
+#region Documentation
+//      -------------
+
+// Structure of this file
+// ----------------------
+//
+// The code in this file is used to auto generated classes, properties and their parent child relationships.
+//
+// Simple comments '//' will not be included in the generated files. They can be used to comment the model only.
+// XML comments '///' will be included in the generated files as comments for the classes or properties they comment.
+// #region will not be included in the generated files. They are used to navigation among the different Storage models
+//
+// using and namespace will be included in the generated files
+// #pragma are used only to prevent compiler warnings in this file
+// [StorageClass] and [StorageProperty] attributes are used for generating code
+
+// How to setup your own project
+// -----------------------------
+//
+// Create a .NET Core Console application project for your model and a .dll project for your generated code.
+// Change Program.cs to something like this:
+/*
+using System;
+using System.IO;
+namespace YourNameSpace {
+
+  class Program {
+    public static void Main(string[] _) {
+      var solutionDirectory = new DirectoryInfo(Environment.CurrentDirectory).Parent.Parent.Parent.Parent;
+      var sourceDirectoryPath = solutionDirectory.FullName + @"\Model";
+      var targetDirectoryPath = solutionDirectory.FullName + @"\DataContext";
+      new StorageClassGenerator(
+        sourceDirectoryString: sourceDirectoryPath, //directory from where the .cs files get read.
+        targetDirectoryString: targetDirectoryPath, //directory where the new .cs files get written.
+        context: "DL"); //>Name of Context class, which gives static access to all data stored.
+    }
+  }
+}
+*/
+// It defines the model project and generated code projects and then calls the StorageClassGenerator.
+// Run the console application each time you have made a change to the model
+
+// Add a .CS file following the structure of the file you read presently. A simple model could look like this:
+/*
+using System;
+using System.Collections.Generic;
+using Storage;
+
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+namespace YourNameSpace {
+
+  /// <summary>
+  /// Some comment for Parent.
+  /// </summary>
+  [StorageClass(areInstancesUpdatable:false, areInstancesDeletable: false)]
+  public class Parent {
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// List representing parent child relationship
+    /// </summary>
+    public List<Child> Children;
+  }
+
+  /// <summary>
+  /// Some comment for Child
+  /// </summary>
+  [StorageClass(pluralName: "Children")]
+  public class Child {
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+  }
+}*/
+
+// Generated Code
+// --------------
+//
+// 2 files will be created for every class Xxx: Xxx.base.cs containing the generated code as partial class and Xxx.cs
+// where you can add your own functionality. The code generator only makes a Xxx.cs when none exist. Xxx.base.cs gets
+// overwritten each time the generator runs.
+
+// One additional file gets generated as data context. It's name is defined in new StorageClassGenerator() call of the
+// Console program. Create in your application a new data context, which gives access to all classes in the model and
+// reads the persisted data from the .CSV files. Dispose it before closing your application, which ensures that all
+// changes are written to the files.
+
+#endregion
+
+
 using System;
 using System.Collections.Generic;
 using Storage;
@@ -28,7 +125,7 @@ namespace StorageModel {
 
   //Sample.SampleMaster is nullable
   //SampleDetail.Sample is NOT nullable, it is not possible to store a SampleDetail without a parent Sample
-  //shows also in Sample most data types supported
+  //shows in Sample also most data types supported
 
   /// <summary>
   /// Some SampleStateEnum comment
