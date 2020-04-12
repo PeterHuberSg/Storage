@@ -7,10 +7,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
-    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
+    /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+    /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
+    /// is nullable.
     /// </summary>
-  public partial class SortedListChild: IStorage<SortedListChild> {
+  public partial class ReadOnlyParentNullable: IStorage<ReadOnlyParentNullable> {
 
 
     #region Properties
@@ -63,23 +64,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after a readOnlyChild gets added to ReadOnlyChildren.
     /// </summary>
-    //partial void onUpdate() {
-    //}
-
-
-    /// <summary>
-    /// Called after an update is read from a CSV file
-    /// </summary>
-    //partial void onCsvUpdate() {
-    //}
-
-
-    /// <summary>
-    /// Called before removal gets executed
-    /// </summary>
-    //partial void onRemove() {
+    //partial void onAddedToReadOnlyChildren(ReadOnlyChild readOnlyChild){
     //}
 
 

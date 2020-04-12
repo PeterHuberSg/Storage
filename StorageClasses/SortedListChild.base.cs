@@ -16,7 +16,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the ParentWithSortedList.SortedListChildren
+    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
+    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
     /// </summary>
   public partial class SortedListChild: IStorage<SortedListChild> {
 
@@ -28,12 +29,6 @@ namespace StorageModel  {
     /// </summary>
     public int Key { get; private set; }
     internal static void SetKey(SortedListChild sortedListChild, int key) { sortedListChild.Key = key; }
-
-
-    /// <summary>
-    /// Parent
-    /// </summary>
-    public ParentWithSortedList ParentWithSortedList { get; private set; }
 
 
     /// <summary>
@@ -50,15 +45,27 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Parent
+    /// </summary>
+    public ParentWithSortedList ParentWithSortedList { get; private set; }
+
+
+    /// <summary>
+    /// Nullable Parent
+    /// </summary>
+    public ParentWithSortedListNullable? ParentWithSortedListNullable { get; private set; }
+
+
+    /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "ParentWithSortedList", "DateKey", "Text"};
+    internal static readonly string[] Headers = {"Key", "DateKey", "Text", "ParentWithSortedList", "ParentWithSortedListNullable"};
 
 
     /// <summary>
     /// None existing SortedListChild
     /// </summary>
-    internal static SortedListChild NoSortedListChild = new SortedListChild(ParentWithSortedList.NoParentWithSortedList, DateTime.MinValue.Date, "NoText", isStoring: false);
+    internal static SortedListChild NoSortedListChild = new SortedListChild(DateTime.MinValue.Date, "NoText", ParentWithSortedList.NoParentWithSortedList, null, isStoring: false);
     #endregion
 
 
@@ -76,14 +83,22 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// SortedListChild Constructor. If isStoring is true, adds SortedListChild to DL.Data.SortedListChildren
-    /// and adds SortedListChild to parentWithSortedList.SortedListChildren.
+    /// SortedListChild Constructor. If isStoring is true, adds SortedListChild to DL.Data.SortedListChildren, 
+    /// adds SortedListChild to parentWithSortedList.SortedListChildren
+    /// and if there is a ParentWithSortedListNullable adds SortedListChild to parentWithSortedListNullable.SortedListChildren.
     /// </summary>
-    public SortedListChild(ParentWithSortedList parentWithSortedList, DateTime dateKey, string text, bool isStoring = true) {
+    public SortedListChild(
+      DateTime dateKey, 
+      string text, 
+      ParentWithSortedList parentWithSortedList, 
+      ParentWithSortedListNullable? parentWithSortedListNullable, 
+      bool isStoring = true)
+    {
       Key = StorageExtensions.NoKey;
-      ParentWithSortedList = parentWithSortedList;
       DateKey = dateKey.Floor(Rounding.Days);
       Text = text;
+      ParentWithSortedList = parentWithSortedList;
+      ParentWithSortedListNullable = parentWithSortedListNullable;
       onConstruct();
 
       if (isStoring) {
@@ -98,6 +113,8 @@ namespace StorageModel  {
     /// </summary>
     private SortedListChild(int key, CsvReader csvReader, DL context) {
       Key = key;
+      DateKey = csvReader.ReadDate();
+      Text = csvReader.ReadString();
       var parentWithSortedListKey = csvReader.ReadInt();
       if (context.ParentsWithSortedList.TryGetValue(parentWithSortedListKey, out var parentWithSortedList)) {
           ParentWithSortedList = parentWithSortedList;
@@ -105,10 +122,19 @@ namespace StorageModel  {
         throw new Exception($"Read SortedListChild from CSV file: Cannot find ParentWithSortedList with key {parentWithSortedListKey}." + Environment.NewLine + 
           csvReader.PresentContent);
       }
-      DateKey = csvReader.ReadDate();
-      Text = csvReader.ReadString();
+      var parentWithSortedListNullableKey = csvReader.ReadIntNull();
+      if (parentWithSortedListNullableKey.HasValue) {
+        if (context.ParentsWithSortedListNullable.TryGetValue(parentWithSortedListNullableKey.Value, out var parentWithSortedListNullable)) {
+          ParentWithSortedListNullable = parentWithSortedListNullable;
+        } else {
+          ParentWithSortedListNullable = ParentWithSortedListNullable.NoParentWithSortedListNullable;
+        }
+      }
       if (ParentWithSortedList!=ParentWithSortedList.NoParentWithSortedList) {
         ParentWithSortedList.AddToSortedListChildren(this);
+      }
+      if (parentWithSortedListNullableKey.HasValue && ParentWithSortedListNullable!=ParentWithSortedListNullable.NoParentWithSortedListNullable) {
+        ParentWithSortedListNullable!.AddToSortedListChildren(this);
       }
       onCsvConstruct(context);
     }
@@ -125,9 +151,11 @@ namespace StorageModel  {
 
     /// <summary>
     /// Verify that sortedListChild.ParentWithSortedList exists.
+    /// Verify that sortedListChild.ParentWithSortedListNullable exists.
     /// </summary>
     internal static bool Verify(SortedListChild sortedListChild) {
       if (sortedListChild.ParentWithSortedList==ParentWithSortedList.NoParentWithSortedList) return false;
+      if (sortedListChild.ParentWithSortedListNullable==ParentWithSortedListNullable.NoParentWithSortedListNullable) return false;
       return true;
     }
     #endregion
@@ -137,7 +165,7 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds SortedListChild to DL.Data.SortedListChildren and ParentWithSortedList.SortedListChildren. 
+    /// Adds SortedListChild to DL.Data.SortedListChildren, ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
@@ -149,6 +177,7 @@ namespace StorageModel  {
       onStore();
       DL.Data.SortedListChildren.Add(this);
       ParentWithSortedList.AddToSortedListChildren(this);
+      ParentWithSortedListNullable?.AddToSortedListChildren(this);
     }
     partial void onStore();
 
@@ -164,11 +193,18 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(SortedListChild sortedListChild, CsvWriter csvWriter) {
       sortedListChild.onCsvWrite();
+      csvWriter.WriteDate(sortedListChild.DateKey);
+      csvWriter.Write(sortedListChild.Text);
       if (sortedListChild.ParentWithSortedList.Key<0) throw new Exception($"Cannot write sortedListChild '{sortedListChild}' to CSV File, because ParentWithSortedList is not stored in DL.Data.ParentsWithSortedList.");
 
       csvWriter.Write(sortedListChild.ParentWithSortedList.Key.ToString());
-      csvWriter.WriteDate(sortedListChild.DateKey);
-      csvWriter.Write(sortedListChild.Text);
+      if (sortedListChild.ParentWithSortedListNullable is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (sortedListChild.ParentWithSortedListNullable.Key<0) throw new Exception($"Cannot write sortedListChild '{sortedListChild}' to CSV File, because ParentWithSortedListNullable is not stored in DL.Data.ParentsWithSortedListNullable.");
+
+        csvWriter.Write(sortedListChild.ParentWithSortedListNullable.Key.ToString());
+      }
     }
     partial void onCsvWrite();
 
@@ -176,14 +212,8 @@ namespace StorageModel  {
     /// <summary>
     /// Updates SortedListChild with the provided values
     /// </summary>
-    public void Update(ParentWithSortedList parentWithSortedList, DateTime dateKey, string text) {
+    public void Update(DateTime dateKey, string text, ParentWithSortedList parentWithSortedList, ParentWithSortedListNullable? parentWithSortedListNullable) {
       var isChangeDetected = false;
-      if (ParentWithSortedList!=parentWithSortedList) {
-        ParentWithSortedList.RemoveFromSortedListChildren(this);
-        ParentWithSortedList = parentWithSortedList;
-        ParentWithSortedList.AddToSortedListChildren(this);
-        isChangeDetected = true;
-      }
       var dateKeyRounded = dateKey.Floor(Rounding.Days);
       if (DateKey!=dateKeyRounded) {
         DateKey = dateKeyRounded;
@@ -192,6 +222,34 @@ namespace StorageModel  {
       if (Text!=text) {
         Text = text;
         isChangeDetected = true;
+      }
+      if (ParentWithSortedList!=parentWithSortedList) {
+        ParentWithSortedList.RemoveFromSortedListChildren(this);
+        ParentWithSortedList = parentWithSortedList;
+        ParentWithSortedList.AddToSortedListChildren(this);
+        isChangeDetected = true;
+      }
+      if (ParentWithSortedListNullable is null) {
+        if (parentWithSortedListNullable is null) {
+          //nothing to do
+        } else {
+          ParentWithSortedListNullable = parentWithSortedListNullable;
+          ParentWithSortedListNullable.AddToSortedListChildren(this);
+          isChangeDetected = true;
+        }
+      } else {
+        if (parentWithSortedListNullable is null) {
+          ParentWithSortedListNullable.RemoveFromSortedListChildren(this);
+          ParentWithSortedListNullable = null;
+          isChangeDetected = true;
+        } else {
+          if (ParentWithSortedListNullable!=parentWithSortedListNullable) {
+            ParentWithSortedListNullable.RemoveFromSortedListChildren(this);
+            ParentWithSortedListNullable = parentWithSortedListNullable;
+            ParentWithSortedListNullable.AddToSortedListChildren(this);
+            isChangeDetected = true;
+          }
+        }
       }
       if (isChangeDetected) {
         onUpdate();
@@ -205,6 +263,8 @@ namespace StorageModel  {
     /// Updates this SortedListChild with values from CSV file
     /// </summary>
     internal static void Update(SortedListChild sortedListChild, CsvReader csvReader, DL context) {
+      sortedListChild.DateKey = csvReader.ReadDate();
+      sortedListChild.Text = csvReader.ReadString();
       if (!context.ParentsWithSortedList.TryGetValue(csvReader.ReadInt(), out var parentWithSortedList)) {
         parentWithSortedList = ParentWithSortedList.NoParentWithSortedList;
       }
@@ -215,16 +275,45 @@ namespace StorageModel  {
         sortedListChild.ParentWithSortedList = parentWithSortedList;
         sortedListChild.ParentWithSortedList.AddToSortedListChildren(sortedListChild);
       }
-      sortedListChild.DateKey = csvReader.ReadDate();
-      sortedListChild.Text = csvReader.ReadString();
+      var parentWithSortedListNullableKey = csvReader.ReadIntNull();
+      ParentWithSortedListNullable? parentWithSortedListNullable;
+      if (parentWithSortedListNullableKey is null) {
+        parentWithSortedListNullable = null;
+      } else {
+        if (!context.ParentsWithSortedListNullable.TryGetValue(parentWithSortedListNullableKey.Value, out parentWithSortedListNullable)) {
+          parentWithSortedListNullable = ParentWithSortedListNullable.NoParentWithSortedListNullable;
+        }
+      }
+      if (sortedListChild.ParentWithSortedListNullable is null) {
+        if (parentWithSortedListNullable is null) {
+          //nothing to do
+        } else {
+          sortedListChild.ParentWithSortedListNullable = parentWithSortedListNullable;
+          sortedListChild.ParentWithSortedListNullable.AddToSortedListChildren(sortedListChild);
+        }
+      } else {
+        if (parentWithSortedListNullable is null) {
+          if (sortedListChild.ParentWithSortedListNullable!=ParentWithSortedListNullable.NoParentWithSortedListNullable) {
+            sortedListChild.ParentWithSortedListNullable.RemoveFromSortedListChildren(sortedListChild);
+          }
+          sortedListChild.ParentWithSortedListNullable = null;
+        } else {
+          if (sortedListChild.ParentWithSortedListNullable!=ParentWithSortedListNullable.NoParentWithSortedListNullable) {
+            sortedListChild.ParentWithSortedListNullable.RemoveFromSortedListChildren(sortedListChild);
+          }
+          sortedListChild.ParentWithSortedListNullable = parentWithSortedListNullable;
+          sortedListChild.ParentWithSortedListNullable.AddToSortedListChildren(sortedListChild);
+        }
+      }
       sortedListChild.onCsvUpdate();
     }
     partial void onCsvUpdate();
 
 
     /// <summary>
-    /// Removes SortedListChild from DL.Data.SortedListChildren and 
-    /// disconnects SortedListChild from ParentWithSortedList because of ParentWithSortedList.
+    /// Removes SortedListChild from DL.Data.SortedListChildren, 
+    /// disconnects SortedListChild from ParentWithSortedList because of ParentWithSortedList and 
+    /// disconnects SortedListChild from ParentWithSortedListNullable because of ParentWithSortedListNullable.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -237,12 +326,26 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects SortedListChild from ParentWithSortedList because of ParentWithSortedList.
+    /// Disconnects SortedListChild from ParentWithSortedList because of ParentWithSortedList and 
+    /// disconnects SortedListChild from ParentWithSortedListNullable because of ParentWithSortedListNullable.
     /// </summary>
     internal static void Disconnect(SortedListChild sortedListChild) {
       if (sortedListChild.ParentWithSortedList!=ParentWithSortedList.NoParentWithSortedList) {
         sortedListChild.ParentWithSortedList.RemoveFromSortedListChildren(sortedListChild);
       }
+      if (sortedListChild.ParentWithSortedListNullable!=null && sortedListChild.ParentWithSortedListNullable!=ParentWithSortedListNullable.NoParentWithSortedListNullable) {
+        sortedListChild.ParentWithSortedListNullable.RemoveFromSortedListChildren(sortedListChild);
+      }
+    }
+
+
+    /// <summary>
+    /// Removes parentWithSortedListNullable from ParentWithSortedListNullable
+    /// </summary>
+    internal void RemoveParentWithSortedListNullable(ParentWithSortedListNullable parentWithSortedListNullable) {
+      if (parentWithSortedListNullable!=ParentWithSortedListNullable) throw new Exception();
+      ParentWithSortedListNullable = null;
+      HasChanged?.Invoke(this);
     }
 
 
@@ -252,9 +355,10 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {ParentWithSortedList.ToShortString()}," +
         $" {DateKey.ToShortDateString()}," +
-        $" {Text}";
+        $" {Text}," +
+        $" {ParentWithSortedList.ToShortString()}," +
+        $" {ParentWithSortedListNullable?.ToShortString()}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -267,9 +371,10 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
-        $" ParentWithSortedList: {ParentWithSortedList.ToShortString()}," +
         $" DateKey: {DateKey.ToShortDateString()}," +
-        $" Text: {Text};";
+        $" Text: {Text}," +
+        $" ParentWithSortedList: {ParentWithSortedList.ToShortString()}," +
+        $" ParentWithSortedListNullable: {ParentWithSortedListNullable?.ToShortString()};";
       onToString(ref returnString);
       return returnString;
     }

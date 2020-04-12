@@ -59,16 +59,21 @@ namespace Storage {
       Console.WriteLine($"Press 'y' 'enter' to copy the files from {targetDirectoryPath} to {sampleDirectoryPath}.");
       if (Console.ReadLine()=="y") {
         var sampleDirectory = new DirectoryInfo(sampleDirectoryPath);
+        int filesDeletedCount = 0;
         foreach (FileInfo file in sampleDirectory.GetFiles()) {
           if (file.Extension.ToLowerInvariant()==".cs" && !file.Name.StartsWith('_')) {
             file.Delete();
+            filesDeletedCount++;
           }
         }
+        int filesCopiedCount = 0;
         foreach (FileInfo file in targetDirectory.GetFiles()) {
           if (file.Extension.ToLowerInvariant()==".cs") {
             file.CopyTo(sampleDirectoryPath + @"\" + file.Name);
+            filesCopiedCount++;
           }
         }
+        Console.WriteLine($"{sampleDirectoryPath}: {filesDeletedCount} files deleted, {filesCopiedCount} files copied");
       }
       #endregion -------------------------------------------------------------------------------------
     }

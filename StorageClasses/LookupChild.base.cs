@@ -33,16 +33,19 @@ namespace StorageModel  {
     public LookupParent LookupParent { get; }
 
 
+    public LookupParentNullable? LookupParentNullable { get; }
+
+
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Number", "LookupParent"};
+    internal static readonly string[] Headers = {"Number", "LookupParent", "LookupParentNullable"};
 
 
     /// <summary>
     /// None existing LookupChild
     /// </summary>
-    internal static LookupChild NoLookupChild = new LookupChild(int.MinValue, LookupParent.NoLookupParent, isStoring: false);
+    internal static LookupChild NoLookupChild = new LookupChild(int.MinValue, LookupParent.NoLookupParent, null, isStoring: false);
     #endregion
 
 
@@ -62,13 +65,15 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// LookupChild Constructor. If isStoring is true, adds LookupChild to DL.Data.LookupChildren
-    /// and adds LookupChild to lookupParent.LookupChildren.
+    /// LookupChild Constructor. If isStoring is true, adds LookupChild to DL.Data.LookupChildren, 
+    /// adds LookupChild to lookupParent.LookupChildren
+    /// and if there is a LookupParentNullable adds LookupChild to lookupParentNullable.LookupChildren.
     /// </summary>
-    public LookupChild(int number, LookupParent lookupParent, bool isStoring = true) {
+    public LookupChild(int number, LookupParent lookupParent, LookupParentNullable? lookupParentNullable, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
       Number = number;
       LookupParent = lookupParent;
+      LookupParentNullable = lookupParentNullable;
       onConstruct();
 
       if (isStoring) {
@@ -91,6 +96,14 @@ namespace StorageModel  {
         throw new Exception($"Read LookupChild from CSV file: Cannot find LookupParent with key {lookupParentKey}." + Environment.NewLine + 
           csvReader.PresentContent);
       }
+      var lookupParentNullableKey = csvReader.ReadIntNull();
+      if (lookupParentNullableKey.HasValue) {
+        if (context.LookupParentNullables.TryGetValue(lookupParentNullableKey.Value, out var lookupParentNullable)) {
+          LookupParentNullable = lookupParentNullable;
+        } else {
+          LookupParentNullable = LookupParentNullable.NoLookupParentNullable;
+        }
+      }
       onCsvConstruct(context);
     }
     partial void onCsvConstruct(DL context);
@@ -106,9 +119,11 @@ namespace StorageModel  {
 
     /// <summary>
     /// Verify that lookupChild.LookupParent exists.
+    /// Verify that lookupChild.LookupParentNullable exists.
     /// </summary>
     internal static bool Verify(LookupChild lookupChild) {
       if (lookupChild.LookupParent==LookupParent.NoLookupParent) return false;
+      if (lookupChild.LookupParentNullable==LookupParentNullable.NoLookupParentNullable) return false;
       return true;
     }
     #endregion
@@ -145,6 +160,13 @@ namespace StorageModel  {
       if (lookupChild.LookupParent.Key<0) throw new Exception($"Cannot write lookupChild '{lookupChild}' to CSV File, because LookupParent is not stored in DL.Data.LookupParents.");
 
       csvWriter.Write(lookupChild.LookupParent.Key.ToString());
+      if (lookupChild.LookupParentNullable is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (lookupChild.LookupParentNullable.Key<0) throw new Exception($"Cannot write lookupChild '{lookupChild}' to CSV File, because LookupParentNullable is not stored in DL.Data.LookupParentNullables.");
+
+        csvWriter.Write(lookupChild.LookupParentNullable.Key.ToString());
+      }
     }
     partial void onCsvWrite();
 
@@ -164,7 +186,8 @@ namespace StorageModel  {
       var returnString =
         $"{Key.ToKeyString()}," +
         $" {Number}," +
-        $" {LookupParent.ToShortString()}";
+        $" {LookupParent.ToShortString()}," +
+        $" {LookupParentNullable?.ToShortString()}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -178,7 +201,8 @@ namespace StorageModel  {
       var returnString =
         $"Key: {Key}," +
         $" Number: {Number}," +
-        $" LookupParent: {LookupParent.ToShortString()};";
+        $" LookupParent: {LookupParent.ToShortString()}," +
+        $" LookupParentNullable: {LookupParentNullable?.ToShortString()};";
       onToString(ref returnString);
       return returnString;
     }

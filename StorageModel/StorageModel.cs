@@ -284,11 +284,22 @@ namespace StorageModel {
   //scenario, the parent can never be deleted.
 
   /// <summary>
-  /// Parent of children who uses lookup, i.e. parent has no children collection
+  /// Parent of children who use lookup, i.e. parent has no children collection
   /// </summary>
   [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
   public class LookupParent {
-    public DateTime Date;
+    public Date Date;
+    public Decimal2 SomeValue;
+  }
+
+
+  /// <summary>
+  /// Parent of children who use lookup, i.e. parent has no children collection,  where the child's 
+  /// parent property is nullable.
+  /// </summary>
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: true)]
+  public class LookupParentNullable {
+    public Date Date;
     public Decimal2 SomeValue;
   }
 
@@ -298,6 +309,8 @@ namespace StorageModel {
     public int Number;
     [StorageProperty(isLookupOnly: true)] //parent LookupParent does not have a collection for LookupChild
     public LookupParent LookupParent;
+    [StorageProperty(isLookupOnly: true)] //parent LookupParentNullable does not have a collection for LookupChild
+    public LookupParentNullable? LookupParentNullable;
   }
   #endregion
 
@@ -309,7 +322,7 @@ namespace StorageModel {
   //can be used as Key for the Dictionary. 
 
   /// <summary>
-  /// Example of a Parent child relationship using a Dictionary.
+  /// Example of a parent child relationship using a Dictionary.
   /// </summary>
   [StorageClass(pluralName: "ParentsWithDictionary")]
   public class ParentWithDictionary {
@@ -328,17 +341,33 @@ namespace StorageModel {
 
 
   /// <summary>
-  /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
+  /// Example of a parent child relationship using a Dictionary where the child's parent property is nullable.
+  /// </summary>
+  [StorageClass(pluralName: "ParentsWithDictionaryNullable")]
+  public class ParentWithDictionaryNullable {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Dictionary used instead of List. Comment is required and indicates which property of the DictionaryChild to 
+    /// use as key
+    /// </summary>
+    public Dictionary<Date /*DateKey*/, DictionaryChild> DictionaryChildren;
+  }
+
+
+  /// <summary>
+  /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the 
+  /// ParentWithDictionary.DictionaryChildren and ParentWithDictionaryNullable.DictionaryChildren
   /// </summary>
   [StorageClass(pluralName: "DictionaryChildren")]
   public class DictionaryChild {
     /// <summary>
-    /// Parent
-    /// </summary>
-    public ParentWithDictionary ParentWithDictionary;
-
-    /// <summary>
-    /// Key field used in ParentWithDictionary.DictionaryChildren Dictionary
+    /// Key field used in ParentWithDictionary.DictionaryChildren and 
+    /// ParentWithDictionaryNullable.DictionaryChildrenDictionary
     /// </summary>
     public Date DateKey;
 
@@ -346,6 +375,16 @@ namespace StorageModel {
     /// Some info
     /// </summary>
     public string Text;
+
+    /// <summary>
+    /// Parent
+    /// </summary>
+    public ParentWithDictionary ParentWithDictionary;
+
+    /// <summary>
+    /// Nullable parent
+    /// </summary>
+    public ParentWithDictionaryNullable? ParentWithDictionaryNullable;
   }
   #endregion
 
@@ -362,7 +401,7 @@ namespace StorageModel {
   //item = sortedList[key];
 
   /// <summary>
-  /// Example of a Parent child relationship using a SortedList.
+  /// Example of a parent child relationship using a SortedList.
   /// </summary>
   [StorageClass(pluralName: "ParentsWithSortedList")]
   public class ParentWithSortedList {
@@ -386,15 +425,35 @@ namespace StorageModel {
 
 
   /// <summary>
-  /// SortedListChild has a member providing the key value needed to add SortedListChild to the ParentWithSortedList.SortedListChildren
+  /// Example of a parent child relationship using a SortedList where the child's parent property is nullable.
+  /// </summary>
+  [StorageClass(pluralName: "ParentsWithSortedListNullable")]
+  public class ParentWithSortedListNullable {
+
+    /// <summary>
+    /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
+    /// </summary>
+    public readonly string TextReadOnly;
+
+    /// <summary>
+    /// This text can be updated
+    /// </summary>
+    public string TextUpdateable;
+
+    /// <summary>
+    /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
+    /// use as key
+    /// </summary>
+    public SortedList<Date /*DateKey*/, SortedListChild> SortedListChildren;
+  }
+
+
+  /// <summary>
+  /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
+  /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
   /// </summary>
   [StorageClass(pluralName: "SortedListChildren")]
   public class SortedListChild {
-    /// <summary>
-    /// Parent
-    /// </summary>
-    public ParentWithSortedList ParentWithSortedList;
-
     /// <summary>
     /// Key field used in ParentWithSortedList.SortedListChildren SortedList
     /// </summary>
@@ -404,6 +463,16 @@ namespace StorageModel {
     /// Some info
     /// </summary>
     public string Text;
+
+    /// <summary>
+    /// Parent
+    /// </summary>
+    public ParentWithSortedList ParentWithSortedList;
+
+    /// <summary>
+    /// Nullable Parent
+    /// </summary>
+    public ParentWithSortedListNullable? ParentWithSortedListNullable;
   }
   #endregion
 
@@ -434,21 +503,68 @@ namespace StorageModel {
 
 
   /// <summary>
+  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
+  /// is nullable.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
+  public class ReadOnlyParentNullable {
+
+    /// <summary>
+    /// Readonly Text, because class is not updatable
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// List of children
+    /// </summary>
+    public List<ReadOnlyChild> ReadOnlyChildren;
+  }
+
+
+  /// <summary>
   /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
   /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
   /// either.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, pluralName: "ReadOnlyChildren")]
   public class ReadOnlyChild {
+
+    /// <summary>
+    /// Readonly Text, because class is not updatable
+    /// </summary>
+    public string Text;
+
     /// <summary>
     /// Parent
     /// </summary>
     public ReadOnlyParent ReadOnlyParent;
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Parent
+    /// </summary>          
+    public ReadOnlyParentNullable? ReadOnlyParentNullable;
+  }
+  #endregion
+
+
+  #region Private Constructor
+  //      -------------------
+
+  // Example where constructor is private instead of public. This is convenient when another public constructor
+  // is defined in Xxx.cs, additional to the private constructor in Xxx.base.cs, which is now hidden.
+
+  /// <summary>
+  /// Example with private constructor.
+  /// </summary>
+  [StorageClass(isConstructorPrivate: true)]
+  public class PrivateConstructor {
+
+    /// <summary>
+    /// Some Text
     /// </summary>
     public string Text;
   }
   #endregion
+
 }

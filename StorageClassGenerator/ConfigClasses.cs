@@ -33,11 +33,13 @@ namespace Storage {
     /// <param name="pluralName">used if class name has an irregular plural. Example: Activity => Activities</param>
     /// <param name="areInstancesUpdatable">Can the properties of the class change ?</param>
     /// <param name="areInstancesDeletable">Can class instance be deleted from StorageDirectory ?</param>
+    /// <param name="isConstructorPrivate">Should constructor be private instead of public ?</param>
     public StorageClassAttribute(
       int maxLineLength = 0,
       string? pluralName = null,
       bool areInstancesUpdatable = true,
-      bool areInstancesDeletable = true) { }
+      bool areInstancesDeletable = true,
+      bool isConstructorPrivate = false) { }
   }
 
 

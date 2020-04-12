@@ -13,6 +13,7 @@ namespace StorageTest {
   public class ReadOnlyTest {
     CsvConfig? csvConfig;
     readonly Dictionary<int, string> expectedParents = new Dictionary<int, string>();
+    readonly Dictionary<int, string> expectedParentsNullable = new Dictionary<int, string>();
     readonly Dictionary<int, string> expectedChildren= new Dictionary<int, string>();
 
 
@@ -50,7 +51,7 @@ namespace StorageTest {
 
 
     private void initDL() {
-      DL.Init(csvConfig);
+      new DL(csvConfig);
     }
 
 
@@ -70,13 +71,16 @@ namespace StorageTest {
     private void addParent(string someText) {
       var newReadOnlyParent = new ReadOnlyParent(someText, isStoring: true);
       expectedParents.Add(newReadOnlyParent.Key, newReadOnlyParent.ToString());
+      var newReadOnlyParenNullablet = new ReadOnlyParentNullable(someText, isStoring: true);
+      expectedParentsNullable.Add(newReadOnlyParenNullablet.Key, newReadOnlyParenNullablet.ToString());
       assertData();
     }
 
 
     private void addChild(int parentKey, string text) {
       var parentDictionary = DL.Data.ReadOnlyParents[parentKey];
-      var newChild = new ReadOnlyChild(parentDictionary, text, isStoring: true);
+      var parentDictionaryNullable = DL.Data.ReadOnlyParentNullables[parentKey];
+      var newChild = new ReadOnlyChild(text, parentDictionary, parentDictionaryNullable, isStoring: true);
       expectedChildren.Add(newChild.Key, newChild.ToString());
       expectedParents[parentDictionary.Key] = parentDictionary.ToString();
       assertData();

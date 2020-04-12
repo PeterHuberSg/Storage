@@ -7,10 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
-    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
+    /// Parent of children who use lookup, i.e. parent has no children collection,  where the child's 
+    /// parent property is nullable.
     /// </summary>
-  public partial class SortedListChild: IStorage<SortedListChild> {
+  public partial class LookupParentNullable: IStorage<LookupParentNullable> {
 
 
     #region Properties
@@ -59,20 +59,6 @@ namespace StorageModel  {
     /// Called before the data gets written to a CSV file
     /// </summary>
     //partial void onCsvWrite() {
-    //}
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    //partial void onUpdate() {
-    //}
-
-
-    /// <summary>
-    /// Called after an update is read from a CSV file
-    /// </summary>
-    //partial void onCsvUpdate() {
     //}
 
 

@@ -16,7 +16,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a Parent child relationship using a Dictionary.
+    /// Example of a parent child relationship using a Dictionary.
     /// </summary>
   public partial class ParentWithDictionary: IStorage<ParentWithDictionary> {
 

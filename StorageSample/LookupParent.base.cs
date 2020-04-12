@@ -16,7 +16,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Parent of children who uses lookup, i.e. parent has no children collection
+    /// Parent of children who use lookup, i.e. parent has no children collection
     /// </summary>
   public partial class LookupParent: IStorage<LookupParent> {
 
@@ -31,7 +31,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Stores date and time with tick precision.
+    /// Stores only dates but no times.
     ///  </summary>
     public DateTime Date { get; }
 
@@ -51,7 +51,7 @@ namespace StorageModel  {
     /// <summary>
     /// None existing LookupParent
     /// </summary>
-    internal static LookupParent NoLookupParent = new LookupParent(DateTime.MinValue, Decimal.MinValue, isStoring: false);
+    internal static LookupParent NoLookupParent = new LookupParent(DateTime.MinValue.Date, Decimal.MinValue, isStoring: false);
     #endregion
 
 
@@ -75,7 +75,7 @@ namespace StorageModel  {
     /// </summary>
     public LookupParent(DateTime date, decimal someValue, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
-      Date = date;
+      Date = date.Floor(Rounding.Days);
       SomeValue = someValue.Round(2);
       onConstruct();
 
@@ -91,7 +91,7 @@ namespace StorageModel  {
     /// </summary>
     private LookupParent(int key, CsvReader csvReader, DL context) {
       Key = key;
-      Date = csvReader.ReadDateTimeTicks();
+      Date = csvReader.ReadDate();
       SomeValue = csvReader.ReadDecimal();
       onCsvConstruct(context);
     }
@@ -126,7 +126,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write LookupParent to CSV file
     /// </summary>
-    internal const int MaxLineLength = 32;
+    internal const int MaxLineLength = 23;
 
 
     /// <summary>
@@ -134,7 +134,7 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(LookupParent lookupParent, CsvWriter csvWriter) {
       lookupParent.onCsvWrite();
-      csvWriter.WriteDateTimeTicks(lookupParent.Date);
+      csvWriter.WriteDate(lookupParent.Date);
       csvWriter.WriteDecimal2(lookupParent.SomeValue);
     }
     partial void onCsvWrite();
@@ -154,7 +154,7 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {Date}," +
+        $" {Date.ToShortDateString()}," +
         $" {SomeValue}";
       onToShortString(ref returnString);
       return returnString;
@@ -168,7 +168,7 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
-        $" Date: {Date}," +
+        $" Date: {Date.ToShortDateString()}," +
         $" SomeValue: {SomeValue};";
       onToString(ref returnString);
       return returnString;

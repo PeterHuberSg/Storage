@@ -7,7 +7,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the ParentWithSortedList.SortedListChildren
+    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
+    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
     /// </summary>
   public partial class SortedListChild: IStorage<SortedListChild> {
 

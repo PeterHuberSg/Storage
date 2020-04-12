@@ -7,7 +7,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
+    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the 
+    /// ParentWithDictionary.DictionaryChildren and ParentWithDictionaryNullable.DictionaryChildren
     /// </summary>
   public partial class DictionaryChild: IStorage<DictionaryChild> {
 

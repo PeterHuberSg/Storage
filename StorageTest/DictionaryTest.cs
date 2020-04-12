@@ -14,6 +14,7 @@ namespace StorageTest {
 
     CsvConfig? csvConfig;
     readonly Dictionary<int, string> expectedParentDictionary = new Dictionary<int, string>();
+    readonly Dictionary<int, string> expectedParentNullableDictionary = new Dictionary<int, string>();
     readonly Dictionary<int, string> expectedDictionaryChild= new Dictionary<int, string>();
 
 
@@ -40,9 +41,13 @@ namespace StorageTest {
         addDictionaryChild(1, now, "21");
         addDictionaryChild(1, now.AddDays(1), "22");
 
-        removeParentDictionary(0);
+        //////////////////////////////////////////////////////////////////////////////////////////
+        // Todo: Update DictionaryTest like SortedDirectory
+        //////////////////////////////////////////////////////////////////////////////////////////
 
-        removeDictionaryChild(1);
+        //removeParentDictionary(0);
+
+        //removeDictionaryChild(1);
 
       } finally {
         DL.DisposeData();
@@ -57,7 +62,7 @@ namespace StorageTest {
 
 
     private void initDL() {
-      DL.Init(csvConfig);
+      new DL(csvConfig);
     }
 
 
@@ -65,6 +70,11 @@ namespace StorageTest {
       Assert.AreEqual(expectedParentDictionary.Count, DL.Data.ParentsWithDictionary.Count);
       foreach (var parentDictionary in DL.Data.ParentsWithDictionary) {
         Assert.AreEqual(expectedParentDictionary[parentDictionary.Key], parentDictionary.ToString());
+      }
+
+      Assert.AreEqual(expectedParentNullableDictionary.Count, DL.Data.ParentsWithDictionaryNullable.Count);
+      foreach (var parentDictionaryNullable in DL.Data.ParentsWithDictionaryNullable) {
+        Assert.AreEqual(expectedParentDictionary[parentDictionaryNullable.Key], parentDictionaryNullable.ToString());
       }
 
       Assert.AreEqual(expectedDictionaryChild.Count, DL.Data.DictionaryChildren.Count);
@@ -77,15 +87,19 @@ namespace StorageTest {
     private void addParentDictionary(string someText) {
       var newParentDictionary = new ParentWithDictionary(someText, isStoring: true);
       expectedParentDictionary.Add(newParentDictionary.Key, newParentDictionary.ToString());
+      var newParentDictionaryNullable = new ParentWithDictionaryNullable(someText, isStoring: true);
+      expectedParentNullableDictionary.Add(newParentDictionaryNullable.Key, newParentDictionaryNullable.ToString());
       assertData();
     }
 
 
     private void addDictionaryChild(int parentDictionaryKey, DateTime date, string text) {
       var parentDictionary = DL.Data.ParentsWithDictionary[parentDictionaryKey];
-      var newDictionaryChild = new DictionaryChild(parentDictionary, date, text, isStoring: true);
+      var parentDictionaryNullable = DL.Data.ParentsWithDictionaryNullable[parentDictionaryKey];
+      var newDictionaryChild = new DictionaryChild(date, text, parentDictionary, parentDictionaryNullable, isStoring: true);
       expectedDictionaryChild.Add(newDictionaryChild.Key, newDictionaryChild.ToString());
       expectedParentDictionary[parentDictionary.Key] = parentDictionary.ToString();
+      expectedParentNullableDictionary[parentDictionaryNullable.Key] = parentDictionaryNullable.ToString();
       assertData();
     }
 
@@ -105,8 +119,10 @@ namespace StorageTest {
       var child = DL.Data.DictionaryChildren[dictionaryChildKey];
       expectedDictionaryChild.Remove(child.Key);
       var parentDictionary = child.ParentWithDictionary;
+      var parentDictionaryNullable = child.ParentWithDictionaryNullable;
       child.Remove();
       expectedParentDictionary[parentDictionary.Key] = parentDictionary.ToString();
+      expectedParentNullableDictionary[parentDictionaryNullable!.Key] = parentDictionaryNullable.ToString();
       assertData();
     }
 

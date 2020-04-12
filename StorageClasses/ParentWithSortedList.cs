@@ -7,7 +7,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a Parent child relationship using a SortedList.
+    /// Example of a parent child relationship using a SortedList.
     /// </summary>
   public partial class ParentWithSortedList: IStorage<ParentWithSortedList> {
 

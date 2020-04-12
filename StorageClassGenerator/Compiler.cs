@@ -76,6 +76,7 @@ namespace Storage {
         string? pluralName = className + 's';
         bool areInstancesUpdatable = true;
         bool areInstancesDeletable = true;
+        bool isConstructorPrivate = false;
         if (classDeclaration.AttributeLists.Count==0) {
           //use the default values
         } else if (classDeclaration.AttributeLists.Count>1) {
@@ -100,6 +101,7 @@ namespace Storage {
               case "pluralName": pluralName = value[1..^1]; break;
               case "areInstancesUpdatable": areInstancesUpdatable = value=="true"; break;
               case "areInstancesDeletable": areInstancesDeletable = value=="true"; break;
+              case "isConstructorPrivate": isConstructorPrivate = value=="true"; break;
               default: throw new Exception();
               }
             } catch {
@@ -108,7 +110,7 @@ namespace Storage {
           }
 
         }
-        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable);
+        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable, isConstructorPrivate);
         classes.Add(className, classInfo);
         var isPropertyWithDefaultValueFound = false;
         foreach (var classMember in classDeclaration.Members) {
@@ -375,9 +377,15 @@ namespace Storage {
               }
             }
             if (!isFound) {
-              //guarantee that there is a property linking to the parent for each child class.
-              throw new GeneratorException($"{ci} '{mi}': has a List<{mi.ChildTypeName}>. The corresponding " +
-                $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
+              if (mi.CollectionType==CollectionTypeEnum.SortedList) {
+                //guarantee that there is a property linking to the parent for each child class.
+                throw new GeneratorException($"{ci} '{mi}': has a SortedList<{mi.ChildTypeName}>. The corresponding " +
+                  $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
+              } else {
+                //guarantee that there is a property linking to the parent for each child class.
+                throw new GeneratorException($"{ci} '{mi}': has a Dictionary<{mi.ChildTypeName}>. The corresponding " +
+                  $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
+              }
             }
             if (!isKeyFound) {
               if (mi.CollectionType==CollectionTypeEnum.SortedList) {
@@ -574,7 +582,7 @@ namespace Storage {
         streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionary<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
-        if (classInfo.AreInstancesDeletable) {
+        if (classInfo.AreInstancesDeletable && classInfo.IsDisconnectNeeded) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
         } else {
           streamWriter.WriteLine($"          null,");
@@ -602,7 +610,7 @@ namespace Storage {
           streamWriter.WriteLine($"          null,");
         }
         streamWriter.WriteLine($"          {classInfo.ClassName}.Write,");
-        if (classInfo.AreInstancesDeletable) {
+        if (classInfo.AreInstancesDeletable && classInfo.IsDisconnectNeeded) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Disconnect,");
         } else {
           streamWriter.WriteLine($"          null,");

@@ -7,10 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
-    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
+    /// Example of a parent child relationship using a Dictionary where the child's parent property is nullable.
     /// </summary>
-  public partial class SortedListChild: IStorage<SortedListChild> {
+  public partial class ParentWithDictionaryNullable: IStorage<ParentWithDictionaryNullable> {
 
 
     #region Properties
@@ -80,6 +79,20 @@ namespace StorageModel  {
     /// Called before removal gets executed
     /// </summary>
     //partial void onRemove() {
+    //}
+
+
+    /// <summary>
+    /// Called after a dictionaryChild gets added to DictionaryChildren.
+    /// </summary>
+    //partial void onAddedToDictionaryChildren(DictionaryChild dictionaryChild){
+    //}
+
+
+    /// <summary>
+    /// Called after a dictionaryChild gets removed from DictionaryChildren.
+    /// </summary>
+    //partial void onRemovedFromDictionaryChildren(DictionaryChild dictionaryChild){
     //}
 
 

@@ -16,7 +16,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the ParentWithDictionary.DictionaryChildren
+    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the 
+    /// ParentWithDictionary.DictionaryChildren and ParentWithDictionaryNullable.DictionaryChildren
     /// </summary>
   public partial class DictionaryChild: IStorage<DictionaryChild> {
 
@@ -31,13 +32,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Parent
-    /// </summary>
-    public ParentWithDictionary ParentWithDictionary { get; private set; }
-
-
-    /// <summary>
-    /// Key field used in ParentWithDictionary.DictionaryChildren Dictionary
+    /// Key field used in ParentWithDictionary.DictionaryChildren and 
+    /// ParentWithDictionaryNullable.DictionaryChildrenDictionary
     /// Stores only dates but no times.
     /// </summary>
     public DateTime DateKey { get; private set; }
@@ -50,15 +46,27 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Parent
+    /// </summary>
+    public ParentWithDictionary ParentWithDictionary { get; private set; }
+
+
+    /// <summary>
+    /// Nullable parent
+    /// </summary>
+    public ParentWithDictionaryNullable? ParentWithDictionaryNullable { get; private set; }
+
+
+    /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Key", "ParentWithDictionary", "DateKey", "Text"};
+    internal static readonly string[] Headers = {"Key", "DateKey", "Text", "ParentWithDictionary", "ParentWithDictionaryNullable"};
 
 
     /// <summary>
     /// None existing DictionaryChild
     /// </summary>
-    internal static DictionaryChild NoDictionaryChild = new DictionaryChild(ParentWithDictionary.NoParentWithDictionary, DateTime.MinValue.Date, "NoText", isStoring: false);
+    internal static DictionaryChild NoDictionaryChild = new DictionaryChild(DateTime.MinValue.Date, "NoText", ParentWithDictionary.NoParentWithDictionary, null, isStoring: false);
     #endregion
 
 
@@ -76,14 +84,22 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// DictionaryChild Constructor. If isStoring is true, adds DictionaryChild to DL.Data.DictionaryChildren
-    /// and adds DictionaryChild to parentWithDictionary.DictionaryChildren.
+    /// DictionaryChild Constructor. If isStoring is true, adds DictionaryChild to DL.Data.DictionaryChildren, 
+    /// adds DictionaryChild to parentWithDictionary.DictionaryChildren
+    /// and if there is a ParentWithDictionaryNullable adds DictionaryChild to parentWithDictionaryNullable.DictionaryChildren.
     /// </summary>
-    public DictionaryChild(ParentWithDictionary parentWithDictionary, DateTime dateKey, string text, bool isStoring = true) {
+    public DictionaryChild(
+      DateTime dateKey, 
+      string text, 
+      ParentWithDictionary parentWithDictionary, 
+      ParentWithDictionaryNullable? parentWithDictionaryNullable, 
+      bool isStoring = true)
+    {
       Key = StorageExtensions.NoKey;
-      ParentWithDictionary = parentWithDictionary;
       DateKey = dateKey.Floor(Rounding.Days);
       Text = text;
+      ParentWithDictionary = parentWithDictionary;
+      ParentWithDictionaryNullable = parentWithDictionaryNullable;
       onConstruct();
 
       if (isStoring) {
@@ -98,6 +114,8 @@ namespace StorageModel  {
     /// </summary>
     private DictionaryChild(int key, CsvReader csvReader, DL context) {
       Key = key;
+      DateKey = csvReader.ReadDate();
+      Text = csvReader.ReadString();
       var parentWithDictionaryKey = csvReader.ReadInt();
       if (context.ParentsWithDictionary.TryGetValue(parentWithDictionaryKey, out var parentWithDictionary)) {
           ParentWithDictionary = parentWithDictionary;
@@ -105,10 +123,19 @@ namespace StorageModel  {
         throw new Exception($"Read DictionaryChild from CSV file: Cannot find ParentWithDictionary with key {parentWithDictionaryKey}." + Environment.NewLine + 
           csvReader.PresentContent);
       }
-      DateKey = csvReader.ReadDate();
-      Text = csvReader.ReadString();
+      var parentWithDictionaryNullableKey = csvReader.ReadIntNull();
+      if (parentWithDictionaryNullableKey.HasValue) {
+        if (context.ParentsWithDictionaryNullable.TryGetValue(parentWithDictionaryNullableKey.Value, out var parentWithDictionaryNullable)) {
+          ParentWithDictionaryNullable = parentWithDictionaryNullable;
+        } else {
+          ParentWithDictionaryNullable = ParentWithDictionaryNullable.NoParentWithDictionaryNullable;
+        }
+      }
       if (ParentWithDictionary!=ParentWithDictionary.NoParentWithDictionary) {
         ParentWithDictionary.AddToDictionaryChildren(this);
+      }
+      if (parentWithDictionaryNullableKey.HasValue && ParentWithDictionaryNullable!=ParentWithDictionaryNullable.NoParentWithDictionaryNullable) {
+        ParentWithDictionaryNullable!.AddToDictionaryChildren(this);
       }
       onCsvConstruct(context);
     }
@@ -125,9 +152,11 @@ namespace StorageModel  {
 
     /// <summary>
     /// Verify that dictionaryChild.ParentWithDictionary exists.
+    /// Verify that dictionaryChild.ParentWithDictionaryNullable exists.
     /// </summary>
     internal static bool Verify(DictionaryChild dictionaryChild) {
       if (dictionaryChild.ParentWithDictionary==ParentWithDictionary.NoParentWithDictionary) return false;
+      if (dictionaryChild.ParentWithDictionaryNullable==ParentWithDictionaryNullable.NoParentWithDictionaryNullable) return false;
       return true;
     }
     #endregion
@@ -137,7 +166,7 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds DictionaryChild to DL.Data.DictionaryChildren and ParentWithDictionary.DictionaryChildren. 
+    /// Adds DictionaryChild to DL.Data.DictionaryChildren, ParentWithDictionary.DictionaryChildren and ParentWithDictionaryNullable.DictionaryChildren. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
@@ -149,6 +178,7 @@ namespace StorageModel  {
       onStore();
       DL.Data.DictionaryChildren.Add(this);
       ParentWithDictionary.AddToDictionaryChildren(this);
+      ParentWithDictionaryNullable?.AddToDictionaryChildren(this);
     }
     partial void onStore();
 
@@ -164,11 +194,18 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(DictionaryChild dictionaryChild, CsvWriter csvWriter) {
       dictionaryChild.onCsvWrite();
+      csvWriter.WriteDate(dictionaryChild.DateKey);
+      csvWriter.Write(dictionaryChild.Text);
       if (dictionaryChild.ParentWithDictionary.Key<0) throw new Exception($"Cannot write dictionaryChild '{dictionaryChild}' to CSV File, because ParentWithDictionary is not stored in DL.Data.ParentsWithDictionary.");
 
       csvWriter.Write(dictionaryChild.ParentWithDictionary.Key.ToString());
-      csvWriter.WriteDate(dictionaryChild.DateKey);
-      csvWriter.Write(dictionaryChild.Text);
+      if (dictionaryChild.ParentWithDictionaryNullable is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (dictionaryChild.ParentWithDictionaryNullable.Key<0) throw new Exception($"Cannot write dictionaryChild '{dictionaryChild}' to CSV File, because ParentWithDictionaryNullable is not stored in DL.Data.ParentsWithDictionaryNullable.");
+
+        csvWriter.Write(dictionaryChild.ParentWithDictionaryNullable.Key.ToString());
+      }
     }
     partial void onCsvWrite();
 
@@ -176,14 +213,8 @@ namespace StorageModel  {
     /// <summary>
     /// Updates DictionaryChild with the provided values
     /// </summary>
-    public void Update(ParentWithDictionary parentWithDictionary, DateTime dateKey, string text) {
+    public void Update(DateTime dateKey, string text, ParentWithDictionary parentWithDictionary, ParentWithDictionaryNullable? parentWithDictionaryNullable) {
       var isChangeDetected = false;
-      if (ParentWithDictionary!=parentWithDictionary) {
-        ParentWithDictionary.RemoveFromDictionaryChildren(this);
-        ParentWithDictionary = parentWithDictionary;
-        ParentWithDictionary.AddToDictionaryChildren(this);
-        isChangeDetected = true;
-      }
       var dateKeyRounded = dateKey.Floor(Rounding.Days);
       if (DateKey!=dateKeyRounded) {
         DateKey = dateKeyRounded;
@@ -192,6 +223,34 @@ namespace StorageModel  {
       if (Text!=text) {
         Text = text;
         isChangeDetected = true;
+      }
+      if (ParentWithDictionary!=parentWithDictionary) {
+        ParentWithDictionary.RemoveFromDictionaryChildren(this);
+        ParentWithDictionary = parentWithDictionary;
+        ParentWithDictionary.AddToDictionaryChildren(this);
+        isChangeDetected = true;
+      }
+      if (ParentWithDictionaryNullable is null) {
+        if (parentWithDictionaryNullable is null) {
+          //nothing to do
+        } else {
+          ParentWithDictionaryNullable = parentWithDictionaryNullable;
+          ParentWithDictionaryNullable.AddToDictionaryChildren(this);
+          isChangeDetected = true;
+        }
+      } else {
+        if (parentWithDictionaryNullable is null) {
+          ParentWithDictionaryNullable.RemoveFromDictionaryChildren(this);
+          ParentWithDictionaryNullable = null;
+          isChangeDetected = true;
+        } else {
+          if (ParentWithDictionaryNullable!=parentWithDictionaryNullable) {
+            ParentWithDictionaryNullable.RemoveFromDictionaryChildren(this);
+            ParentWithDictionaryNullable = parentWithDictionaryNullable;
+            ParentWithDictionaryNullable.AddToDictionaryChildren(this);
+            isChangeDetected = true;
+          }
+        }
       }
       if (isChangeDetected) {
         onUpdate();
@@ -205,6 +264,8 @@ namespace StorageModel  {
     /// Updates this DictionaryChild with values from CSV file
     /// </summary>
     internal static void Update(DictionaryChild dictionaryChild, CsvReader csvReader, DL context) {
+      dictionaryChild.DateKey = csvReader.ReadDate();
+      dictionaryChild.Text = csvReader.ReadString();
       if (!context.ParentsWithDictionary.TryGetValue(csvReader.ReadInt(), out var parentWithDictionary)) {
         parentWithDictionary = ParentWithDictionary.NoParentWithDictionary;
       }
@@ -215,16 +276,45 @@ namespace StorageModel  {
         dictionaryChild.ParentWithDictionary = parentWithDictionary;
         dictionaryChild.ParentWithDictionary.AddToDictionaryChildren(dictionaryChild);
       }
-      dictionaryChild.DateKey = csvReader.ReadDate();
-      dictionaryChild.Text = csvReader.ReadString();
+      var parentWithDictionaryNullableKey = csvReader.ReadIntNull();
+      ParentWithDictionaryNullable? parentWithDictionaryNullable;
+      if (parentWithDictionaryNullableKey is null) {
+        parentWithDictionaryNullable = null;
+      } else {
+        if (!context.ParentsWithDictionaryNullable.TryGetValue(parentWithDictionaryNullableKey.Value, out parentWithDictionaryNullable)) {
+          parentWithDictionaryNullable = ParentWithDictionaryNullable.NoParentWithDictionaryNullable;
+        }
+      }
+      if (dictionaryChild.ParentWithDictionaryNullable is null) {
+        if (parentWithDictionaryNullable is null) {
+          //nothing to do
+        } else {
+          dictionaryChild.ParentWithDictionaryNullable = parentWithDictionaryNullable;
+          dictionaryChild.ParentWithDictionaryNullable.AddToDictionaryChildren(dictionaryChild);
+        }
+      } else {
+        if (parentWithDictionaryNullable is null) {
+          if (dictionaryChild.ParentWithDictionaryNullable!=ParentWithDictionaryNullable.NoParentWithDictionaryNullable) {
+            dictionaryChild.ParentWithDictionaryNullable.RemoveFromDictionaryChildren(dictionaryChild);
+          }
+          dictionaryChild.ParentWithDictionaryNullable = null;
+        } else {
+          if (dictionaryChild.ParentWithDictionaryNullable!=ParentWithDictionaryNullable.NoParentWithDictionaryNullable) {
+            dictionaryChild.ParentWithDictionaryNullable.RemoveFromDictionaryChildren(dictionaryChild);
+          }
+          dictionaryChild.ParentWithDictionaryNullable = parentWithDictionaryNullable;
+          dictionaryChild.ParentWithDictionaryNullable.AddToDictionaryChildren(dictionaryChild);
+        }
+      }
       dictionaryChild.onCsvUpdate();
     }
     partial void onCsvUpdate();
 
 
     /// <summary>
-    /// Removes DictionaryChild from DL.Data.DictionaryChildren and 
-    /// disconnects DictionaryChild from ParentWithDictionary because of ParentWithDictionary.
+    /// Removes DictionaryChild from DL.Data.DictionaryChildren, 
+    /// disconnects DictionaryChild from ParentWithDictionary because of ParentWithDictionary and 
+    /// disconnects DictionaryChild from ParentWithDictionaryNullable because of ParentWithDictionaryNullable.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -237,12 +327,26 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects DictionaryChild from ParentWithDictionary because of ParentWithDictionary.
+    /// Disconnects DictionaryChild from ParentWithDictionary because of ParentWithDictionary and 
+    /// disconnects DictionaryChild from ParentWithDictionaryNullable because of ParentWithDictionaryNullable.
     /// </summary>
     internal static void Disconnect(DictionaryChild dictionaryChild) {
       if (dictionaryChild.ParentWithDictionary!=ParentWithDictionary.NoParentWithDictionary) {
         dictionaryChild.ParentWithDictionary.RemoveFromDictionaryChildren(dictionaryChild);
       }
+      if (dictionaryChild.ParentWithDictionaryNullable!=null && dictionaryChild.ParentWithDictionaryNullable!=ParentWithDictionaryNullable.NoParentWithDictionaryNullable) {
+        dictionaryChild.ParentWithDictionaryNullable.RemoveFromDictionaryChildren(dictionaryChild);
+      }
+    }
+
+
+    /// <summary>
+    /// Removes parentWithDictionaryNullable from ParentWithDictionaryNullable
+    /// </summary>
+    internal void RemoveParentWithDictionaryNullable(ParentWithDictionaryNullable parentWithDictionaryNullable) {
+      if (parentWithDictionaryNullable!=ParentWithDictionaryNullable) throw new Exception();
+      ParentWithDictionaryNullable = null;
+      HasChanged?.Invoke(this);
     }
 
 
@@ -252,9 +356,10 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {ParentWithDictionary.ToShortString()}," +
         $" {DateKey.ToShortDateString()}," +
-        $" {Text}";
+        $" {Text}," +
+        $" {ParentWithDictionary.ToShortString()}," +
+        $" {ParentWithDictionaryNullable?.ToShortString()}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -267,9 +372,10 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
-        $" ParentWithDictionary: {ParentWithDictionary.ToShortString()}," +
         $" DateKey: {DateKey.ToShortDateString()}," +
-        $" Text: {Text};";
+        $" Text: {Text}," +
+        $" ParentWithDictionary: {ParentWithDictionary.ToShortString()}," +
+        $" ParentWithDictionaryNullable: {ParentWithDictionaryNullable?.ToShortString()};";
       onToString(ref returnString);
       return returnString;
     }

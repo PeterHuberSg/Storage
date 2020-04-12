@@ -7,10 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
-    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
+    /// Example of a parent child relationship using a SortedList where the child's parent property is nullable.
     /// </summary>
-  public partial class SortedListChild: IStorage<SortedListChild> {
+  public partial class ParentWithSortedListNullable: IStorage<ParentWithSortedListNullable> {
 
 
     #region Properties
@@ -80,6 +79,20 @@ namespace StorageModel  {
     /// Called before removal gets executed
     /// </summary>
     //partial void onRemove() {
+    //}
+
+
+    /// <summary>
+    /// Called after a sortedListChild gets added to SortedListChildren.
+    /// </summary>
+    //partial void onAddedToSortedListChildren(SortedListChild sortedListChild){
+    //}
+
+
+    /// <summary>
+    /// Called after a sortedListChild gets removed from SortedListChildren.
+    /// </summary>
+    //partial void onRemovedFromSortedListChildren(SortedListChild sortedListChild){
     //}
 
 

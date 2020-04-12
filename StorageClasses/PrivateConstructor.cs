@@ -7,10 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
-    /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
+    /// Example with private constructor.
     /// </summary>
-  public partial class SortedListChild: IStorage<SortedListChild> {
+  public partial class PrivateConstructor: IStorage<PrivateConstructor> {
 
 
     #region Properties

@@ -33,27 +33,33 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Parent
-    /// </summary>
-    public ReadOnlyParent ReadOnlyParent { get; }
-
-
-    /// <summary>
     /// Readonly Text, because class is not updatable
     /// </summary>
     public string Text { get; }
 
 
     /// <summary>
+    /// Parent
+    /// </summary>
+    public ReadOnlyParent ReadOnlyParent { get; }
+
+
+    /// <summary>
+    /// Parent
+    /// </summary>          
+    public ReadOnlyParentNullable? ReadOnlyParentNullable { get; }
+
+
+    /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"ReadOnlyParent", "Text"};
+    internal static readonly string[] Headers = {"Text", "ReadOnlyParent", "ReadOnlyParentNullable"};
 
 
     /// <summary>
     /// None existing ReadOnlyChild
     /// </summary>
-    internal static ReadOnlyChild NoReadOnlyChild = new ReadOnlyChild(ReadOnlyParent.NoReadOnlyParent, "NoText", isStoring: false);
+    internal static ReadOnlyChild NoReadOnlyChild = new ReadOnlyChild("NoText", ReadOnlyParent.NoReadOnlyParent, null, isStoring: false);
     #endregion
 
 
@@ -73,13 +79,15 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// ReadOnlyChild Constructor. If isStoring is true, adds ReadOnlyChild to DL.Data.ReadOnlyChildren
-    /// and adds ReadOnlyChild to readOnlyParent.ReadOnlyChildren.
+    /// ReadOnlyChild Constructor. If isStoring is true, adds ReadOnlyChild to DL.Data.ReadOnlyChildren, 
+    /// adds ReadOnlyChild to readOnlyParent.ReadOnlyChildren
+    /// and if there is a ReadOnlyParentNullable adds ReadOnlyChild to readOnlyParentNullable.ReadOnlyChildren.
     /// </summary>
-    public ReadOnlyChild(ReadOnlyParent readOnlyParent, string text, bool isStoring = true) {
+    public ReadOnlyChild(string text, ReadOnlyParent readOnlyParent, ReadOnlyParentNullable? readOnlyParentNullable, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
-      ReadOnlyParent = readOnlyParent;
       Text = text;
+      ReadOnlyParent = readOnlyParent;
+      ReadOnlyParentNullable = readOnlyParentNullable;
       onConstruct();
 
       if (isStoring) {
@@ -94,6 +102,7 @@ namespace StorageModel  {
     /// </summary>
     private ReadOnlyChild(int key, CsvReader csvReader, DL context) {
       Key = key;
+      Text = csvReader.ReadString();
       var readOnlyParentKey = csvReader.ReadInt();
       if (context.ReadOnlyParents.TryGetValue(readOnlyParentKey, out var readOnlyParent)) {
           ReadOnlyParent = readOnlyParent;
@@ -101,9 +110,19 @@ namespace StorageModel  {
         throw new Exception($"Read ReadOnlyChild from CSV file: Cannot find ReadOnlyParent with key {readOnlyParentKey}." + Environment.NewLine + 
           csvReader.PresentContent);
       }
-      Text = csvReader.ReadString();
+      var readOnlyParentNullableKey = csvReader.ReadIntNull();
+      if (readOnlyParentNullableKey.HasValue) {
+        if (context.ReadOnlyParentNullables.TryGetValue(readOnlyParentNullableKey.Value, out var readOnlyParentNullable)) {
+          ReadOnlyParentNullable = readOnlyParentNullable;
+        } else {
+          ReadOnlyParentNullable = ReadOnlyParentNullable.NoReadOnlyParentNullable;
+        }
+      }
       if (ReadOnlyParent!=ReadOnlyParent.NoReadOnlyParent) {
         ReadOnlyParent.AddToReadOnlyChildren(this);
+      }
+      if (readOnlyParentNullableKey.HasValue && ReadOnlyParentNullable!=ReadOnlyParentNullable.NoReadOnlyParentNullable) {
+        ReadOnlyParentNullable!.AddToReadOnlyChildren(this);
       }
       onCsvConstruct(context);
     }
@@ -120,9 +139,11 @@ namespace StorageModel  {
 
     /// <summary>
     /// Verify that readOnlyChild.ReadOnlyParent exists.
+    /// Verify that readOnlyChild.ReadOnlyParentNullable exists.
     /// </summary>
     internal static bool Verify(ReadOnlyChild readOnlyChild) {
       if (readOnlyChild.ReadOnlyParent==ReadOnlyParent.NoReadOnlyParent) return false;
+      if (readOnlyChild.ReadOnlyParentNullable==ReadOnlyParentNullable.NoReadOnlyParentNullable) return false;
       return true;
     }
     #endregion
@@ -132,7 +153,7 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds ReadOnlyChild to DL.Data.ReadOnlyChildren and ReadOnlyParent.ReadOnlyChildren. 
+    /// Adds ReadOnlyChild to DL.Data.ReadOnlyChildren, ReadOnlyParent.ReadOnlyChildren and ReadOnlyParentNullable.ReadOnlyChildren. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
@@ -144,6 +165,7 @@ namespace StorageModel  {
       onStore();
       DL.Data.ReadOnlyChildren.Add(this);
       ReadOnlyParent.AddToReadOnlyChildren(this);
+      ReadOnlyParentNullable?.AddToReadOnlyChildren(this);
     }
     partial void onStore();
 
@@ -159,10 +181,17 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(ReadOnlyChild readOnlyChild, CsvWriter csvWriter) {
       readOnlyChild.onCsvWrite();
+      csvWriter.Write(readOnlyChild.Text);
       if (readOnlyChild.ReadOnlyParent.Key<0) throw new Exception($"Cannot write readOnlyChild '{readOnlyChild}' to CSV File, because ReadOnlyParent is not stored in DL.Data.ReadOnlyParents.");
 
       csvWriter.Write(readOnlyChild.ReadOnlyParent.Key.ToString());
-      csvWriter.Write(readOnlyChild.Text);
+      if (readOnlyChild.ReadOnlyParentNullable is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (readOnlyChild.ReadOnlyParentNullable.Key<0) throw new Exception($"Cannot write readOnlyChild '{readOnlyChild}' to CSV File, because ReadOnlyParentNullable is not stored in DL.Data.ReadOnlyParentNullables.");
+
+        csvWriter.Write(readOnlyChild.ReadOnlyParentNullable.Key.ToString());
+      }
     }
     partial void onCsvWrite();
 
@@ -181,8 +210,9 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
+        $" {Text}," +
         $" {ReadOnlyParent.ToShortString()}," +
-        $" {Text}";
+        $" {ReadOnlyParentNullable?.ToShortString()}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -195,8 +225,9 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
+        $" Text: {Text}," +
         $" ReadOnlyParent: {ReadOnlyParent.ToShortString()}," +
-        $" Text: {Text};";
+        $" ReadOnlyParentNullable: {ReadOnlyParentNullable?.ToShortString()};";
       onToString(ref returnString);
       return returnString;
     }

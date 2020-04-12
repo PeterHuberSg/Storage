@@ -19,8 +19,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// Todo: Improvements Storage Compiler
+//////////////////////////////////////////////////////////////////////////////////////
+// Todo: Improvements Storage Compiler for stored / not stored parents and children
 // When creating a child instance which is not stored yet, it should get added to its parent's children collection only
 // if the parent is not stored yet neither.
 // When updating a child instance which is not stored yet, it should get added to its parent's children collection  only
@@ -29,7 +29,7 @@ using System.IO;
 // Should there be an update() just to change the parent ? This is useful when a child was created without parent, but
 // the parent gets added before storing.
 //
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//////////////////////////////////////////////////////////////////////////////////////
 
 
 namespace Storage {
@@ -46,6 +46,8 @@ namespace Storage {
     public readonly string LowerPluralName;
     public readonly bool AreInstancesUpdatable;
     public readonly bool AreInstancesDeletable;
+    public readonly bool IsConstructorPrivate;
+    public bool IsDisconnectNeeded = true;
     public readonly Dictionary<string, MemberInfo> Members;
     public readonly HashSet<ClassInfo> ParentsAll;
     public readonly HashSet<ClassInfo> ParentsWithList;
@@ -61,7 +63,8 @@ namespace Storage {
       int? maxLineLength, 
       string pluralName, 
       bool areInstancesUpdatable, 
-      bool areInstancesDeletable)
+      bool areInstancesDeletable,
+      bool isConstructorPrivate)
     {
       ClassName = name;
       LowerClassName = name[0..1].ToLowerInvariant() + name[1..];
@@ -71,6 +74,7 @@ namespace Storage {
       LowerPluralName = pluralName[0..1].ToLowerInvariant() + pluralName[1..];
       AreInstancesUpdatable = areInstancesUpdatable;
       AreInstancesDeletable = areInstancesDeletable;
+      IsConstructorPrivate = isConstructorPrivate;
       Members = new Dictionary<string, MemberInfo>();
       ParentsAll = new HashSet<ClassInfo>();
       ParentsWithList = new HashSet<ClassInfo>();
@@ -500,7 +504,11 @@ namespace Storage {
       }
       streamWriter.WriteLine(".");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write($"    public {ClassName}(");
+      if (IsConstructorPrivate) {
+        streamWriter.Write($"    private {ClassName}(");
+      } else {
+        streamWriter.Write($"    public {ClassName}(");
+      }
       writeParameters(streamWriter, isConstructor: true);
       streamWriter.WriteLine("      Key = StorageExtensions.NoKey;");
       foreach (var mi in Members.Values) {
@@ -970,7 +978,7 @@ namespace Storage {
         #region Remove()
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
-        writeRemoveComent(streamWriter, isCapitaliseFirstLetter: false);
+        IsDisconnectNeeded = writeRemoveComent(streamWriter, isCapitaliseFirstLetter: false);
         streamWriter.WriteLine(".");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine("    public void Remove() {");
@@ -986,62 +994,59 @@ namespace Storage {
         #endregion
 
         #region Disconnect()
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.Write($"    /// ");
-        writeRemoveComent(streamWriter, isCapitaliseFirstLetter: true);
-        streamWriter.WriteLine(".");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
-        foreach (var mi in Members.Values) {
-          if (mi.CollectionType>CollectionTypeEnum.Undefined) { //List, Dictionary or SortedList
-            //if (mi.MemberType==MemberTypeEnum.List) {
-            //  streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}) {{");
-            //} else { //Dictionary, SortedList
-            //  streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Values) {{");
-            //}
-            switch (mi.CollectionType) {
-            case CollectionTypeEnum.List:
-              streamWriter.WriteLine($"      for (int {mi.LowerChildTypeName}Index = {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count-1; {mi.LowerChildTypeName}Index>= 0; {mi.LowerChildTypeName}Index--) {{");
-              streamWriter.WriteLine($"        var {mi.LowerChildTypeName} = {LowerClassName}.{mi.ChildClassInfo!.PluralName}[{mi.LowerChildTypeName}Index];");
-              break;
-            case CollectionTypeEnum.Dictionary:
-              streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Values) {{");
-              break;
-            case CollectionTypeEnum.SortedList:
-              streamWriter.WriteLine($"      var {mi.ChildClassInfo!.LowerPluralName} = new {mi.ChildTypeName}[{LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count];");
-              streamWriter.WriteLine($"      {LowerClassName}.{mi.ChildClassInfo!.LowerPluralName}.Values.CopyTo({mi.ChildClassInfo!.LowerPluralName}, 0);");
-              streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.ChildClassInfo!.LowerPluralName}) {{");
-              break;
-            default: throw new NotSupportedException(); ;
-            }
-            foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
-              if (childMI.MemberType==MemberTypeEnum.Parent && (childMI.ParentType!)==ClassName) {
-                if (childMI.IsNullable) {
-                  streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{childMI.MemberName}({LowerClassName});");
-                } else {
-                  streamWriter.WriteLine($"         if ({mi.LowerChildTypeName}.Key>=0) {{");
-                  streamWriter.WriteLine($"           {mi.LowerChildTypeName}.Remove();");
-                  streamWriter.WriteLine("         }");
+        if (IsDisconnectNeeded) {
+          streamWriter.WriteLine("    /// <summary>");
+          streamWriter.Write($"    /// ");
+          writeRemoveComent(streamWriter, isCapitaliseFirstLetter: true);
+          streamWriter.WriteLine(".");
+          streamWriter.WriteLine("    /// </summary>");
+          streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
+          foreach (var mi in Members.Values) {
+            if (mi.CollectionType>CollectionTypeEnum.Undefined) { 
+              switch (mi.CollectionType) {
+              case CollectionTypeEnum.List:
+                streamWriter.WriteLine($"      for (int {mi.LowerChildTypeName}Index = {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count-1; {mi.LowerChildTypeName}Index>= 0; {mi.LowerChildTypeName}Index--) {{");
+                streamWriter.WriteLine($"        var {mi.LowerChildTypeName} = {LowerClassName}.{mi.ChildClassInfo!.PluralName}[{mi.LowerChildTypeName}Index];");
+                break;
+              case CollectionTypeEnum.Dictionary:
+                streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Values) {{");
+                break;
+              case CollectionTypeEnum.SortedList:
+                streamWriter.WriteLine($"      var {mi.ChildClassInfo!.LowerPluralName} = new {mi.ChildTypeName}[{LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count];");
+                streamWriter.WriteLine($"      {LowerClassName}.{mi.ChildClassInfo!.LowerPluralName}.Values.CopyTo({mi.ChildClassInfo!.LowerPluralName}, 0);");
+                streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.ChildClassInfo!.LowerPluralName}) {{");
+                break;
+              default: throw new NotSupportedException(); 
+              }
+              foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
+                if (childMI.MemberType==MemberTypeEnum.Parent && (childMI.ParentType!)==ClassName) {
+                  if (childMI.IsNullable) {
+                    streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{childMI.MemberName}({LowerClassName});");
+                  } else {
+                    streamWriter.WriteLine($"         if ({mi.LowerChildTypeName}.Key>=0) {{");
+                    streamWriter.WriteLine($"           {mi.LowerChildTypeName}.Remove();");
+                    streamWriter.WriteLine("         }");
+                  }
                 }
               }
-            }
-            streamWriter.WriteLine("      }");
+              streamWriter.WriteLine("      }");
 
-          } else if (mi.MemberType==MemberTypeEnum.Parent) {
-            if (mi.IsNullable) {
-              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("      }");
-            } else {
-              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
-              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
-              streamWriter.WriteLine("      }");
+            } else if (mi.MemberType==MemberTypeEnum.Parent) {
+              if (mi.IsNullable) {
+                streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+                streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("      }");
+              } else {
+                streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+                streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
+                streamWriter.WriteLine("      }");
+              }
             }
           }
+          streamWriter.WriteLine("    }");
+          streamWriter.WriteLine();
+          streamWriter.WriteLine();
         }
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
         #endregion
 
         #region Internal RemoveParent())
@@ -1178,7 +1183,7 @@ namespace Storage {
     }
 
 
-    private void writeRemoveComent(StreamWriter streamWriter, bool isCapitaliseFirstLetter) {
+    private bool writeRemoveComent(StreamWriter streamWriter, bool isCapitaliseFirstLetter) {
       var lineParts = new List<string>();
       foreach (var mi in Members.Values) {
         if (mi.CollectionType>CollectionTypeEnum.Undefined) {//List, Dictionary or SortedList
@@ -1222,8 +1227,9 @@ namespace Storage {
           //}
           streamWriter.Write(linePart);
         }
+        return true;
       } else {
-        System.Diagnostics.Debugger.Break();
+        return false;
       }
 
     }
