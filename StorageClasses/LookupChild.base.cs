@@ -137,7 +137,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"LookupChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"LookupChild can not be stored again in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.LookupChildren.Add(this);

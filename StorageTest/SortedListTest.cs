@@ -34,16 +34,43 @@ namespace StorageTest {
         initDL();
         assertDL();
 
+        //stored immediately
         var now = DateTime.Now.Date;
-        var parent1Key = addParentSortedList("1", "1.0");
-        var parent1NullableKey = addParentSortedListNullable("1", "1N.0");
+        var dayIndex = 1;
+        var parent1Key = addParentSortedList("1", "1.0", isStoring: true).Key;
+        var parent1NullableKey = addParentSortedListNullable("1", "1N.0", isStoring: true).Key;
 
-        var child1 = addSortedListChild(parent1Key, null, now, "11");
+        var child1Key = addSortedListChild(parent1Key, null, now, "11", isStoring: true).Key;
 
-        var parent2Key = addParentSortedList("2", "2.0");
-        var parent2NullableKey = addParentSortedListNullable("1", "2N.0");
-        var child2 = addSortedListChild(parent2Key, parent2NullableKey, now, "21");
-        var child3 = addSortedListChild(parent2Key, parent2NullableKey, now.AddDays(1), "22");
+        var parent2Key = addParentSortedList("2", "2.0", isStoring: true).Key;
+        var parent2NullableKey = addParentSortedListNullable("1", "2N.0", isStoring: true).Key;
+        var child2Key = addSortedListChild(parent2Key, parent2NullableKey, now.AddDays(dayIndex++), "21", isStoring: true).Key;
+        var child3Key = addSortedListChild(parent2Key, parent2NullableKey, now.AddDays(dayIndex++), "22", isStoring: true).Key;
+
+        //not stored
+        var parent3 = addParentSortedList("1", "1.0", isStoring: false);
+        var parent3Nullable = addParentSortedListNullable("1", "1N.0", isStoring: false);
+
+        var child4 = addSortedListChild(parent3, null, now.AddDays(dayIndex++), "11", isStoring: false);
+
+        var parent4 = addParentSortedList("2", "2.0", isStoring: false);
+        var parent4Nullable = addParentSortedListNullable("1", "2N.0", isStoring: false);
+        var child5 = addSortedListChild(parent4, parent4Nullable, now.AddDays(dayIndex++), "21", isStoring: false);
+        var child6 = addSortedListChild(parent4, parent4Nullable, now.AddDays(dayIndex++), "22", isStoring: false);
+
+        store(parent3);
+        store(parent3Nullable);
+        store(child4);
+        assertData();
+
+
+        store(parent4);
+        store(parent4Nullable);
+        store(child5);
+        store(child6);
+        assertData();
+
+
 
         updateParent(parent2Key, "2.1");
         updateParentNullable(parent2NullableKey, "2N.1");
@@ -109,36 +136,81 @@ namespace StorageTest {
     }
 
 
-    private int addParentSortedList(string readOnlyText, string updateableText) {
-      var newParent = new ParentWithSortedList(readOnlyText, updateableText, isStoring: true);
+    private ParentWithSortedList addParentSortedList(string readOnlyText, string updateableText, bool isStoring) {
+      var newParent = new ParentWithSortedList(readOnlyText, updateableText, isStoring);
+      if (isStoring) {
+        expectedParents.Add(newParent.Key, newParent.ToString());
+        assertData();
+      }
+      return newParent;
+    }
+
+
+    private void store(ParentWithSortedList newParent) {
+      newParent.Store();
       expectedParents.Add(newParent.Key, newParent.ToString());
-      assertData();
-      return newParent.Key;
     }
 
 
-    private int addParentSortedListNullable(string readOnlyText, string updateableText) {
-      var newParentNullable = new ParentWithSortedListNullable(readOnlyText, updateableText, isStoring: true);
+    private ParentWithSortedListNullable addParentSortedListNullable(string readOnlyText, string updateableText, bool isStoring) {
+      var newParentNullable = new ParentWithSortedListNullable(readOnlyText, updateableText, isStoring);
+      if (isStoring) {
+        expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
+        assertData();
+      }
+      return newParentNullable;
+    }
+
+
+    private void store(ParentWithSortedListNullable newParentNullable) {
+      newParentNullable.Store();
       expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
-      assertData();
-      return newParentNullable.Key;
     }
 
 
-    private int addSortedListChild(int parentKey, int? parentNullableKey, DateTime date, string text) {
+    private SortedListChild addSortedListChild(int parentKey, int? parentNullableKey, DateTime date, string text, bool isStoring) {
       var parent = DL.Data.ParentsWithSortedList[parentKey];
       ParentWithSortedListNullable? parentNullable = null;
       if (parentNullableKey.HasValue) {
         parentNullable = DL.Data.ParentsWithSortedListNullable[parentNullableKey.Value];
       }
-      var newChild = new SortedListChild(date, text, parent, parentNullable, isStoring: true);
+      var newChild = new SortedListChild(date, text, parent, parentNullable, isStoring);
+      if (isStoring) {
+        expectedChildren.Add(newChild.Key, newChild.ToString());
+        expectedParents[parent.Key] = parent.ToString();
+        if (parentNullable!=null) {
+          expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+        }
+        assertData();
+      }
+      return newChild;
+    }
+
+
+    private SortedListChild addSortedListChild(ParentWithSortedList parent, ParentWithSortedListNullable? parentNullable, 
+      DateTime date, string text, bool isStoring) 
+    {
+      var newChild = new SortedListChild(date, text, parent, parentNullable, isStoring);
+      if (isStoring) {
+        expectedChildren.Add(newChild.Key, newChild.ToString());
+        expectedParents[parent.Key] = parent.ToString();
+        if (parentNullable!=null) {
+          expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+        }
+        assertData();
+      }
+      return newChild;
+    }
+
+
+    private void store(SortedListChild newChild) {
+      newChild.Store();
       expectedChildren.Add(newChild.Key, newChild.ToString());
-      expectedParents[parent.Key] = parent.ToString();
+      expectedParents[newChild.ParentWithSortedList.Key] = newChild.ParentWithSortedList.ToString();
+      var parentNullable = newChild.ParentWithSortedListNullable;
       if (parentNullable!=null) {
         expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
       }
-      assertData();
-      return newChild.Key;
     }
 
 

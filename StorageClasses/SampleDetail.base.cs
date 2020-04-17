@@ -132,10 +132,10 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SampleDetail can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"SampleDetail can not be stored again in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       if (Sample.Key<0) {
-        throw new Exception($"SampleDetail can not be stored in DL.Data, Sample is missing." + Environment.NewLine + ToString());
+        throw new Exception($"SampleDetail can not be stored in DL.Data, Sample is missing or not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.SampleDetails.Add(this);

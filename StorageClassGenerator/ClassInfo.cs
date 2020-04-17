@@ -522,6 +522,17 @@ namespace Storage {
           streamWriter.WriteLine($"      {mi.LowerMemberName} = new {mi.TypeString}();");
         } else {
           streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName}{mi.Rounding};");
+          //if (mi.MemberType==MemberTypeEnum.Parent  && !mi.IsLookupOnly) {
+          //  if (mi.IsNullable) {
+          //    streamWriter.WriteLine($"      if ({mi.MemberName}!=null && {mi.MemberName}.Key<0) {{");
+          //    streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
+          //    streamWriter.WriteLine("      }");
+          //  } else {
+          //    streamWriter.WriteLine($"      if ({mi.MemberName}.Key<0 && {mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
+          //    streamWriter.WriteLine($"        {mi.MemberName}.AddTo{PluralName}(this);");
+          //    streamWriter.WriteLine("      }");
+          //  }
+          //}
         }
       }
       streamWriter.WriteLine("      onConstruct();");
@@ -675,15 +686,22 @@ namespace Storage {
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    public void Store() {");
       streamWriter.WriteLine("      if (Key>=0) {");
-      streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored in {context}.Data, " +
+      streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored again in {context}.Data, " +
         $"key is {{Key}} greater equal 0.\" + Environment.NewLine + ToString());");
       streamWriter.WriteLine("      }");
       foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.Parent && !mi.IsLookupOnly && !mi.IsNullable) {
-          streamWriter.WriteLine($"      if ({mi.MemberName}.Key<0) {{");
-          streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored in {context}.Data, " +
-            $"{mi.MemberName} is missing.\" + Environment.NewLine + ToString());");
-          streamWriter.WriteLine("      }");
+        if (mi.MemberType==MemberTypeEnum.Parent && !mi.IsLookupOnly) {
+          if (mi.IsNullable) {
+            streamWriter.WriteLine($"      if ({mi.MemberName}!=null && {mi.MemberName}.Key<0) {{");
+            streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored in {context}.Data, " +
+              $"{mi.MemberName} is not stored yet.\" + Environment.NewLine + ToString());");
+            streamWriter.WriteLine("      }");
+          } else {
+            streamWriter.WriteLine($"      if ({mi.MemberName}.Key<0) {{");
+            streamWriter.WriteLine($"        throw new Exception($\"{ClassName} can not be stored in {context}.Data, " +
+              $"{mi.MemberName} is missing or not stored yet.\" + Environment.NewLine + ToString());");
+            streamWriter.WriteLine("      }");
+          }
         }
       }
       streamWriter.WriteLine("      onStore();");

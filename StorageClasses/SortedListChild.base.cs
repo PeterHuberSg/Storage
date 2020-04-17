@@ -169,10 +169,13 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SortedListChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"SortedListChild can not be stored again in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       if (ParentWithSortedList.Key<0) {
-        throw new Exception($"SortedListChild can not be stored in DL.Data, ParentWithSortedList is missing." + Environment.NewLine + ToString());
+        throw new Exception($"SortedListChild can not be stored in DL.Data, ParentWithSortedList is missing or not stored yet." + Environment.NewLine + ToString());
+      }
+      if (ParentWithSortedListNullable!=null && ParentWithSortedListNullable.Key<0) {
+        throw new Exception($"SortedListChild can not be stored in DL.Data, ParentWithSortedListNullable is not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.SortedListChildren.Add(this);

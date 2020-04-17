@@ -312,7 +312,13 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"Sample can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"Sample can not be stored again in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+      }
+      if (OneMaster!=null && OneMaster.Key<0) {
+        throw new Exception($"Sample can not be stored in DL.Data, OneMaster is not stored yet." + Environment.NewLine + ToString());
+      }
+      if (OtherMaster!=null && OtherMaster.Key<0) {
+        throw new Exception($"Sample can not be stored in DL.Data, OtherMaster is not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.SampleX.Add(this);

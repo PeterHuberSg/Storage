@@ -170,10 +170,13 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"DictionaryChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"DictionaryChild can not be stored again in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       if (ParentWithDictionary.Key<0) {
-        throw new Exception($"DictionaryChild can not be stored in DL.Data, ParentWithDictionary is missing." + Environment.NewLine + ToString());
+        throw new Exception($"DictionaryChild can not be stored in DL.Data, ParentWithDictionary is missing or not stored yet." + Environment.NewLine + ToString());
+      }
+      if (ParentWithDictionaryNullable!=null && ParentWithDictionaryNullable.Key<0) {
+        throw new Exception($"DictionaryChild can not be stored in DL.Data, ParentWithDictionaryNullable is not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.DictionaryChildren.Add(this);

@@ -157,10 +157,13 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ReadOnlyChild can not be stored in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ReadOnlyChild can not be stored again in DL.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       if (ReadOnlyParent.Key<0) {
-        throw new Exception($"ReadOnlyChild can not be stored in DL.Data, ReadOnlyParent is missing." + Environment.NewLine + ToString());
+        throw new Exception($"ReadOnlyChild can not be stored in DL.Data, ReadOnlyParent is missing or not stored yet." + Environment.NewLine + ToString());
+      }
+      if (ReadOnlyParentNullable!=null && ReadOnlyParentNullable.Key<0) {
+        throw new Exception($"ReadOnlyChild can not be stored in DL.Data, ReadOnlyParentNullable is not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DL.Data.ReadOnlyChildren.Add(this);
