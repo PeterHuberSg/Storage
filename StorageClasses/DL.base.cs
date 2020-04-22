@@ -108,6 +108,16 @@ namespace StorageModel  {
     public StorageDictionary<ReadOnlyParent, DL> ReadOnlyParents { get; private set; }
 
     /// <summary>
+    /// Directory of all ReadOnlyParent2s
+    /// </summary>
+    public StorageDictionary<ReadOnlyParent2, DL> ReadOnlyParent2s { get; private set; }
+
+    /// <summary>
+    /// Directory of all ReadOnlyParent2Nullables
+    /// </summary>
+    public StorageDictionary<ReadOnlyParent2Nullable, DL> ReadOnlyParent2Nullables { get; private set; }
+
+    /// <summary>
     /// Directory of all ReadOnlyParentNullables
     /// </summary>
     public StorageDictionary<ReadOnlyParentNullable, DL> ReadOnlyParentNullables { get; private set; }
@@ -131,6 +141,11 @@ namespace StorageModel  {
     /// Directory of all SortedListChildren
     /// </summary>
     public StorageDictionary<SortedListChild, DL> SortedListChildren { get; private set; }
+
+    /// <summary>
+    /// Directory of all UpdatableChildren
+    /// </summary>
+    public StorageDictionary<UpdatableChild, DL> UpdatableChildren { get; private set; }
     #endregion
 
 
@@ -245,6 +260,24 @@ namespace StorageModel  {
           ReadOnlyChild.SetKey,
           null,
           areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ReadOnlyParent2s = new StorageDictionary<ReadOnlyParent2, DL>(
+          this,
+          ReadOnlyParent2.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ReadOnlyParent2Nullables = new StorageDictionary<ReadOnlyParent2Nullable, DL>(
+          this,
+          ReadOnlyParent2Nullable.SetKey,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        UpdatableChildren = new StorageDictionary<UpdatableChild, DL>(
+          this,
+          UpdatableChild.SetKey,
+          null,
+          areInstancesUpdatable: true,
           areInstancesDeletable: false);
         PrivateConstructors = new StorageDictionary<PrivateConstructor, DL>(
           this,
@@ -448,6 +481,45 @@ namespace StorageModel  {
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        ReadOnlyParent2s = new StorageDictionaryCSV<ReadOnlyParent2, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyParent2.MaxLineLength,
+          ReadOnlyParent2.Headers,
+          ReadOnlyParent2.SetKey,
+          ReadOnlyParent2.Create,
+          null,
+          null,
+          ReadOnlyParent2.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        ReadOnlyParent2Nullables = new StorageDictionaryCSV<ReadOnlyParent2Nullable, DL>(
+          this,
+          csvConfig!,
+          ReadOnlyParent2Nullable.MaxLineLength,
+          ReadOnlyParent2Nullable.Headers,
+          ReadOnlyParent2Nullable.SetKey,
+          ReadOnlyParent2Nullable.Create,
+          null,
+          null,
+          ReadOnlyParent2Nullable.Write,
+          null,
+          areInstancesUpdatable: false,
+          areInstancesDeletable: false);
+        UpdatableChildren = new StorageDictionaryCSV<UpdatableChild, DL>(
+          this,
+          csvConfig!,
+          UpdatableChild.MaxLineLength,
+          UpdatableChild.Headers,
+          UpdatableChild.SetKey,
+          UpdatableChild.Create,
+          UpdatableChild.Verify,
+          UpdatableChild.Update,
+          UpdatableChild.Write,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false);
         PrivateConstructors = new StorageDictionaryCSV<PrivateConstructor, DL>(
           this,
           csvConfig!,
@@ -491,6 +563,9 @@ namespace StorageModel  {
       if (disposing) {
         onDispose();
         PrivateConstructors.Dispose();
+        UpdatableChildren.Dispose();
+        ReadOnlyParent2Nullables.Dispose();
+        ReadOnlyParent2s.Dispose();
         ReadOnlyChildren.Dispose();
         ReadOnlyParentNullables.Dispose();
         ReadOnlyParents.Dispose();

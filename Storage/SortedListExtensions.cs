@@ -100,7 +100,8 @@ namespace Storage {
     /// </summary>
     [return: MaybeNull]
     public static TValue GetLastItem<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> iReadOnlyDictionary)
-      where TKey : notnull where TValue : class {
+      where TKey : notnull where TValue : class 
+    {
       var sortedList = (SortedList<TKey, TValue>) iReadOnlyDictionary;
       return sortedList[sortedList.GetLastKey()!];
     }
@@ -111,7 +112,8 @@ namespace Storage {
     /// </summary>
     [return: MaybeNull]
     public static TValue GetLastItem<TKey, TValue>(this SortedList<TKey, TValue> sortedList)
-      where TKey : notnull {
+      where TKey : notnull 
+    {
       return sortedList[sortedList.GetLastKey()!];
     }
 

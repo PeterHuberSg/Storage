@@ -548,6 +548,76 @@ namespace StorageModel {
   #endregion
 
 
+  #region ReadOnlyParent2 -> UpdatableChild, using List for children
+  //      ----------------------------------------------------------
+
+  //Example where parent is not updatable and not editable. Child can be updated, but not deleted. 
+
+  /// <summary>
+  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// deleted, but it is still possible to add children, but not to remove them.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
+  public class ReadOnlyParent2 {
+
+    /// <summary>
+    /// Readonly Text, because class is not updatable
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// List of children
+    /// </summary>
+    public List<UpdatableChild> UpdatableChildren;
+  }
+
+
+  /// <summary>
+  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
+  /// is nullable.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
+  public class ReadOnlyParent2Nullable {
+
+    /// <summary>
+    /// Readonly Text, because class is not updatable
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// List of children
+    /// </summary>
+    public List<UpdatableChild> UpdatableChildren;
+  }
+
+
+  /// <summary>
+  /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
+  /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
+  /// either.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: true, pluralName: "UpdatableChildren")]
+  public class UpdatableChild {
+
+    /// <summary>
+    /// Readonly Text, because class is not updatable
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Parent
+    /// </summary>
+    public ReadOnlyParent2 ReadOnlyParent2;
+
+    /// <summary>
+    /// Parent
+    /// </summary>          
+    public ReadOnlyParent2Nullable? ReadOnlyParent2Nullable;
+  }
+  #endregion
+
+
   #region Private Constructor
   //      -------------------
 

@@ -937,7 +937,7 @@ namespace Storage {
           streamWriter.WriteLine($"    partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
           streamWriter.WriteLine();
           streamWriter.WriteLine();
-          if (mi.ClassInfo.AreInstancesUpdatable) {
+          if (mi.ChildClassInfo.AreInstancesUpdatable) {
             streamWriter.WriteLine("    /// <summary>");
             streamWriter.WriteLine($"    /// Removes {mi.LowerChildTypeName} from {mi.ChildClassInfo!.PluralName}.");
             streamWriter.WriteLine("    /// </summary>");
