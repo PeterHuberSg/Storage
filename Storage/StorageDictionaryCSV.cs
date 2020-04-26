@@ -231,7 +231,8 @@ namespace Storage {
     private void readFromCsvFile(CsvReader csvReader) {
       //verify headers line
       var headerLine = csvReader.ReadLine();
-      if (CsvHeaderString!=headerLine) throw new Exception("'" + headerLine + "' should be " + CsvHeaderString + ".");
+      if (CsvHeaderString!=headerLine) throw new Exception($"Error reading file {csvReader.FileName}{Environment.NewLine}'" + 
+        headerLine + "' should be " + CsvHeaderString + ".");
 
       //read data lines
       var errorStringBuilder = new StringBuilder();

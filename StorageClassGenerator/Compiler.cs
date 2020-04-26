@@ -576,6 +576,9 @@ namespace Storage {
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      isDisposed = 0;");
       streamWriter.WriteLine("      data = this;");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("      onConstruct();");
+      streamWriter.WriteLine();
       streamWriter.WriteLine("      CsvConfig = csvConfig;");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
@@ -619,13 +622,18 @@ namespace Storage {
         streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
       }
       streamWriter.WriteLine("      }");
-      streamWriter.WriteLine("      onConstruct();");
+      streamWriter.WriteLine("      onConstructed();");
       streamWriter.WriteLine("    }");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>}");
+      streamWriter.WriteLine("    /// Called at beginning of constructor");
+      streamWriter.WriteLine("    /// </summary>}");
+      streamWriter.WriteLine("    partial void onConstruct();");
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>}");
       streamWriter.WriteLine("    /// Called at end of constructor");
       streamWriter.WriteLine("    /// </summary>}");
-      streamWriter.WriteLine("    partial void onConstruct();");
+      streamWriter.WriteLine("    partial void onConstructed();");
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
