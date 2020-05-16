@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -331,7 +332,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write Sample to CSV file
     /// </summary>
-    internal const int MaxLineLength = 200;
+    public const int MaxLineLength = 200;
 
 
     /// <summary>
@@ -727,4 +728,130 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region SampleWriter
+  //      ------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as Sample. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class SampleWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+    int lastKey = int.MinValue;
+
+
+    /// <summary>
+    /// Constructor, will write the Sample header line into the CSV file. Dispose SampleWriter once done.
+    /// </summary>
+    public SampleWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(Sample.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one Sample to the CSV file
+    /// </summary>
+    public void Write(
+      int key, 
+      string text, 
+      bool flag, 
+      int number, 
+      decimal amount, 
+      decimal amount4, 
+      decimal? amount5, 
+      decimal preciseDecimal, 
+      SampleStateEnum sampleState, 
+      DateTime dateOnly, 
+      TimeSpan timeOnly, 
+      DateTime dateTimeTicks, 
+      DateTime dateTimeMinute, 
+      DateTime dateTimeSecond, 
+      int? oneMasterKey, 
+      int? otherMasterKey, 
+      string? optional)
+    {
+      if (key<0) {
+        throw new Exception($"Sample's key {key} needs to be greater equal 0.");
+      }
+      if (key<=lastKey) {
+        throw new Exception($"Sample's key {key} must be greater than the last written Sample's key {lastKey}.");
+      }
+      lastKey = key;
+      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+      csvWriter.Write(key);
+      csvWriter.Write(text);
+      csvWriter.Write(flag);
+      csvWriter.Write(number);
+      csvWriter.WriteDecimal2(amount);
+      csvWriter.WriteDecimal4(amount4);
+      csvWriter.WriteDecimal5(amount5);
+      csvWriter.Write(preciseDecimal);
+      csvWriter.Write((int)sampleState);
+      csvWriter.WriteDate(dateOnly);
+      csvWriter.WriteTime(timeOnly);
+      csvWriter.WriteDateTimeTicks(dateTimeTicks);
+      csvWriter.WriteDateTimeTicks(dateTimeMinute);
+      csvWriter.WriteDateTimeTicks(dateTimeSecond);
+      if (oneMasterKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (oneMasterKey<0) throw new Exception($"Cannot write sample to CSV File, because OneMaster is not stored in DL.Data.SampleMasters.");
+
+        csvWriter.Write(oneMasterKey.ToString());
+      }
+      if (otherMasterKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (otherMasterKey<0) throw new Exception($"Cannot write sample to CSV File, because OtherMaster is not stored in DL.Data.SampleMasters.");
+
+        csvWriter.Write(otherMasterKey.ToString());
+      }
+      csvWriter.Write(optional);
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of SampleWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is SampleWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -189,7 +190,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write DictionaryChild to CSV file
     /// </summary>
-    internal const int MaxLineLength = 161;
+    public const int MaxLineLength = 161;
 
 
     /// <summary>
@@ -385,4 +386,102 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region DictionaryChildWriter
+  //      ---------------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as DictionaryChild. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class DictionaryChildWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+    int lastKey = int.MinValue;
+
+
+    /// <summary>
+    /// Constructor, will write the DictionaryChild header line into the CSV file. Dispose DictionaryChildWriter once done.
+    /// </summary>
+    public DictionaryChildWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(DictionaryChild.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one DictionaryChild to the CSV file
+    /// </summary>
+    public void Write(
+      int key, 
+      DateTime dateKey, 
+      string text, 
+      int parentWithDictionaryKey, 
+      int? parentWithDictionaryNullableKey)
+    {
+      if (key<0) {
+        throw new Exception($"DictionaryChild's key {key} needs to be greater equal 0.");
+      }
+      if (key<=lastKey) {
+        throw new Exception($"DictionaryChild's key {key} must be greater than the last written DictionaryChild's key {lastKey}.");
+      }
+      lastKey = key;
+      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+      csvWriter.Write(key);
+      csvWriter.WriteDate(dateKey);
+      csvWriter.Write(text);
+      if (parentWithDictionaryKey<0) throw new Exception($"Cannot write dictionaryChild to CSV File, because ParentWithDictionary is not stored in DL.Data.ParentsWithDictionary.");
+
+      csvWriter.Write(parentWithDictionaryKey.ToString());
+      if (parentWithDictionaryNullableKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (parentWithDictionaryNullableKey<0) throw new Exception($"Cannot write dictionaryChild to CSV File, because ParentWithDictionaryNullable is not stored in DL.Data.ParentsWithDictionaryNullable.");
+
+        csvWriter.Write(parentWithDictionaryNullableKey.ToString());
+      }
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of DictionaryChildWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is DictionaryChildWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

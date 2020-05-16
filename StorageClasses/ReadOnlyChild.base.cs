@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -176,7 +177,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write ReadOnlyChild to CSV file
     /// </summary>
-    internal const int MaxLineLength = 150;
+    public const int MaxLineLength = 150;
 
 
     /// <summary>
@@ -237,4 +238,86 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region ReadOnlyChildWriter
+  //      -------------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as ReadOnlyChild. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class ReadOnlyChildWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+
+
+    /// <summary>
+    /// Constructor, will write the ReadOnlyChild header line into the CSV file. Dispose ReadOnlyChildWriter once done.
+    /// </summary>
+    public ReadOnlyChildWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(ReadOnlyChild.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one ReadOnlyChild to the CSV file
+    /// </summary>
+    public void Write(string text, int readOnlyParentKey, int? readOnlyParentNullableKey) {
+      csvWriter.StartNewLine();
+      csvWriter.Write(text);
+      if (readOnlyParentKey<0) throw new Exception($"Cannot write readOnlyChild to CSV File, because ReadOnlyParent is not stored in DL.Data.ReadOnlyParents.");
+
+      csvWriter.Write(readOnlyParentKey.ToString());
+      if (readOnlyParentNullableKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (readOnlyParentNullableKey<0) throw new Exception($"Cannot write readOnlyChild to CSV File, because ReadOnlyParentNullable is not stored in DL.Data.ReadOnlyParentNullables.");
+
+        csvWriter.Write(readOnlyParentNullableKey.ToString());
+      }
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of ReadOnlyChildWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is ReadOnlyChildWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

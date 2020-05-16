@@ -313,11 +313,11 @@ namespace Storage {
       } else if (readByteAsInt=='1') {
         b = true;
       } else {
-        throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
+        throw new Exception($"CsvReader.ReadBoolNull() '{FileName}': Illegal character found: " + Environment.NewLine + GetPresentContent());
       }
       readByteAsInt = (int)byteArray[readIndex++];
       if (readByteAsInt!=CsvConfig.Delimiter) {
-        throw new Exception($"CsvReader.ReadBool() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
+        throw new Exception($"CsvReader.ReadBoolNull() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
       }
       return b;
     }
@@ -475,7 +475,7 @@ namespace Storage {
           var tempCharsSpan = new ReadOnlySpan<char>(tempChars, 0, tempCharsIndex);
           return Decimal.Parse(tempCharsSpan);
         }
-        if (readByteAsInt>=0x80) throw new Exception($"CsvReader.ReadDecimal() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
+        if (readByteAsInt>=0x80) throw new Exception($"CsvReader.ReadDecimalNull() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
 
         tempChars[tempCharsIndex++] = (char)readByteAsInt;
       }
@@ -535,7 +535,7 @@ namespace Storage {
         var readChar = (char)readByte;
         if (readChar==delimiter) {
           if (tempCharsIndex==0) {
-           throw new Exception($"CsvReader.ReadDate() '{FileName}': Null found where string is expected: " + Environment.NewLine + GetPresentContent());
+           return "";
           }
           return new string(tempChars, 0, tempCharsIndex);
         }
@@ -632,14 +632,14 @@ namespace Storage {
       var readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar!='.') {
         day = day*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDateSeconds() '{FileName}': Day has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
       var month = (int)(byteArray[readIndex++] - '0');
       readByteAsChar = (char)byteArray[readIndex++];
       if (readByteAsChar!='.') {
         month = month*10 + (int)(readByteAsChar - '0');
-        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDate() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
+        if ((char)byteArray[readIndex++]!='.') throw new Exception($"CsvReader.ReadDateSeconds() '{FileName}': Month has more than 2 chars: " + Environment.NewLine + GetPresentContent());
       }
 
       var year = (int)(byteArray[readIndex++] - '0');

@@ -53,6 +53,11 @@ namespace StorageModel  {
     public CsvConfig? CsvConfig { get; }
 
     /// <summary>
+    /// Is all data initialised
+    /// </summary>
+    public bool IsInitialised { get; private set; }
+
+    /// <summary>
     /// Directory of all DictionaryChildren
     /// </summary>
     public StorageDictionary<DictionaryChild, DL> DictionaryChildren { get; private set; }
@@ -169,6 +174,10 @@ namespace StorageModel  {
       }
       isDisposed = 0;
       data = this;
+      IsInitialised = false;
+
+      onConstruct();
+
       CsvConfig = csvConfig;
       if (csvConfig==null) {
         SampleMasters = new StorageDictionary<SampleMaster, DL>(
@@ -534,13 +543,19 @@ namespace StorageModel  {
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
       }
-      onConstruct();
+      onConstructed();
+      IsInitialised = true;
     }
+
+    /// <summary>}
+    /// Called at beginning of constructor
+    /// </summary>}
+    partial void onConstruct();
 
     /// <summary>}
     /// Called at end of constructor
     /// </summary>}
-    partial void onConstruct();
+    partial void onConstructed();
     #endregion
 
 

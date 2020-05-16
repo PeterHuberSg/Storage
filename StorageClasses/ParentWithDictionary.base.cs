@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -126,7 +127,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write ParentWithDictionary to CSV file
     /// </summary>
-    internal const int MaxLineLength = 150;
+    public const int MaxLineLength = 150;
 
 
     /// <summary>
@@ -243,4 +244,85 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region ParentWithDictionaryWriter
+  //      --------------------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as ParentWithDictionary. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class ParentWithDictionaryWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+    int lastKey = int.MinValue;
+
+
+    /// <summary>
+    /// Constructor, will write the ParentWithDictionary header line into the CSV file. Dispose ParentWithDictionaryWriter once done.
+    /// </summary>
+    public ParentWithDictionaryWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(ParentWithDictionary.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one ParentWithDictionary to the CSV file
+    /// </summary>
+    public void Write(int key, string text) {
+      if (key<0) {
+        throw new Exception($"ParentWithDictionary's key {key} needs to be greater equal 0.");
+      }
+      if (key<=lastKey) {
+        throw new Exception($"ParentWithDictionary's key {key} must be greater than the last written ParentWithDictionary's key {lastKey}.");
+      }
+      lastKey = key;
+      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+      csvWriter.Write(key);
+      csvWriter.Write(text);
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of ParentWithDictionaryWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is ParentWithDictionaryWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

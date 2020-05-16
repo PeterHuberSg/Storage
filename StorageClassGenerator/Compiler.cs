@@ -546,6 +546,11 @@ namespace Storage {
       streamWriter.WriteLine("    /// Configuration parameters if data gets stored in .csv files");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.WriteLine("    public CsvConfig? CsvConfig { get; }");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Is all data initialised");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine("    public bool IsInitialised { get; private set; }");
       foreach (var classInfo in classes.Values.OrderBy(ci => ci.ClassName)) {
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
@@ -576,6 +581,7 @@ namespace Storage {
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      isDisposed = 0;");
       streamWriter.WriteLine("      data = this;");
+      streamWriter.WriteLine("      IsInitialised = false;");
       streamWriter.WriteLine();
       streamWriter.WriteLine("      onConstruct();");
       streamWriter.WriteLine();
@@ -623,6 +629,7 @@ namespace Storage {
       }
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onConstructed();");
+      streamWriter.WriteLine("      IsInitialised = true;");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>}");

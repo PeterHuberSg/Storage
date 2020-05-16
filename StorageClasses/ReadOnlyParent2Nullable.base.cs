@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -129,7 +130,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write ReadOnlyParent2Nullable to CSV file
     /// </summary>
-    internal const int MaxLineLength = 150;
+    public const int MaxLineLength = 150;
 
 
     /// <summary>
@@ -201,4 +202,76 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region ReadOnlyParent2NullableWriter
+  //      -----------------------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as ReadOnlyParent2Nullable. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class ReadOnlyParent2NullableWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+
+
+    /// <summary>
+    /// Constructor, will write the ReadOnlyParent2Nullable header line into the CSV file. Dispose ReadOnlyParent2NullableWriter once done.
+    /// </summary>
+    public ReadOnlyParent2NullableWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(ReadOnlyParent2Nullable.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one ReadOnlyParent2Nullable to the CSV file
+    /// </summary>
+    public void Write(string text) {
+      csvWriter.StartNewLine();
+      csvWriter.Write(text);
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of ReadOnlyParent2NullableWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is ReadOnlyParent2NullableWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

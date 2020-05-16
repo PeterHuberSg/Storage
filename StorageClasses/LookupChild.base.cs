@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -148,7 +149,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write LookupChild to CSV file
     /// </summary>
-    internal const int MaxLineLength = 11;
+    public const int MaxLineLength = 11;
 
 
     /// <summary>
@@ -209,4 +210,86 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region LookupChildWriter
+  //      -----------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as LookupChild. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class LookupChildWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+
+
+    /// <summary>
+    /// Constructor, will write the LookupChild header line into the CSV file. Dispose LookupChildWriter once done.
+    /// </summary>
+    public LookupChildWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(LookupChild.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one LookupChild to the CSV file
+    /// </summary>
+    public void Write(int number, int lookupParentKey, int? lookupParentNullableKey) {
+      csvWriter.StartNewLine();
+      csvWriter.Write(number);
+      if (lookupParentKey<0) throw new Exception($"Cannot write lookupChild to CSV File, because LookupParent is not stored in DL.Data.LookupParents.");
+
+      csvWriter.Write(lookupParentKey.ToString());
+      if (lookupParentNullableKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (lookupParentNullableKey<0) throw new Exception($"Cannot write lookupChild to CSV File, because LookupParentNullable is not stored in DL.Data.LookupParentNullables.");
+
+        csvWriter.Write(lookupParentNullableKey.ToString());
+      }
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of LookupChildWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is LookupChildWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

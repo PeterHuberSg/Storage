@@ -9,6 +9,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Storage;
 
 
@@ -188,7 +189,7 @@ namespace StorageModel  {
     /// <summary>
     /// Maximal number of UTF8 characters needed to write SortedListChild to CSV file
     /// </summary>
-    internal const int MaxLineLength = 161;
+    public const int MaxLineLength = 161;
 
 
     /// <summary>
@@ -384,4 +385,102 @@ namespace StorageModel  {
     partial void onToString(ref string returnString);
     #endregion
   }
+
+
+  #region SortedListChildWriter
+  //      ---------------------
+
+  /// <summary>
+  /// Writes a CSV file containing records which can be read back as SortedListChild. Note that the keys of linked objects
+  /// need to be provided in Write(), since the data context will not be involved.
+  /// </summary>
+  public class SortedListChildWriter: IDisposable {
+
+    readonly CsvConfig csvConfig;
+    readonly CsvWriter csvWriter;
+    int lastKey = int.MinValue;
+
+
+    /// <summary>
+    /// Constructor, will write the SortedListChild header line into the CSV file. Dispose SortedListChildWriter once done.
+    /// </summary>
+    public SortedListChildWriter(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {
+      this.csvConfig = csvConfig;
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);
+      var csvHeaderString = Csv.ToCsvHeaderString(SortedListChild.Headers, csvConfig.Delimiter);
+      csvWriter.WriteLine(csvHeaderString);
+    }
+
+
+    /// <summary>
+    /// Writes the details of one SortedListChild to the CSV file
+    /// </summary>
+    public void Write(
+      int key, 
+      DateTime dateKey, 
+      string text, 
+      int parentWithSortedListKey, 
+      int? parentWithSortedListNullableKey)
+    {
+      if (key<0) {
+        throw new Exception($"SortedListChild's key {key} needs to be greater equal 0.");
+      }
+      if (key<=lastKey) {
+        throw new Exception($"SortedListChild's key {key} must be greater than the last written SortedListChild's key {lastKey}.");
+      }
+      lastKey = key;
+      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);
+      csvWriter.Write(key);
+      csvWriter.WriteDate(dateKey);
+      csvWriter.Write(text);
+      if (parentWithSortedListKey<0) throw new Exception($"Cannot write sortedListChild to CSV File, because ParentWithSortedList is not stored in DL.Data.ParentsWithSortedList.");
+
+      csvWriter.Write(parentWithSortedListKey.ToString());
+      if (parentWithSortedListNullableKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (parentWithSortedListNullableKey<0) throw new Exception($"Cannot write sortedListChild to CSV File, because ParentWithSortedListNullable is not stored in DL.Data.ParentsWithSortedListNullable.");
+
+        csvWriter.Write(parentWithSortedListNullableKey.ToString());
+      }
+      csvWriter.WriteEndOfLine();
+    }
+
+
+    #region IDisposable Support
+    //      -------------------
+
+    /// <summary>
+    /// Executes disposal of SortedListChildWriter exactly once.
+    /// </summary>
+    public void Dispose() {
+      Dispose(true);
+
+      GC.SuppressFinalize(this);
+    }
+
+
+    /// <summary>
+    /// Is SortedListChildWriter already exposed ?
+    /// </summary>
+    protected bool IsDisposed {
+      get { return isDisposed==1; }
+    }
+
+
+    int isDisposed = 0;
+
+
+    /// <summary>
+    /// Inheritors should call Dispose(false) from their destructor
+    /// </summary>
+    protected void Dispose(bool disposing) {
+      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
+      if (wasDisposed==1) return; // already disposed
+
+      csvWriter.Dispose();
+    }
+    #endregion
+  }
+  #endregion
 }

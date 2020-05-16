@@ -24,6 +24,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 
+
 namespace Storage {
 
 
@@ -243,9 +244,10 @@ namespace Storage {
           var firstLineChar = csvReader.ReadFirstLineChar();
           if (firstLineChar==CsvConfig.LineCharAdd) {
             addItem(csvReader, errorStringBuilder);
-
+            
           //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          //acutally, there should never be the case where deletion or updates get read, since all
+          //Todo: improve StorageDictionaryCSV.readFromCsvFile()
+          //actually, there should never be the case where deletion or updates get read, since all
           //CSV files get now compacted on Dispose. Need to detect the case here when the Dispose()
           //did not work properly
           //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
