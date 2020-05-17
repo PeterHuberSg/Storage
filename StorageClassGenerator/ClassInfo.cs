@@ -212,8 +212,8 @@ namespace Storage {
     }
 
 
-    internal void WriteClassFile(StreamWriter streamWriter, string nameSpace, bool isFullyCommented) {
-      var cs = isFullyCommented ? "//" : "";
+    internal void WriteClassFile(StreamWriter streamWriter, string nameSpace, string context, bool isFullyCommented) {
+      var cs /*CommentString*/= isFullyCommented ? "//" : "";
       streamWriter.WriteLine("using System;");
       streamWriter.WriteLine("using System.Collections.Generic;");
       streamWriter.WriteLine("using Storage;");
@@ -258,7 +258,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onCsvConstruct(DL context) {{");
+      streamWriter.WriteLine($"    {cs}partial void onCsvConstruct({context} context) {{");
       streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
@@ -616,7 +616,7 @@ namespace Storage {
       }
       streamWriter.WriteLine("      onCsvConstruct(context);");
       streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onCsvConstruct(DL context);");
+      streamWriter.WriteLine($"    partial void onCsvConstruct({context} context);");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion

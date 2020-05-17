@@ -27,8 +27,8 @@ code generator
 StorageModel.cs: contains all simple classes like Sample, SampleDetail, ...  
 Program: A console application running the code generator
 
-**StorageClasses: Target directory**, contains the generated files  
-Sample.cs: Partial class, gets created once, contains code which is not from the generator
+**StorageDataContext: Target directory**, contains the generated files  
+Sample.cs: Partial class, gets created once, contains code which is not from the generator  
 Sample.base.cs: Partial class, gets recreated every time the generator runs.  
 The generator also creates a data context, which holds all the StorageDictionaries. The
 name of this .cs file is configurable.
@@ -39,9 +39,6 @@ it back from a CSV file.
 
 **StorageText**  
 Unit tests for Storage
-
-**StorageSample**  
-The same classes like in StorageClasses, used for unit testing
 
 # Further Documentation
 See file StorageModel.cs in the project StorageModel for a description how to setup your 

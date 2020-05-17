@@ -33,7 +33,7 @@ namespace Storage {
     public static void Main(string[] _) {
       var storageSolutionDirectory = new DirectoryInfo(Environment.CurrentDirectory).Parent.Parent.Parent.Parent;
       var sourceDirectoryPath = storageSolutionDirectory.FullName + @"\StorageModel";
-      var targetDirectoryPath = storageSolutionDirectory.FullName + @"\StorageClasses";
+      var targetDirectoryPath = storageSolutionDirectory.FullName + @"\StorageDataContext";
 
       #region normally not needed code ---------------------------------------------------------------
       //normally, do not delete all files in targetDirectory, because manual changes in Xxx.CS files would get lost.
@@ -41,7 +41,7 @@ namespace Storage {
       //Xxx classes are no longer needed. To get rid of those, we just delete here all files.
       var targetDirectory = new DirectoryInfo(targetDirectoryPath);
       foreach (FileInfo file in targetDirectory.GetFiles()) {
-        if (file.Extension.ToLowerInvariant()==".cs") {
+        if (file.Extension.ToLowerInvariant()==".cs" && !file.Name.StartsWith('_')) {
           file.Delete();
         }
       }
@@ -50,32 +50,32 @@ namespace Storage {
       new StorageClassGenerator(
         sourceDirectoryString: sourceDirectoryPath, //directory from where the .cs files get read.
         targetDirectoryString: targetDirectoryPath, //directory where the new .cs files get written.
-        context: "DL"); //>Name of Context class, which gives static access to all data stored.
+        context: "DC"); //>Name of Context class, which gives static access to all data stored.
 
-      #region normally not needed code ----------------------------------------------------------------
-      //normally, there is no sampleDirectory. We have it here for the unit tests, so they still work, 
-      //while the files in targetDirectory have already been changed, but might not be correct yet.
-      var sampleDirectoryPath = storageSolutionDirectory.FullName + @"\StorageSample";
-      Console.WriteLine($"Press 'y' 'enter' to copy the files from {targetDirectoryPath} to {sampleDirectoryPath}.");
-      if (Console.ReadLine()=="y") {
-        var sampleDirectory = new DirectoryInfo(sampleDirectoryPath);
-        int filesDeletedCount = 0;
-        foreach (FileInfo file in sampleDirectory.GetFiles()) {
-          if (file.Extension.ToLowerInvariant()==".cs" && !file.Name.StartsWith('_')) {
-            file.Delete();
-            filesDeletedCount++;
-          }
-        }
-        int filesCopiedCount = 0;
-        foreach (FileInfo file in targetDirectory.GetFiles()) {
-          if (file.Extension.ToLowerInvariant()==".cs") {
-            file.CopyTo(sampleDirectoryPath + @"\" + file.Name);
-            filesCopiedCount++;
-          }
-        }
-        Console.WriteLine($"{sampleDirectoryPath}: {filesDeletedCount} files deleted, {filesCopiedCount} files copied");
-      }
-      #endregion -------------------------------------------------------------------------------------
+      //#region normally not needed code ----------------------------------------------------------------
+      ////normally, there is no sampleDirectory. We have it here for the unit tests, so they still work, 
+      ////while the files in targetDirectory have already been changed, but might not be correct yet.
+      //var sampleDirectoryPath = storageSolutionDirectory.FullName + @"\StorageSample";
+      //Console.WriteLine($"Press 'y' 'enter' to copy the files from {targetDirectoryPath} to {sampleDirectoryPath}.");
+      //if (Console.ReadLine()=="y") {
+      //  var sampleDirectory = new DirectoryInfo(sampleDirectoryPath);
+      //  int filesDeletedCount = 0;
+      //  foreach (FileInfo file in sampleDirectory.GetFiles()) {
+      //    if (file.Extension.ToLowerInvariant()==".cs" && !file.Name.StartsWith('_')) {
+      //      file.Delete();
+      //      filesDeletedCount++;
+      //    }
+      //  }
+      //  int filesCopiedCount = 0;
+      //  foreach (FileInfo file in targetDirectory.GetFiles()) {
+      //    if (file.Extension.ToLowerInvariant()==".cs") {
+      //      file.CopyTo(sampleDirectoryPath + @"\" + file.Name);
+      //      filesCopiedCount++;
+      //    }
+      //  }
+      //  Console.WriteLine($"{sampleDirectoryPath}: {filesDeletedCount} files deleted, {filesCopiedCount} files copied");
+      //}
+      //#endregion -------------------------------------------------------------------------------------
     }
   }
 }

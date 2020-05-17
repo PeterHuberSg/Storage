@@ -39,7 +39,7 @@ namespace StorageTest {
         addChild(1, "21");
         addChild(1, "22");
       } finally {
-        DL.DisposeData();
+        DC.DisposeData();
       }
     }
 
@@ -51,18 +51,18 @@ namespace StorageTest {
 
 
     private void initDL() {
-      new DL(csvConfig);
+      new DC(csvConfig);
     }
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParents.Count, DL.Data.ReadOnlyParents.Count);
-      foreach (var parent in DL.Data.ReadOnlyParents) {
+      Assert.AreEqual(expectedParents.Count, DC.Data.ReadOnlyParents.Count);
+      foreach (var parent in DC.Data.ReadOnlyParents) {
         Assert.AreEqual(expectedParents[parent.Key], parent.ToString());
       }
 
-      Assert.AreEqual(expectedChildren.Count, DL.Data.ReadOnlyChildren.Count);
-      foreach (var child in DL.Data.ReadOnlyChildren) {
+      Assert.AreEqual(expectedChildren.Count, DC.Data.ReadOnlyChildren.Count);
+      foreach (var child in DC.Data.ReadOnlyChildren) {
         Assert.AreEqual(expectedChildren[child.Key], child.ToString());
       }
     }
@@ -78,8 +78,8 @@ namespace StorageTest {
 
 
     private void addChild(int parentKey, string text) {
-      var parentDictionary = DL.Data.ReadOnlyParents[parentKey];
-      var parentDictionaryNullable = DL.Data.ReadOnlyParentNullables[parentKey];
+      var parentDictionary = DC.Data.ReadOnlyParents[parentKey];
+      var parentDictionaryNullable = DC.Data.ReadOnlyParentNullables[parentKey];
       var newChild = new ReadOnlyChild(text, parentDictionary, parentDictionaryNullable, isStoring: true);
       expectedChildren.Add(newChild.Key, newChild.ToString());
       expectedParents[parentDictionary.Key] = parentDictionary.ToString();
@@ -89,7 +89,7 @@ namespace StorageTest {
 
     private void assertData() {
       assertDL();
-      DL.DisposeData();
+      DC.DisposeData();
 
       initDL();
       assertDL();

@@ -102,7 +102,7 @@ namespace StorageTest {
         removeChild(1);
 
       } finally {
-        DL.DisposeData();
+        DC.DisposeData();
       }
     }
 
@@ -114,23 +114,23 @@ namespace StorageTest {
 
 
     private void initDL() {
-      new DL(csvConfig);
+      new DC(csvConfig);
     }
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParents.Count, DL.Data.ParentsWithSortedList.Count);
-      foreach (var parentSortedList in DL.Data.ParentsWithSortedList) {
+      Assert.AreEqual(expectedParents.Count, DC.Data.ParentsWithSortedList.Count);
+      foreach (var parentSortedList in DC.Data.ParentsWithSortedList) {
         Assert.AreEqual(expectedParents[parentSortedList.Key], parentSortedList.ToString());
       }
 
-      Assert.AreEqual(expectedParentsNullable.Count, DL.Data.ParentsWithSortedListNullable.Count);
-      foreach (var parentNullable in DL.Data.ParentsWithSortedListNullable) {
+      Assert.AreEqual(expectedParentsNullable.Count, DC.Data.ParentsWithSortedListNullable.Count);
+      foreach (var parentNullable in DC.Data.ParentsWithSortedListNullable) {
         Assert.AreEqual(expectedParentsNullable[parentNullable.Key], parentNullable.ToString());
       }
 
-      Assert.AreEqual(expectedChildren.Count, DL.Data.SortedListChildren.Count);
-      foreach (var sortedListChild in DL.Data.SortedListChildren) {
+      Assert.AreEqual(expectedChildren.Count, DC.Data.SortedListChildren.Count);
+      foreach (var sortedListChild in DC.Data.SortedListChildren) {
         Assert.AreEqual(expectedChildren[sortedListChild.Key], sortedListChild.ToString());
       }
     }
@@ -169,10 +169,10 @@ namespace StorageTest {
 
 
     private SortedListChild addSortedListChild(int parentKey, int? parentNullableKey, DateTime date, string text, bool isStoring) {
-      var parent = DL.Data.ParentsWithSortedList[parentKey];
+      var parent = DC.Data.ParentsWithSortedList[parentKey];
       ParentWithSortedListNullable? parentNullable = null;
       if (parentNullableKey.HasValue) {
-        parentNullable = DL.Data.ParentsWithSortedListNullable[parentNullableKey.Value];
+        parentNullable = DC.Data.ParentsWithSortedListNullable[parentNullableKey.Value];
       }
       var newChild = new SortedListChild(date, text, parent, parentNullable, isStoring);
       if (isStoring) {
@@ -215,7 +215,7 @@ namespace StorageTest {
 
 
     private void updateParent(int parentSortedListKey, string textUpdateable) {
-      var parentSortedList = DL.Data.ParentsWithSortedList[parentSortedListKey];
+      var parentSortedList = DC.Data.ParentsWithSortedList[parentSortedListKey];
       parentSortedList.Update(textUpdateable);
       expectedParents[parentSortedList.Key] = parentSortedList.ToString();
       foreach (var sortedListChild in parentSortedList.SortedListChildren.Values) {
@@ -226,7 +226,7 @@ namespace StorageTest {
 
 
     private void updateParentNullable(int parentSortedListNullableKey, string textUpdateable) {
-      var parentSortedListNullable = DL.Data.ParentsWithSortedListNullable[parentSortedListNullableKey];
+      var parentSortedListNullable = DC.Data.ParentsWithSortedListNullable[parentSortedListNullableKey];
       parentSortedListNullable.Update(textUpdateable);
       expectedParentsNullable[parentSortedListNullable.Key] = parentSortedListNullable.ToString();
       foreach (var sortedListChild in parentSortedListNullable.SortedListChildren.Values) {
@@ -237,12 +237,12 @@ namespace StorageTest {
 
 
     private void updateChild(int childKey, int parentKey, int? parentNullableKey, DateTime date, string text) {
-      var childSortedList = DL.Data.SortedListChildren[childKey];
-      var newParent = DL.Data.ParentsWithSortedList[parentKey];
+      var childSortedList = DC.Data.SortedListChildren[childKey];
+      var newParent = DC.Data.ParentsWithSortedList[parentKey];
       var oldParent = childSortedList.ParentWithSortedList;
       ParentWithSortedListNullable? newParentNullable = null;
       if (parentNullableKey!=null) {
-        newParentNullable = DL.Data.ParentsWithSortedListNullable[parentNullableKey.Value];
+        newParentNullable = DC.Data.ParentsWithSortedListNullable[parentNullableKey.Value];
       }
       var oldParentNullable = childSortedList.ParentWithSortedListNullable;
       childSortedList.Update(date, text, newParent, newParentNullable);
@@ -269,7 +269,7 @@ namespace StorageTest {
 
 
     private void removeParent(int parentKey) {
-      var parent = DL.Data.ParentsWithSortedList[parentKey];
+      var parent = DC.Data.ParentsWithSortedList[parentKey];
       foreach (var child in parent.SortedListChildren.Values) {
         expectedChildren.Remove(child.Key);
       }
@@ -280,7 +280,7 @@ namespace StorageTest {
 
 
     private void removeParentNullable(int parentNullableKey) {
-      var parentNullable = DL.Data.ParentsWithSortedListNullable[parentNullableKey];
+      var parentNullable = DC.Data.ParentsWithSortedListNullable[parentNullableKey];
       foreach (var child in parentNullable.SortedListChildren.Values) {
         expectedChildren[child.Key] = child.ToString();
       }
@@ -291,7 +291,7 @@ namespace StorageTest {
 
 
     private void removeChild(int ChildKey) {
-      var child = DL.Data.SortedListChildren[ChildKey];
+      var child = DC.Data.SortedListChildren[ChildKey];
       expectedChildren.Remove(child.Key);
       var parent = child.ParentWithSortedList;
       var parentNullable = child.ParentWithSortedListNullable;
@@ -306,7 +306,7 @@ namespace StorageTest {
 
     private void assertData() {
       assertDL();
-      DL.DisposeData();
+      DC.DisposeData();
 
       initDL();
       assertDL();

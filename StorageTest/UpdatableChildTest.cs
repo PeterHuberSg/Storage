@@ -75,7 +75,7 @@ namespace StorageTest {
 
 
       } finally {
-        DL.DisposeData();
+        DC.DisposeData();
       }
     }
 
@@ -87,23 +87,23 @@ namespace StorageTest {
 
 
     private void initDL() {
-      new DL(csvConfig);
+      new DC(csvConfig);
     }
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParents.Count, DL.Data.ReadOnlyParent2s.Count);
-      foreach (var parent in DL.Data.ReadOnlyParent2s) {
+      Assert.AreEqual(expectedParents.Count, DC.Data.ReadOnlyParent2s.Count);
+      foreach (var parent in DC.Data.ReadOnlyParent2s) {
         Assert.AreEqual(expectedParents[parent.Key], parent.ToString());
       }
 
-      Assert.AreEqual(expectedParentsNullable.Count, DL.Data.ReadOnlyParent2Nullables.Count);
-      foreach (var parentNullable in DL.Data.ReadOnlyParent2Nullables) {
+      Assert.AreEqual(expectedParentsNullable.Count, DC.Data.ReadOnlyParent2Nullables.Count);
+      foreach (var parentNullable in DC.Data.ReadOnlyParent2Nullables) {
         Assert.AreEqual(expectedParentsNullable[parentNullable.Key], parentNullable.ToString());
       }
 
-      Assert.AreEqual(expectedChildren.Count, DL.Data.UpdatableChildren.Count);
-      foreach (var child in DL.Data.UpdatableChildren) {
+      Assert.AreEqual(expectedChildren.Count, DC.Data.UpdatableChildren.Count);
+      foreach (var child in DC.Data.UpdatableChildren) {
         Assert.AreEqual(expectedChildren[child.Key], child.ToString());
       }
     }
@@ -142,10 +142,10 @@ namespace StorageTest {
 
 
     private UpdatableChild addUpdatableChild(int parentKey, int? parentNullableKey, string text, bool isStoring) {
-      var parent = DL.Data.ReadOnlyParent2s[parentKey];
+      var parent = DC.Data.ReadOnlyParent2s[parentKey];
       ReadOnlyParent2Nullable? parentNullable = null;
       if (parentNullableKey.HasValue) {
-        parentNullable = DL.Data.ReadOnlyParent2Nullables[parentNullableKey.Value];
+        parentNullable = DC.Data.ReadOnlyParent2Nullables[parentNullableKey.Value];
       }
       var newChild = new UpdatableChild(text, parent, parentNullable, isStoring);
       if (isStoring) {
@@ -188,12 +188,12 @@ namespace StorageTest {
 
 
     private void updateChild(int childKey, int parentKey, int? parentNullableKey, DateTime date, string text) {
-      var child = DL.Data.UpdatableChildren[childKey];
-      var newParent = DL.Data.ReadOnlyParent2s[parentKey];
+      var child = DC.Data.UpdatableChildren[childKey];
+      var newParent = DC.Data.ReadOnlyParent2s[parentKey];
       var oldParent = child.ReadOnlyParent2;
       ReadOnlyParent2Nullable? newParentNullable = null;
       if (parentNullableKey!=null) {
-        newParentNullable = DL.Data.ReadOnlyParent2Nullables[parentNullableKey.Value];
+        newParentNullable = DC.Data.ReadOnlyParent2Nullables[parentNullableKey.Value];
       }
       var oldParentNullable = child.ReadOnlyParent2Nullable;
       child.Update(text, newParent, newParentNullable);
@@ -221,7 +221,7 @@ namespace StorageTest {
 
     private void assertData() {
       assertDL();
-      DL.DisposeData();
+      DC.DisposeData();
 
       initDL();
       assertDL();

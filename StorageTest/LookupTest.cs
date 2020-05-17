@@ -45,7 +45,7 @@ namespace StorageTest {
         addLookupChild(3, lookupParent2, lookupParent2Nullable);
 
       } finally {
-        DL.DisposeData();
+        DC.DisposeData();
       }
     }
 
@@ -57,23 +57,23 @@ namespace StorageTest {
 
 
     private void initDL() {
-      new DL(csvConfig);
+      new DC(csvConfig);
     }
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedLookupParent.Count, DL.Data.LookupParents.Count);
-      foreach (var lookupParent in DL.Data.LookupParents) {
+      Assert.AreEqual(expectedLookupParent.Count, DC.Data.LookupParents.Count);
+      foreach (var lookupParent in DC.Data.LookupParents) {
         Assert.AreEqual(expectedLookupParent[lookupParent.Key], lookupParent.ToString());
       }
 
-      Assert.AreEqual(expectedLookupParentNullable.Count, DL.Data.LookupParentNullables.Count);
-      foreach (var lookupParentNullable in DL.Data.LookupParentNullables) {
+      Assert.AreEqual(expectedLookupParentNullable.Count, DC.Data.LookupParentNullables.Count);
+      foreach (var lookupParentNullable in DC.Data.LookupParentNullables) {
         Assert.AreEqual(expectedLookupParent[lookupParentNullable.Key], lookupParentNullable.ToString());
       }
 
-      Assert.AreEqual(expectedLookupChild.Count, DL.Data.LookupChildren.Count);
-      foreach (var lookupChild in DL.Data.LookupChildren) {
+      Assert.AreEqual(expectedLookupChild.Count, DC.Data.LookupChildren.Count);
+      foreach (var lookupChild in DC.Data.LookupChildren) {
         Assert.AreEqual(expectedLookupChild[lookupChild.Key], lookupChild.ToString());
       }
     }
@@ -104,7 +104,7 @@ namespace StorageTest {
 
     private void assertData() {
       assertDL();
-      DL.DisposeData();
+      DC.DisposeData();
 
       initDL();
       assertDL();

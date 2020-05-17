@@ -58,9 +58,9 @@ namespace StorageTest {
           addDetail(2, 2);
 
           updateMaster(1, "a");
-          updateSample(1, "b", DL.Data.SampleMasters[0]);
+          updateSample(1, "b", DC.Data.SampleMasters[0]);
           updateSample(1, "c", null);
-          updateSample(1, "d", DL.Data.SampleMasters[1]);
+          updateSample(1, "d", DC.Data.SampleMasters[1]);
           updateDetail(1, "a");
 
           removeDetail(2);
@@ -69,14 +69,14 @@ namespace StorageTest {
           //removeMaster(1);
           //showStructure()
         } finally {
-          DL.DisposeData();
+          DC.DisposeData();
         }
       }
     }
 
 
     private void initDL() {
-      new DL(csvConfig);
+      new DC(csvConfig);
     }
 
 
@@ -99,7 +99,7 @@ namespace StorageTest {
       var masterText = "Master" + masterKey + text;
       expectedData!.Masters.Remove(masterKey);
       expectedData!.Masters.Add(masterKey, masterText);
-      var master = DL.Data.SampleMasters[masterKey];
+      var master = DC.Data.SampleMasters[masterKey];
       master.Update(masterText, 1);
       foreach (var sample in master.SampleX) {
         expectedData!.Samples.Remove(sample.Key);
@@ -107,18 +107,6 @@ namespace StorageTest {
       }
       assertData();
     }
-
-
-    //private void removeMaster(int masterKey) {
-    //  expectedData!.Masters.Remove(masterKey);
-    //  var master = DL.Data.SampleMasters[masterKey];
-    //  master.Remove();
-    //  foreach (var sample in master.SampleX) {
-    //    expectedData!.Samples.Remove(sample.Key);
-    //    expectedData!.Samples.Add(sample.Key, sample.ToString());
-    //  }
-    //  assertData();
-    //}
 
 
     private void addSample(int sampleKey, int? masterKey) {
@@ -158,8 +146,8 @@ namespace StorageTest {
           dateTimeTicks: DateTime.Now.Date.AddDays(-sampleKey) + TimeSpan.FromTicks(sampleKey),
           dateTimeMinute: DateTime.Now.Date.AddDays(-sampleKey) + TimeSpan.FromMinutes(sampleKey),
           dateTimeSecond: DateTime.Now.Date.AddDays(-sampleKey) + TimeSpan.FromSeconds(sampleKey),
-          oneMaster: DL.Data.SampleMasters[masterKey.Value], 
-          otherMaster: DL.Data.SampleMasters[masterKey.Value + 1],
+          oneMaster: DC.Data.SampleMasters[masterKey.Value], 
+          otherMaster: DC.Data.SampleMasters[masterKey.Value + 1],
           "option" + sampleKey,
           isStoring: false);
       }
@@ -171,7 +159,7 @@ namespace StorageTest {
 
     private void updateSample(int sampleKey, string text, SampleMaster? newSampleMaster) {
       var sampleText = "Sample" + sampleKey + text;
-      Sample sample = DL.Data.SampleX[sampleKey];
+      Sample sample = DC.Data.SampleX[sampleKey];
       sample.Update(
         text: sampleText,
         flag: sample.Flag,
@@ -197,7 +185,7 @@ namespace StorageTest {
 
     private void removeSample(int sampleKey) {
       expectedData!.Samples.Remove(sampleKey);
-      var sample = DL.Data.SampleX[sampleKey];
+      var sample = DC.Data.SampleX[sampleKey];
       sample.Remove();
       assertData();
     }
@@ -206,7 +194,7 @@ namespace StorageTest {
     private void addDetail(int detailKey, int sampleKey) {
       var detailText = "Detail" + sampleKey + '.' + detailKey;
       expectedData!.Details.Add(detailKey, detailText);
-      var sample = DL.Data.SampleX[sampleKey];
+      var sample = DC.Data.SampleX[sampleKey];
       var detail = new SampleDetail(detailText, sample, false);
       detail.Store();
       expectedData!.Samples.Remove(sampleKey);
@@ -219,7 +207,7 @@ namespace StorageTest {
       var detailText = "Detail" + key + text;
       expectedData!.Details.Remove(key);
       expectedData!.Details.Add(key, detailText);
-      var detail = DL.Data.SampleDetails[key];
+      var detail = DC.Data.SampleDetails[key];
       detail.Update(detailText, detail.Sample);
       assertData();
     }
@@ -227,7 +215,7 @@ namespace StorageTest {
 
     private void removeDetail(int detailKey) {
       expectedData!.Details.Remove(detailKey);
-      var detail = DL.Data.SampleDetails[detailKey];
+      var detail = DC.Data.SampleDetails[detailKey];
       detail.Remove();
       var sampleKey = detail.Sample.Key;
       expectedData!.Samples.Remove(sampleKey);
@@ -241,30 +229,30 @@ namespace StorageTest {
 
       if (csvConfig is null) return;
 
-      DL.DisposeData();
+      DC.DisposeData();
       initDL();
       assertDL();
     }
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedData!.Masters.Count, DL.Data.SampleMasters.Count);
+      Assert.AreEqual(expectedData!.Masters.Count, DC.Data.SampleMasters.Count);
       foreach (var master in expectedData!.Masters) {
-        var dlMaster = DL.Data.SampleMasters[master.Key];
+        var dlMaster = DC.Data.SampleMasters[master.Key];
         Assert.AreEqual(master.Value, dlMaster.Text);
       }
 
-      Assert.AreEqual(expectedData!.Samples.Count, DL.Data.SampleX.Count);
+      Assert.AreEqual(expectedData!.Samples.Count, DC.Data.SampleX.Count);
       foreach (var sample in expectedData!.Samples) {
-        var dlSample = DL.Data.SampleX[sample.Key];
+        var dlSample = DC.Data.SampleX[sample.Key];
         Assert.AreEqual(sample.Value, dlSample.ToString());
         //assertMaster(dlSample.OneMaster, dlSample);
         //assertMaster(dlSample.OtherMaster, dlSample);
       }
 
-      Assert.AreEqual(expectedData!.Details.Count, DL.Data.SampleDetails.Count);
+      Assert.AreEqual(expectedData!.Details.Count, DC.Data.SampleDetails.Count);
       foreach (var detail in expectedData!.Details) {
-        var dlDetail = DL.Data.SampleDetails[detail.Key];
+        var dlDetail = DC.Data.SampleDetails[detail.Key];
         Assert.AreEqual(detail.Value, dlDetail.Text);
         var isFound = false;
         foreach (var sampleDetail in dlDetail.Sample.SampleDetails) {
@@ -277,11 +265,11 @@ namespace StorageTest {
       }
 
       var mastersFromSamples = new Dictionary<int, HashSet<Sample>>();
-      foreach (var sample in DL.Data.SampleX.Values) {
+      foreach (var sample in DC.Data.SampleX.Values) {
         addSampleToMaster(sample, sample.OneMaster, mastersFromSamples);
         addSampleToMaster(sample, sample.OtherMaster, mastersFromSamples);
       }
-      foreach (var master in DL.Data.SampleMasters.Values) {
+      foreach (var master in DC.Data.SampleMasters.Values) {
         if (mastersFromSamples.TryGetValue(master.Key, out var samplesHashSet)) {
           Assert.AreEqual(samplesHashSet.Count, master.SampleX.Count);
           foreach (var sample in samplesHashSet) {
@@ -296,25 +284,6 @@ namespace StorageTest {
     }
 
 
-    //private string showStructure() {
-    //  var sb = new StringBuilder();
-    //  sb.AppendLine("Samples");
-    //  foreach (var sample in DL.Data.SampleX.Values) {
-    //    sb.AppendLine($"{sample.Key}: {sample.OneMaster?.Key} {sample.OtherMaster?.Key}");
-    //  }
-    //  sb.AppendLine();
-    //  sb.AppendLine("Masters");
-    //  foreach (var master in DL.Data.SampleMasters.Values) {
-    //    sb.Append(master.Key + ":");
-    //    foreach (var sample in master.SampleX) {
-    //      sb.Append(" " + sample.Key);
-    //    }
-    //    sb.AppendLine();
-    //  }
-    //  return sb.ToString();
-    //}
-
-
     private void addSampleToMaster(Sample sample, SampleMaster? master, Dictionary<int, HashSet<Sample>> mastersFromSamples) {
       if (master is null) return;
 
@@ -324,33 +293,5 @@ namespace StorageTest {
       }
       samplesHashSet.Add(sample);
     }
-
-
-    //private void assertMaster(SampleMaster? master, Sample dlSample) {
-    //  if (master is null) {
-    //    var isFound = false;
-    //    foreach (var master1 in DL.Data!.SampleMasters) {
-    //      foreach (var sample1 in master1.Samples) {
-    //        if (sample1.Key==dlSample.Key) {
-    //          isFound = true;
-    //          break;
-    //        }
-    //      }
-    //      if (isFound) {
-    //        break;
-    //      }
-    //    }
-    //    Assert.IsFalse(isFound);
-    //  } else {
-    //    var isFound = false;
-    //    foreach (var sample1 in master.Samples) {
-    //      if (sample1.Key==dlSample.Key) {
-    //        isFound = true;
-    //        break;
-    //      }
-    //    }
-    //    Assert.IsTrue(isFound);
-    //  }
-    //}
   }
 }

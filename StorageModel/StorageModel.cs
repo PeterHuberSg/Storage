@@ -51,7 +51,7 @@ namespace YourNameSpace {
       new StorageClassGenerator(
         sourceDirectoryString: sourceDirectoryPath, //directory from where the .cs files get read.
         targetDirectoryString: targetDirectoryPath, //directory where the new .cs files get written.
-        context: "DL"); //>Name of Context class, which gives static access to all data stored.
+        context: "DC"); //>Name of Data Context class, which gives static access to all data stored.
     }
   }
 }

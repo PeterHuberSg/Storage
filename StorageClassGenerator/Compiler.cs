@@ -468,7 +468,7 @@ namespace Storage {
         if (!new FileInfo(fileNameAndPath).Exists) {
           using var streamWriter = new StreamWriter(fileNameAndPath);
           Console.WriteLine(classInfo.ClassName + ".cs");
-          classInfo.WriteClassFile(streamWriter, nameSpaceString!, IsFullyCommented);
+          classInfo.WriteClassFile(streamWriter, nameSpaceString!, context, IsFullyCommented);
         }
       }
     }
