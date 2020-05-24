@@ -601,7 +601,12 @@ namespace Storage {
       streamWriter.WriteLine("      data = this;");
       streamWriter.WriteLine("      IsInitialised = false;");
       streamWriter.WriteLine();
-      streamWriter.WriteLine("      onConstruct();");
+      streamWriter.WriteLine("      string? backupResult = null;");
+      streamWriter.WriteLine("      if (csvConfig!=null) {");
+      streamWriter.WriteLine("        backupResult = Csv.Backup(csvConfig, DateTime.Now);");
+      streamWriter.WriteLine("      }");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("      onConstructing(backupResult);");
       streamWriter.WriteLine();
 
       foreach (var classInfo in classes.Values.OrderBy(ci => ci.ClassName)) {
@@ -663,7 +668,7 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>}");
       streamWriter.WriteLine("    /// Called at beginning of constructor");
       streamWriter.WriteLine("    /// </summary>}");
-      streamWriter.WriteLine("    partial void onConstruct();");
+      streamWriter.WriteLine("    partial void onConstructing(string? backupResult);");
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>}");
       streamWriter.WriteLine("    /// Called at end of constructor");

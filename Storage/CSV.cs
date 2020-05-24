@@ -16,6 +16,8 @@ the Creative Commons 0 license (details see COPYING.txt file, see also
 This software is distributed without any warranty. 
 **************************************************************************************/
 using System;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 
@@ -334,6 +336,53 @@ namespace Storage {
       if (thisString==thatString) return true;
       if ((thisString==null || thisString=="") && (thatString==null || thatString=="")) return true;
       return false;
+    }
+    #endregion
+
+
+    #region Backup
+    //      ------
+
+    public static string Backup(CsvConfig csvConfig, DateTime nowDate) {
+      if (csvConfig.BackupPath is null) return "";
+
+      if (csvConfig.BackupPeriodicity<1 || csvConfig.BackupCopies<1) throw new Exception("CSV.Backup: " +
+        $"Both BackupPeriodicity {csvConfig.BackupPeriodicity} and BackupCopies {csvConfig.BackupCopies} must be greater" + 
+        $"equal 1 for backup to {csvConfig.BackupPath}.");
+
+      var backupDir = new DirectoryInfo(csvConfig.BackupPath);
+      if (!backupDir.Exists) throw new Exception($"Backup directory does not exist: {csvConfig.BackupPath}");
+
+      var existingDirectories = backupDir.GetDirectories("csv*").OrderBy(d=>d.Name).ToList();
+      if (existingDirectories.Count>0) {
+        var newestDirectory = existingDirectories[^1];
+        ReadOnlySpan<char> newestDirectoryName = newestDirectory.Name;
+        var lastBackupDate = new DateTime(
+        int.Parse(newestDirectory.Name[3..7]),
+        int.Parse(newestDirectory.Name[7..9]),
+        int.Parse(newestDirectory.Name[9..11]));
+        var nextBackupDate = lastBackupDate.AddDays(csvConfig.BackupPeriodicity);
+        if (nowDate<nextBackupDate) return 
+            $"Last backup: {lastBackupDate:dd.MM.yy}; Today: {nowDate:dd.MM.yy}; Next backup: {nextBackupDate:dd.MM.yy};";
+      }
+
+      var result = "";
+      var deleteCount = existingDirectories.Count - csvConfig.BackupCopies;
+      for (int deleteIndex = 0; deleteIndex < deleteCount; deleteIndex++) {
+        existingDirectories[deleteIndex].Delete(true);
+        result += "Directory " + existingDirectories[deleteIndex].FullName + " deleted" + Environment.NewLine;
+      }
+
+      var newDirectory = backupDir.CreateSubdirectory("csv" + nowDate.ToString("yyyyMMdd"));
+      var newPath = newDirectory.FullName + '\\';
+      var activeDir = new DirectoryInfo(csvConfig.DirectoryPath);
+      var fileCount = 0;
+      foreach (var file in activeDir.GetFiles("*.csv")) {
+        file.CopyTo(newPath + file.Name);
+        fileCount++;
+      }
+      result += $"{fileCount} files copied from {csvConfig.DirectoryPath} {Environment.NewLine}to {newDirectory.FullName}.";
+      return result;
     }
     #endregion
 

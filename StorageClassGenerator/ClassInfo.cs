@@ -390,8 +390,6 @@ namespace Storage {
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
         streamWriter.WriteLine("    /// </summary>");
-        if (ClassName=="Sample") System.Diagnostics.Debugger.Break();
-
         streamWriter.Write($"    {cs}partial void onUpdating(");
         if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Implementation, cs)) {
           throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +

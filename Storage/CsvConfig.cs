@@ -42,6 +42,24 @@ namespace Storage {
 
 
     /// <summary>
+    /// Directory where the content of DirectoryPath should be backed up to
+    /// </summary>
+    public readonly string? BackupPath;
+
+
+    /// <summary>
+    /// Backup periodicity in days
+    /// </summary>
+    public readonly int BackupPeriodicity;
+
+
+    /// <summary>
+    /// Number of backup copies to keep before the oldest gets deleted
+    /// </summary>
+    public readonly int BackupCopies;
+
+
+    /// <summary>
     /// Delimiter character used in CSV file to separate fields
     /// </summary>
     public readonly char Delimiter;
@@ -98,6 +116,9 @@ namespace Storage {
     /// pass the exception to the main thread of the application.</param>
     public CsvConfig(
       string directoryPath,
+      string? backupPath = null,
+      int backupPeriodicity = int.MinValue,
+      int backupCopies = int.MinValue,
       char delimiter = '\t',
       Encoding? encoding = null,
       int bufferSize = 1 << 15, //32k
@@ -107,6 +128,9 @@ namespace Storage {
       char lineCharDelete = '-') 
     {
       DirectoryPath = directoryPath;
+      BackupPath = backupPath;
+      BackupPeriodicity = backupPeriodicity;
+      BackupCopies = backupCopies;
       Delimiter = delimiter;
       if (encoding!=null) {
         Encoding = encoding;
@@ -134,6 +158,8 @@ namespace Storage {
     public override string ToString() {
       return
         "DirectoryPath: " + DirectoryPath +
+        "; BackupPath: " + BackupPath +
+        "; BackupPeriodicity: " + BackupPeriodicity +
         "; Delimiter: " + Delimiter +
         "; Encoding: " + Encoding +
         "; BufferSize: " + BufferSize +

@@ -192,7 +192,12 @@ namespace StorageModel  {
       data = this;
       IsInitialised = false;
 
-      onConstruct();
+      string? backupResult = null;
+      if (csvConfig!=null) {
+        backupResult = Csv.Backup(csvConfig, DateTime.Now);
+      }
+
+      onConstructing(backupResult);
 
       SampleWithDictionariesByIdInt = new Dictionary<int, SampleWithDictionary>();
       SampleWithDictionariesByIdString = new Dictionary<string, SampleWithDictionary>();
@@ -587,7 +592,7 @@ namespace StorageModel  {
     /// <summary>}
     /// Called at beginning of constructor
     /// </summary>}
-    partial void onConstruct();
+    partial void onConstructing(string? backupResult);
 
     /// <summary>}
     /// Called at end of constructor
