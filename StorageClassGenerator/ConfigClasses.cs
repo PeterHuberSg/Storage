@@ -25,6 +25,7 @@ namespace Storage {
   /// <summary>
   /// Provides additional information about storing the class in a CSV file
   /// </summary>
+  [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
   public class StorageClassAttribute: Attribute {
     /// <summary>
     /// Constructor
@@ -46,6 +47,7 @@ namespace Storage {
   /// <summary>
   /// Provides additional information about a property of a class which can be written to a CSV file.
   /// </summary>
+  [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
   public class StoragePropertyAttribute: Attribute {
     /// <summary>
     /// Constructor
@@ -53,7 +55,9 @@ namespace Storage {
     /// <param name="defaultValue">Provides a default value for this property in the class constructor.</param>
     /// <param name="isLookupOnly">Normally, a parent has a child collection for every child type referencing it. If the
     /// child just wants to link to the parent without the parent having a collection for that child, set isLookupOnly = true.</param>
-    public StoragePropertyAttribute(string? defaultValue = null, bool isLookupOnly = false) { }
+    /// <param name="needsDictionary">A dictionary gets created in the data context for quick access to an instance using
+    /// the value of this property.</param>
+    public StoragePropertyAttribute(string? defaultValue = null, bool isLookupOnly = false, bool needsDictionary = false) { }
   }
 #pragma warning restore IDE0060 // Remove unused parameter
 

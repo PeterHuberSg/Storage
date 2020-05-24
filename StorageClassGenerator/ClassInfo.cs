@@ -92,6 +92,7 @@ namespace Storage {
       string? propertyComment, 
       string ? defaultValue, 
       bool? isLookupOnly,
+      bool needsDictionary,
       bool isReadOnly) 
     {
       var isLookUp = false;
@@ -99,36 +100,138 @@ namespace Storage {
       if (isNullable) {
         csvTypeString = csvTypeString[..^1];
       }
+      //MemberInfo member;
+      //switch (csvTypeString.ToLowerInvariant()) {
+      //case "date": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Date, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "time": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Time, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "dateminutes": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateMinutes, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "dateseconds": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateSeconds, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "datetime": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateTime, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "decimal": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "decimal2": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal2, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "decimal4": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal4, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "decimal5": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal5, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "bool": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Bool, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "int": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Int, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //case "string": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.String, this, isNullable, isReadOnly, propertyComment, defaultValue, needsDictionary); break;
+      //default:
+      //  if (csvTypeString.Contains("<")) {
+      //    //a parent having a collection for its children
+      //    if (csvTypeString.StartsWith("List<") && csvTypeString.EndsWith(">")) {
+      //      if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
+
+      //      /*List*/member = new MemberInfo(name, this, csvTypeString, csvTypeString[5..^1], propertyComment, defaultValue);
+      //      break;
+      //    } else if ((csvTypeString.StartsWith("Dictionary<") || csvTypeString.StartsWith("SortedList<")) && 
+      //      csvTypeString.EndsWith(">")) 
+      //    {
+      //      if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
+
+      //      //Dictionary or SortedList
+      //      // memberTypeString: SortedList<DateTime /*DateOnly*/, Sample>
+      //      // memberTypeString: Dictionary<DateTime /*DateOnly*/, Sample>
+      //      var startCommentPos = csvTypeString.IndexOf("/*");
+      //      if (startCommentPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} is " +
+      //        "missing a comment '/* */' after the key type, indicating which child-property to use for that key.");
+      //      var endCommentPos = csvTypeString.IndexOf("*/");
+      //      if (endCommentPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} is " +
+      //        "missing the comment closing '*/'.");
+      //      if (endCommentPos<startCommentPos) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} " +
+      //        "Closing '*/' must come before '/*'.");
+      //      var childKeyPropertyName = csvTypeString[(startCommentPos+2)..endCommentPos];
+      //      var stringWithoutComment = csvTypeString[..(startCommentPos-1)] + csvTypeString[(endCommentPos+2)..];
+      //      // stringWithoutComment: Dictionary<DateTime, Sample>
+      //      var openBracketPos = stringWithoutComment.IndexOf('<');
+      //      if (openBracketPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} " +
+      //        "Opening '<' is missing.");
+      //      var closingBracketPos = stringWithoutComment.IndexOf('>');
+      //      if (closingBracketPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} " +
+      //        "Closing '>' is missing.");
+      //      var comaPos = stringWithoutComment.IndexOf(',');
+      //      if (comaPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} " +
+      //        "',' is missing.");
+      //      if (comaPos<openBracketPos) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} " +
+      //        "Coma ',' should come after '<'.");
+      //      if (closingBracketPos<comaPos) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} " +
+      //        "Coma ',' should come before '>'.");
+      //      var keyTypeString = stringWithoutComment[(openBracketPos+1)..(comaPos)].Trim();
+      //      var itemTypeName = stringWithoutComment[(comaPos+1)..(closingBracketPos)].Trim();
+      //      CollectionTypeEnum collectionType;
+      //      if (csvTypeString.StartsWith("SortedList<")) {
+      //        collectionType = CollectionTypeEnum.SortedList;
+      //      } else {
+      //        collectionType = CollectionTypeEnum.Dictionary;
+      //      }
+      //      member = new MemberInfo(
+      //        name, 
+      //        this, 
+      //        csvTypeString,
+      //        collectionType,
+      //        itemTypeName,
+      //        childKeyPropertyName, 
+      //        keyTypeString, 
+      //        propertyComment, 
+      //        defaultValue);
+      //      break;
+      //    }
+
+      //    throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} not support. Should " +
+      //      "it be a List<>, SortedList<,> or Dictionary<,> ?");
+      //  }
+      //  //a child linking to its parent, i.e. a MemberTypeEnum.Parent
+      //  member = new MemberInfo(name, this, csvTypeString, isNullable, isReadOnly, propertyComment, defaultValue, isLookupOnly??false);
+      //  isLookUp = true;
+      //  break;
+      //}
+
       MemberInfo member;
-      switch (csvTypeString.ToLowerInvariant()) {
-      case "date": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Date, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "time": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Time, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "dateminutes": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateMinutes, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "dateseconds": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateSeconds, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "datetime": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.DateTime, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "decimal": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "decimal2": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal2, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "decimal4": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal4, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "decimal5": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Decimal5, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "bool": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Bool, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "int": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.Int, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      case "string": member = new MemberInfo(name, csvTypeString, MemberTypeEnum.String, this, isNullable, isReadOnly, propertyComment, defaultValue); break;
-      default:
+      var memberType = (csvTypeString.ToLowerInvariant()) switch
+      {
+        "date" => MemberTypeEnum.Date,
+        "time" => MemberTypeEnum.Time,
+        "dateminutes" => MemberTypeEnum.DateMinutes,
+        "dateseconds" => MemberTypeEnum.DateSeconds,
+        "datetime" => MemberTypeEnum.DateTime,
+        "decimal" => MemberTypeEnum.Decimal,
+        "decimal2" => MemberTypeEnum.Decimal2,
+        "decimal4" => MemberTypeEnum.Decimal4,
+        "decimal5" => MemberTypeEnum.Decimal5,
+        "bool" => MemberTypeEnum.Bool,
+        "int" => MemberTypeEnum.Int,
+        "string" => MemberTypeEnum.String,
+        _ => MemberTypeEnum.Undefined,
+      };
+
+      if (memberType!=MemberTypeEnum.Undefined) {
+        //simple data type
+        //----------------
+        member = new MemberInfo(name, csvTypeString, memberType, this, isNullable, isReadOnly, propertyComment,
+          defaultValue, needsDictionary);
+
+      } else {
+        if (needsDictionary) {
+          throw new GeneratorException($"{ClassName}.{name} is of type {csvTypeString}. It " +
+            "cannot have the attribute 'needsDictionary', which is only available for simple types.");
+        }
         if (csvTypeString.Contains("<")) {
           //a parent having a collection for its children
+          //=============================================
           if (csvTypeString.StartsWith("List<") && csvTypeString.EndsWith(">")) {
+            //List
+            //----
             if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
 
-            /*List*/member = new MemberInfo(name, this, csvTypeString, csvTypeString[5..^1], propertyComment, defaultValue);
-            break;
-          } else if ((csvTypeString.StartsWith("Dictionary<") || csvTypeString.StartsWith("SortedList<")) && 
+            member = new MemberInfo(name, this, csvTypeString, csvTypeString[5..^1], propertyComment, defaultValue);
+
+          } else if ((csvTypeString.StartsWith("Dictionary<") || csvTypeString.StartsWith("SortedList<")) &&
             csvTypeString.EndsWith(">")) 
           {
-            if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
-
             //Dictionary or SortedList
+            //------------------------
             // memberTypeString: SortedList<DateTime /*DateOnly*/, Sample>
             // memberTypeString: Dictionary<DateTime /*DateOnly*/, Sample>
+            if (isNullable) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} cannot be nullable.");
+
             var startCommentPos = csvTypeString.IndexOf("/*");
             if (startCommentPos<0) throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} is " +
               "missing a comment '/* */' after the key type, indicating which child-property to use for that key.");
@@ -162,25 +265,26 @@ namespace Storage {
               collectionType = CollectionTypeEnum.Dictionary;
             }
             member = new MemberInfo(
-              name, 
-              this, 
+              name,
+              this,
               csvTypeString,
               collectionType,
               itemTypeName,
-              childKeyPropertyName, 
-              keyTypeString, 
-              propertyComment, 
+              childKeyPropertyName,
+              keyTypeString,
+              propertyComment,
               defaultValue);
-            break;
-          }
 
-          throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} not support. Should " +
-            "it be a List<>, SortedList<,> or Dictionary<,> ?");
+          } else {
+            throw new GeneratorException($"Class '{ClassName}'.Property '{name}': {csvTypeString} not support. Should " +
+              "it be a List<>, SortedList<,> or Dictionary<,> ?");
+          }
+        } else {
+          //a child linking to its parent, i.e. a MemberTypeEnum.Parent
+          //===========================================================
+          member = new MemberInfo(name, this, csvTypeString, isNullable, isReadOnly, propertyComment, defaultValue, isLookupOnly??false);
+          isLookUp = true;
         }
-        //a child linking to its parent, i.e. a MemberTypeEnum.Parent
-        member = new MemberInfo(name, this, csvTypeString, isNullable, isReadOnly, propertyComment, defaultValue, isLookupOnly??false);
-        isLookUp = true;
-        break;
       }
 
       if (!isLookUp && isLookupOnly.HasValue) {
@@ -584,19 +688,31 @@ namespace Storage {
             streamWriter.WriteLine("      }");
           } else {
             streamWriter.WriteLine($"      var {mi.ParentClassInfo!.LowerClassName}Key = csvReader.ReadInt();");
-            streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}." + 
+            streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}." +
               $"TryGetValue({mi.ParentClassInfo!.LowerClassName}Key, out var {mi.LowerMemberName})) {{");
             streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
             streamWriter.WriteLine($"      }} else {{");
-            streamWriter.WriteLine($"        throw new Exception($\"Read {mi.ClassInfo.ClassName} from CSV file: Cannot find " + 
+            streamWriter.WriteLine($"        throw new Exception($\"Read {mi.ClassInfo.ClassName} from CSV file: Cannot find " +
               $"{mi.MemberName} with key {{{mi.ParentClassInfo!.LowerClassName}Key}}.\" + Environment.NewLine + ");
             streamWriter.WriteLine($"          csvReader.PresentContent);");
             streamWriter.WriteLine($"      }}");
           }
-        } else if (mi.MemberType==MemberTypeEnum.Enum) {
-          streamWriter.WriteLine($"      {mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
         } else {
-          streamWriter.WriteLine($"      {mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+          //simple data type
+          if (mi.MemberType==MemberTypeEnum.Enum) {
+          streamWriter.WriteLine($"      {mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+          } else {
+            streamWriter.WriteLine($"      {mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+          }
+          if (mi.NeedsDictionary) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      if ({mi.MemberName}!=null) {{");
+              streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+              streamWriter.WriteLine($"      }}");
+            } else {
+              streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+            }
+          }
         }
       }
       //if the parent is a Dictionary or SortedList, the key property must be assigned first (i.e. in the for loop 
@@ -710,13 +826,26 @@ namespace Storage {
       streamWriter.WriteLine("      onStore();");
       streamWriter.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.Parent && !mi.IsLookupOnly) {
-          if (mi.IsNullable) {
-            //streamWriter.WriteLine($"      if ({mi.Name}!=null) {{");
-            streamWriter.WriteLine($"      {mi.MemberName}?.AddTo{PluralName}(this);");
-            //streamWriter.WriteLine("      }");
-          } else {
-            streamWriter.WriteLine($"      {mi.MemberName}.AddTo{PluralName}(this);");
+        if (mi.MemberType==MemberTypeEnum.Parent) {
+          if (!mi.IsLookupOnly) {
+            if (mi.IsNullable) {
+              //streamWriter.WriteLine($"      if ({mi.Name}!=null) {{");
+              streamWriter.WriteLine($"      {mi.MemberName}?.AddTo{PluralName}(this);");
+              //streamWriter.WriteLine("      }");
+            } else {
+              streamWriter.WriteLine($"      {mi.MemberName}.AddTo{PluralName}(this);");
+            }
+          }
+        } else if (mi.MemberType<MemberTypeEnum.List) {
+          //simple data type
+          if (mi.NeedsDictionary) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      if ({mi.MemberName}!=null) {{");
+              streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+              streamWriter.WriteLine($"      }}");
+            } else {
+              streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+            }
           }
         }
       }
@@ -784,8 +913,7 @@ namespace Storage {
         streamWriter.WriteLine("      var isChangeDetected = false;");
         foreach (var mi in Members.Values) {
           if (mi.CollectionType==CollectionTypeEnum.Undefined && //not List, Dictionary nor SortedList
-            !mi.IsReadOnly)
-          {
+            !mi.IsReadOnly) {
             if (mi.MemberType==MemberTypeEnum.Parent) {
               if (mi.IsNullable) {
                 streamWriter.WriteLine($"      if ({mi.MemberName} is null) {{");
@@ -818,15 +946,42 @@ namespace Storage {
                 streamWriter.WriteLine("        isChangeDetected = true;");
                 streamWriter.WriteLine("      }");
               }
-            } else if (mi.Rounding!=null) {
-              streamWriter.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
-              streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
-              streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
-              streamWriter.WriteLine("        isChangeDetected = true;");
-              streamWriter.WriteLine("      }");
             } else {
-              streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
-              streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
+              if (mi.Rounding!=null) {
+                streamWriter.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
+                streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
+                if (mi.NeedsDictionary) {
+                  if (mi.IsNullable) {
+                    streamWriter.WriteLine($"        if ({mi.MemberName}!=null) {{");
+                    streamWriter.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                    streamWriter.WriteLine($"        }}");
+                  } else {
+                    streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                  }
+                }
+                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
+              } else {
+                streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
+                if (mi.NeedsDictionary) {
+                  if (mi.IsNullable) {
+                    streamWriter.WriteLine($"        if ({mi.MemberName}!=null) {{");
+                    streamWriter.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                    streamWriter.WriteLine($"        }}");
+                  } else {
+                    streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                  }
+                }
+                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
+              }
+              if (mi.NeedsDictionary) {
+                if (mi.IsNullable) {
+                  streamWriter.WriteLine($"        if ({mi.MemberName}!=null) {{");
+                  streamWriter.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+                  streamWriter.WriteLine($"        }}");
+                } else {
+                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+                }
+              }
               streamWriter.WriteLine("        isChangeDetected = true;");
               streamWriter.WriteLine("      }");
             }
@@ -908,10 +1063,30 @@ namespace Storage {
                 streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{PluralName}({LowerClassName});");
                 streamWriter.WriteLine("      }");
               }
-            } else if (mi.MemberType==MemberTypeEnum.Enum) {
-              streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
-            } else if (mi.CollectionType==CollectionTypeEnum.Undefined) {//not List, Dictionary nor SortedList
-              streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+            } else if (mi.MemberType<MemberTypeEnum.List) {
+              if (mi.NeedsDictionary) {
+                if (mi.IsNullable) {
+                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                  streamWriter.WriteLine($"      }}");
+                } else {
+                  streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                }
+              }
+              if (mi.MemberType==MemberTypeEnum.Enum) {
+                streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+              } else if (mi.CollectionType==CollectionTypeEnum.Undefined) {//not List, Dictionary nor SortedList
+                streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+              }
+              if (mi.NeedsDictionary) {
+                if (mi.IsNullable) {
+                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
+                  streamWriter.WriteLine($"      }}");
+                } else {
+                  streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
+                }
+              }
             }
           }
         }
@@ -999,7 +1174,7 @@ namespace Storage {
         #region Remove()
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
-        IsDisconnectNeeded = writeRemoveComent(streamWriter, isCapitaliseFirstLetter: false);
+        IsDisconnectNeeded = writeRemoveComment(streamWriter, context, isCapitaliseFirstLetter: false);
         streamWriter.WriteLine(".");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine("    public void Remove() {");
@@ -1018,7 +1193,7 @@ namespace Storage {
         if (IsDisconnectNeeded) {
           streamWriter.WriteLine("    /// <summary>");
           streamWriter.Write($"    /// ");
-          writeRemoveComent(streamWriter, isCapitaliseFirstLetter: true);
+          writeRemoveComment(streamWriter, context, isCapitaliseFirstLetter: true);
           streamWriter.WriteLine(".");
           streamWriter.WriteLine("    /// </summary>");
           streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
@@ -1061,6 +1236,17 @@ namespace Storage {
                 streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentType}.No{mi.ParentType}) {{");
                 streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{PluralName}({LowerClassName});");
                 streamWriter.WriteLine("      }");
+              }
+            } else {
+              //simple data type
+              if (mi.NeedsDictionary) {
+                if (mi.IsNullable) {
+                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                  streamWriter.WriteLine($"      }}");
+                } else {
+                  streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                }
               }
             }
           }
@@ -1330,7 +1516,7 @@ namespace Storage {
     }
 
 
-    private bool writeRemoveComent(StreamWriter streamWriter, bool isCapitaliseFirstLetter) {
+    private bool writeRemoveComment(StreamWriter streamWriter, string context, bool isCapitaliseFirstLetter) {
       var lineParts = new List<string>();
       foreach (var mi in Members.Values) {
         if (mi.CollectionType>CollectionTypeEnum.Undefined) {//List, Dictionary or SortedList
@@ -1345,6 +1531,8 @@ namespace Storage {
           }
         } else if (mi.MemberType==MemberTypeEnum.Parent) {
           lineParts.Add($"disconnects {ClassName} from {mi.ParentType} because of {mi.MemberName}");
+        } else if (mi.NeedsDictionary) {
+          lineParts.Add($"removes {ClassName} from {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}");
         }
       }
 

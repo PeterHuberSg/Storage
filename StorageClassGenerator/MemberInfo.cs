@@ -35,12 +35,13 @@ namespace Storage {
     public string TypeString;
     public string? ReadOnlyTypeString; //used by Dictionary and SortedList: IReadOnlyDictionary<DateTime, DictionaryChild>
     public readonly bool IsNullable;
-    public readonly bool IsReadOnly;
+    public readonly bool IsReadOnly; //property is marked 'readonly' or class is not updatable 
     public readonly string? Comment;
     public readonly string? PrecissionComment;
     public readonly string? Rounding;
     public readonly string? DefaultValue;
     public readonly bool IsLookupOnly = false;
+    public readonly bool NeedsDictionary = false;
     public readonly int MaxStorageSize;
     public readonly string? ChildTypeName; //used by List, Dictionary and SortedList
     public readonly string? LowerChildTypeName; //used by List, Dictionary and SortedList
@@ -68,7 +69,8 @@ namespace Storage {
       bool isNullable,
       bool isReadOnly,
       string? comment, 
-      string? defaultValue) 
+      string? defaultValue,
+      bool needsDictionary) 
     {
       if (CollectionType>CollectionTypeEnum.Undefined) throw new Exception();
 
@@ -81,6 +83,7 @@ namespace Storage {
       IsReadOnly = isReadOnly;
       Comment = comment;
       DefaultValue = defaultValue;
+      NeedsDictionary = needsDictionary;
       switch (memberType) {
       case MemberTypeEnum.Date:
         TypeString = "DateTime";

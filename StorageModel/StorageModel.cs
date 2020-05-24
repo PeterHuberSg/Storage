@@ -275,6 +275,39 @@ namespace StorageModel {
   #endregion
 
 
+  #region Sample with dictionary
+  //      ----------------------
+
+  // Often, a class has one property which can be used to identify one particular instance. 
+  // StorageProperty(needsDictionary: true) adds a Dictionary to the data context, which gets updated whenever
+  // an instance get added, that property updated or the instance deleted.
+
+  /// <summary>
+  /// Some comment for SampleDetail
+  /// </summary>
+  [StorageClass(pluralName: "SampleWithDictionaries")]
+  public class SampleWithDictionary {
+
+    /// <summary>
+    /// Used as key into dictionary SampleWithDictionaryByIdInt
+    /// </summary>
+    [StorageProperty(needsDictionary: true)]
+    public int IdInt;
+
+    /// <summary>
+    /// Used as key into dictionary SampleWithDictionaryByIdString
+    /// </summary>
+    [StorageProperty(needsDictionary: true)]
+    public string? IdString;
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+  }
+  #endregion
+
+
   #region LookupParent -> LookupChild, parent has no collection for children
   //      ------------------------------------------------------------------
 

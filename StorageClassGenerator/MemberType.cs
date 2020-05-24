@@ -20,11 +20,12 @@ namespace Storage {
     Decimal5,
     Bool,
     Int,
+    String,
+    Enum,
+    //---- add new simple types before List ----
     List, //member of parent being a child collection, is List<TValue>
     CollectionKeyValue, //member of parent being a child collection<TKey, TValue>, can be Dictionary or SortedList
     Parent, //member of child linking to parent
-    String,
-    Enum,
     Lenght
   }
 

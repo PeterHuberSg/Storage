@@ -40,6 +40,7 @@ namespace Storage {
     readonly List<ClassInfo> parentChildTree;
     readonly Dictionary<string, EnumInfo> enums;
     public IReadOnlyDictionary<string, EnumInfo> Enums { get { return enums; } }
+    bool isUsingDictionary = false;
 
 
     public Compiler() {
@@ -165,6 +166,7 @@ namespace Storage {
             //////////////////////////////////
             string? defaultValue = null;
             bool? isLookupOnly = null;
+            bool needsDictionary = false;
             if (field.AttributeLists.Count==0) {
               if (isPropertyWithDefaultValueFound && !propertyType.StartsWith("List<")) {
                 throw new GeneratorException($"Property {className}.{property.Identifier.Text} should have a " +
@@ -192,6 +194,10 @@ namespace Storage {
                   switch (name) {
                   case "defaultValue": defaultValue = value[1..^1]; isPropertyWithDefaultValueFound = true; break;
                   case "isLookupOnly": isLookupOnly = bool.Parse(value); break;
+                  case "needsDictionary": 
+                    needsDictionary = bool.Parse(value);
+                    if (needsDictionary) isUsingDictionary = true;
+                    break;
                   default: throw new Exception();
                   }
                 } catch {
@@ -210,7 +216,7 @@ namespace Storage {
               
               ///////////////////////////////////
             }
-            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly, isReadOnly);
+            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly, needsDictionary, isReadOnly);
             //}
           }
         }
@@ -492,6 +498,9 @@ namespace Storage {
       streamWriter.WriteLine("//------------------------------------------------------------------------------");
       streamWriter.WriteLine("#nullable enable");
       streamWriter.WriteLine("using System;");
+      if (isUsingDictionary) {
+        streamWriter.WriteLine("using System.Collections.Generic;");
+      }
       streamWriter.WriteLine("using System.Threading;");
       streamWriter.WriteLine("using Storage;");
       streamWriter.WriteLine();
@@ -557,6 +566,15 @@ namespace Storage {
         streamWriter.WriteLine($"    /// Directory of all {classInfo.PluralName}");
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine($"    public StorageDictionary<{classInfo.ClassName}, {context}> {classInfo.PluralName} {{ get; private set; }}");
+        foreach (var mi in classInfo.Members.Values.OrderBy(mi => mi.MemberName)) {
+          if (mi.NeedsDictionary) {
+            streamWriter.WriteLine();
+            streamWriter.WriteLine("    /// <summary>");
+            streamWriter.WriteLine($"    /// Directory of all {classInfo.PluralName} by {mi.MemberName}");
+            streamWriter.WriteLine("    /// </summary>");
+            streamWriter.WriteLine($"    public Dictionary<{mi.TypeString.Replace("?", "")}, {classInfo.ClassName}> {classInfo.PluralName}By{mi.MemberName} {{ get; private set; }}");
+          }
+        }
       }
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
@@ -585,6 +603,16 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine("      onConstruct();");
       streamWriter.WriteLine();
+
+      foreach (var classInfo in classes.Values.OrderBy(ci => ci.ClassName)) {
+        foreach (var mi in classInfo.Members.Values.OrderBy(mi => mi.MemberName)) {
+          if (mi.NeedsDictionary) {
+            streamWriter.WriteLine($"      {classInfo.PluralName}By{mi.MemberName} = new Dictionary<{mi.TypeString.Replace("?", "")}, {classInfo.ClassName}>();");
+         }
+        }
+      }
+
+
       streamWriter.WriteLine("      CsvConfig = csvConfig;");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {

@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Storage;
 
@@ -143,6 +144,21 @@ namespace StorageModel  {
     public StorageDictionary<SampleMaster, DC> SampleMasters { get; private set; }
 
     /// <summary>
+    /// Directory of all SampleWithDictionaries
+    /// </summary>
+    public StorageDictionary<SampleWithDictionary, DC> SampleWithDictionaries { get; private set; }
+
+    /// <summary>
+    /// Directory of all SampleWithDictionaries by IdInt
+    /// </summary>
+    public Dictionary<int, SampleWithDictionary> SampleWithDictionariesByIdInt { get; private set; }
+
+    /// <summary>
+    /// Directory of all SampleWithDictionaries by IdString
+    /// </summary>
+    public Dictionary<string, SampleWithDictionary> SampleWithDictionariesByIdString { get; private set; }
+
+    /// <summary>
     /// Directory of all SortedListChildren
     /// </summary>
     public StorageDictionary<SortedListChild, DC> SortedListChildren { get; private set; }
@@ -178,6 +194,8 @@ namespace StorageModel  {
 
       onConstruct();
 
+      SampleWithDictionariesByIdInt = new Dictionary<int, SampleWithDictionary>();
+      SampleWithDictionariesByIdString = new Dictionary<string, SampleWithDictionary>();
       CsvConfig = csvConfig;
       if (csvConfig==null) {
         SampleMasters = new StorageDictionary<SampleMaster, DC>(
@@ -196,6 +214,12 @@ namespace StorageModel  {
           this,
           SampleDetail.SetKey,
           SampleDetail.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        SampleWithDictionaries = new StorageDictionary<SampleWithDictionary, DC>(
+          this,
+          SampleWithDictionary.SetKey,
+          SampleWithDictionary.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
         LookupParents = new StorageDictionary<LookupParent, DC>(
@@ -332,6 +356,19 @@ namespace StorageModel  {
           SampleDetail.Update,
           SampleDetail.Write,
           SampleDetail.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        SampleWithDictionaries = new StorageDictionaryCSV<SampleWithDictionary, DC>(
+          this,
+          csvConfig!,
+          SampleWithDictionary.MaxLineLength,
+          SampleWithDictionary.Headers,
+          SampleWithDictionary.SetKey,
+          SampleWithDictionary.Create,
+          null,
+          SampleWithDictionary.Update,
+          SampleWithDictionary.Write,
+          SampleWithDictionary.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
         LookupParents = new StorageDictionaryCSV<LookupParent, DC>(
@@ -593,6 +630,7 @@ namespace StorageModel  {
         LookupChildren.Dispose();
         LookupParentNullables.Dispose();
         LookupParents.Dispose();
+        SampleWithDictionaries.Dispose();
         SampleDetails.Dispose();
         SampleX.Dispose();
         SampleMasters.Dispose();
