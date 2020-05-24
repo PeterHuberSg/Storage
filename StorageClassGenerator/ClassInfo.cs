@@ -390,7 +390,19 @@ namespace Storage {
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    {cs}partial void onUpdate() {{");
+        if (ClassName=="Sample") System.Diagnostics.Debugger.Break();
+
+        streamWriter.Write($"    {cs}partial void onUpdating(");
+        if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Implementation, cs)) {
+          throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +
+            " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
+        }
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    {cs}partial void onUpdated() {{");
         streamWriter.WriteLine($"    {cs}}}");
         streamWriter.WriteLine();
         streamWriter.WriteLine();
@@ -910,6 +922,16 @@ namespace Storage {
           throw new GeneratorException($"Method '{ClassName}.Update()': has no parameters. Are all properties readonly ?" +
             " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
         }
+        //call onUpdating()
+        streamWriter.WriteLine("      var isCancelled = false;");
+        streamWriter.Write("      onUpdating(");
+        if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Call)) {
+          throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +
+            " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
+        }
+        streamWriter.WriteLine("      if (isCancelled) return;");
+        streamWriter.WriteLine();
+        //update code and detect change
         streamWriter.WriteLine("      var isChangeDetected = false;");
         foreach (var mi in Members.Values) {
           if (mi.CollectionType==CollectionTypeEnum.Undefined && //not List, Dictionary nor SortedList
@@ -987,12 +1009,18 @@ namespace Storage {
             }
           }
         }
+        //call updated()
         streamWriter.WriteLine("      if (isChangeDetected) {");
-        streamWriter.WriteLine("        onUpdate();");
+        streamWriter.WriteLine("        onUpdated();");
         streamWriter.WriteLine("        HasChanged?.Invoke(this);");
         streamWriter.WriteLine("      }");
         streamWriter.WriteLine("    }");
-        streamWriter.WriteLine("    partial void onUpdate();");
+        streamWriter.Write("    partial void onUpdating(");
+        if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Definition)) {
+          throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +
+            " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
+        }
+        streamWriter.WriteLine("    partial void onUpdated();");
         streamWriter.WriteLine();
         streamWriter.WriteLine();
         #endregion
@@ -1379,7 +1407,7 @@ namespace Storage {
       streamWriter.WriteLine($"    /// Writes the details of one {ClassName} to the CSV file");
       streamWriter.WriteLine("    /// </summary>");
       streamWriter.Write("    public void Write(");
-      writeParameters(streamWriter, isConstructor: true, isWriter: true);
+      writeParameters(streamWriter, isConstructor: true, isWriterWrite: true);
       if (AreInstancesDeletable || AreInstancesUpdatable) {
         streamWriter.WriteLine("      if (key<0) {");
         streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} needs to be greater equal 0.\");");
@@ -1463,9 +1491,12 @@ namespace Storage {
     }
 
 
-    private bool writeParameters(StreamWriter streamWriter, bool isConstructor, bool isWriter = false) {
+    private bool writeParameters(StreamWriter streamWriter, bool isConstructor, bool isWriterWrite = false) {
+      //isConstructor = false: Called by Update()
+      if (!isConstructor && isWriterWrite) throw new Exception("Not supported combination.");
+
       var parts = new List<string>();
-      if (isWriter) {
+      if (isWriterWrite) {
         if (AreInstancesDeletable || AreInstancesUpdatable) {
           parts.Add("int key");
         }
@@ -1475,7 +1506,7 @@ namespace Storage {
           (isConstructor || !mi.IsReadOnly))
         {
           string part;
-          if (isWriter && mi.ParentClassInfo!=null) {
+          if (isWriterWrite && mi.ParentClassInfo!=null) {
             if (mi.IsNullable) {
               part = $"int? {mi.LowerMemberName}Key";
             } else {
@@ -1490,11 +1521,34 @@ namespace Storage {
           parts.Add(part);
         }
       }
-      if (isConstructor && !isWriter) {
+      if (isConstructor && !isWriterWrite) {
         parts.Add("bool isStoring = true");
       }
       if (parts.Count==0) return false;//update should only be created if it has parameters.
 
+      writeCode(streamWriter, parts);
+      //var isNewLines = parts.Count>4;
+      //for (int partsIndex = 0; partsIndex < parts.Count; partsIndex++) {
+      //  if (isNewLines) {
+      //    streamWriter.WriteLine();
+      //    streamWriter.Write("      ");
+      //  }
+      //  streamWriter.Write(parts[partsIndex]);
+      //  if (partsIndex+1!=parts.Count) {
+      //    streamWriter.Write(", ");
+      //  }
+      //}
+      //streamWriter.Write(")");
+      //if (isNewLines) {
+      //  streamWriter.WriteLine();
+      //  streamWriter.Write("   ");
+      //}
+      //streamWriter.WriteLine(" {");
+      return true;
+    }
+
+
+    private void writeCode(StreamWriter streamWriter, List<string> parts, bool isStatement = false) {
       var isNewLines = parts.Count>4;
       for (int partsIndex = 0; partsIndex < parts.Count; partsIndex++) {
         if (isNewLines) {
@@ -1506,12 +1560,92 @@ namespace Storage {
           streamWriter.Write(", ");
         }
       }
-      streamWriter.Write(")");
-      if (isNewLines) {
-        streamWriter.WriteLine();
-        streamWriter.Write("   ");
+      if (isStatement) {
+        streamWriter.Write(");");
+      } else {
+        streamWriter.Write(")");
+        if (isNewLines) {
+          streamWriter.WriteLine();
+          streamWriter.Write("   ");
+        }
+        streamWriter.WriteLine(" {");
       }
-      streamWriter.WriteLine(" {");
+    }
+
+
+    enum updateTypeEnum {
+      Call,
+      Definition,
+      Implementation
+    }
+
+
+    private bool writeOnUpdateParameters(StreamWriter streamWriter, updateTypeEnum updateType, string? comment = null) {
+      var parts = new List<string>();
+      foreach (var mi in Members.Values) {
+        if (mi.CollectionType==CollectionTypeEnum.Undefined && //not List, Dictionary nor SortedList
+          (!mi.IsReadOnly)) 
+        {
+          var part = "";
+          if (updateType==updateTypeEnum.Definition || updateType==updateTypeEnum.Implementation) {
+            part = $"{mi.TypeString} ";
+          }
+          part += $"{mi.LowerMemberName}";
+          parts.Add(part);
+        }
+      }
+      if (parts.Count==0) return false;//update should only be created if it has parameters.
+
+      var lastPart = "ref ";
+      if (updateType==updateTypeEnum.Definition || updateType==updateTypeEnum.Implementation) {
+        lastPart += "bool ";
+      }
+      lastPart += "isCancelled";
+      parts.Add(lastPart);
+
+      bool isNewLines;
+      if (updateType==updateTypeEnum.Call) {
+        isNewLines = parts.Count>7;
+      } else {
+        isNewLines = parts.Count>4;
+      }
+      for (int partsIndex = 0; partsIndex < parts.Count; partsIndex++) {
+        if (isNewLines) {
+          streamWriter.WriteLine();
+          if (updateType==updateTypeEnum.Call) {
+            streamWriter.Write("        ");
+          } else {
+            streamWriter.Write("      ");
+          }
+          if (comment!=null) {
+            streamWriter.Write(comment);
+          }
+        }
+        streamWriter.Write(parts[partsIndex]);
+        if (partsIndex+1!=parts.Count) {
+          streamWriter.Write(", ");
+        }
+      }
+      switch (updateType) {
+      case updateTypeEnum.Call:
+      case updateTypeEnum.Definition:
+        streamWriter.WriteLine(");");
+        break;
+      case updateTypeEnum.Implementation:
+        streamWriter.Write(")");
+        if (isNewLines) {
+          streamWriter.WriteLine();
+          streamWriter.Write("   ");
+          if (comment!=null) {
+            streamWriter.Write(comment);
+          }
+        }
+        streamWriter.WriteLine("{");
+        streamWriter.WriteLine($"   {comment}}}");
+        break;
+      default:
+        throw new NotSupportedException();
+      }
       return true;
     }
 

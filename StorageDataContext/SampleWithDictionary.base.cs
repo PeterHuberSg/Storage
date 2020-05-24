@@ -160,6 +160,10 @@ namespace StorageModel  {
     /// Updates SampleWithDictionary with the provided values
     /// </summary>
     public void Update(int idInt, string? idString, string text) {
+      var isCancelled = false;
+      onUpdating(idInt, idString, text, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (IdInt!=idInt) {
         DC.Data.SampleWithDictionariesByIdInt.Remove(IdInt);
@@ -182,11 +186,12 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(int idInt, string? idString, string text, ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

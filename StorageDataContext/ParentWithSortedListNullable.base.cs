@@ -153,17 +153,22 @@ namespace StorageModel  {
     /// Updates ParentWithSortedListNullable with the provided values
     /// </summary>
     public void Update(string textUpdateable) {
+      var isCancelled = false;
+      onUpdating(textUpdateable, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (TextUpdateable!=textUpdateable) {
         TextUpdateable = textUpdateable;
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(string textUpdateable, ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

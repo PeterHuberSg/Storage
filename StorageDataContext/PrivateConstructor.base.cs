@@ -134,17 +134,22 @@ namespace StorageModel  {
     /// Updates PrivateConstructor with the provided values
     /// </summary>
     public void Update(string text) {
+      var isCancelled = false;
+      onUpdating(text, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(string text, ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

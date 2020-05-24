@@ -65,7 +65,20 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    //partial void onUpdate() {
+    //partial void onUpdating(
+      //DateTime dateKey, 
+      //string text, 
+      //ParentWithSortedList parentWithSortedList, 
+      //ParentWithSortedListNullable? parentWithSortedListNullable, 
+      //ref bool isCancelled)
+   //{
+   //}
+
+
+    /// <summary>
+    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// </summary>
+    //partial void onUpdated() {
     //}
 
 

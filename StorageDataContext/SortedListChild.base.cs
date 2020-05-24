@@ -217,6 +217,10 @@ namespace StorageModel  {
     /// Updates SortedListChild with the provided values
     /// </summary>
     public void Update(DateTime dateKey, string text, ParentWithSortedList parentWithSortedList, ParentWithSortedListNullable? parentWithSortedListNullable) {
+      var isCancelled = false;
+      onUpdating(dateKey, text, parentWithSortedList, parentWithSortedListNullable, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       var dateKeyRounded = dateKey.Floor(Rounding.Days);
       if (DateKey!=dateKeyRounded) {
@@ -256,11 +260,17 @@ namespace StorageModel  {
         }
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(
+      DateTime dateKey, 
+      string text, 
+      ParentWithSortedList parentWithSortedList, 
+      ParentWithSortedListNullable? parentWithSortedListNullable, 
+      ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

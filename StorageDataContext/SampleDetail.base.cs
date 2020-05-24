@@ -168,6 +168,10 @@ namespace StorageModel  {
     /// Updates SampleDetail with the provided values
     /// </summary>
     public void Update(string text, Sample sample) {
+      var isCancelled = false;
+      onUpdating(text, sample, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -180,11 +184,12 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(string text, Sample sample, ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

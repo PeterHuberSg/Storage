@@ -393,6 +393,27 @@ namespace StorageModel  {
       SampleMaster? otherMaster, 
       string? optional)
     {
+      var isCancelled = false;
+      onUpdating(
+        text, 
+        flag, 
+        number, 
+        amount, 
+        amount4, 
+        amount5, 
+        preciseDecimal, 
+        sampleState, 
+        dateOnly, 
+        timeOnly, 
+        dateTimeTicks, 
+        dateTimeMinute, 
+        dateTimeSecond, 
+        oneMaster, 
+        otherMaster, 
+        optional, 
+        ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -500,11 +521,29 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(
+      string text, 
+      bool flag, 
+      int number, 
+      decimal amount, 
+      decimal amount4, 
+      decimal? amount5, 
+      decimal preciseDecimal, 
+      SampleStateEnum sampleState, 
+      DateTime dateOnly, 
+      TimeSpan timeOnly, 
+      DateTime dateTimeTicks, 
+      DateTime dateTimeMinute, 
+      DateTime dateTimeSecond, 
+      SampleMaster? oneMaster, 
+      SampleMaster? otherMaster, 
+      string? optional, 
+      ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

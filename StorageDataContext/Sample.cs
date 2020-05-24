@@ -64,7 +64,32 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    //partial void onUpdate() {
+    partial void onUpdating(
+      string text, 
+      bool flag, 
+      int number, 
+      decimal amount, 
+      decimal amount4, 
+      decimal? amount5, 
+      decimal preciseDecimal, 
+      SampleStateEnum sampleState, 
+      DateTime dateOnly, 
+      TimeSpan timeOnly, 
+      DateTime dateTimeTicks, 
+      DateTime dateTimeMinute, 
+      DateTime dateTimeSecond, 
+      SampleMaster? oneMaster, 
+      SampleMaster? otherMaster, 
+      string? optional, 
+      ref bool isCancelled)
+   {
+   }
+
+
+    /// <summary>
+    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// </summary>
+    //partial void onUpdated() {
     //}
 
 

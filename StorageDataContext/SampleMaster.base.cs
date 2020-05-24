@@ -153,6 +153,10 @@ namespace StorageModel  {
     /// Updates SampleMaster with the provided values
     /// </summary>
     public void Update(string text, int numberWithDefault) {
+      var isCancelled = false;
+      onUpdating(text, numberWithDefault, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -163,11 +167,12 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(string text, int numberWithDefault, ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>

@@ -202,6 +202,10 @@ namespace StorageModel  {
     /// Updates UpdatableChild with the provided values
     /// </summary>
     public void Update(string text, ReadOnlyParent2 readOnlyParent2, ReadOnlyParent2Nullable? readOnlyParent2Nullable) {
+      var isCancelled = false;
+      onUpdating(text, readOnlyParent2, readOnlyParent2Nullable, ref isCancelled);
+      if (isCancelled) return;
+
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -236,11 +240,12 @@ namespace StorageModel  {
         }
       }
       if (isChangeDetected) {
-        onUpdate();
+        onUpdated();
         HasChanged?.Invoke(this);
       }
     }
-    partial void onUpdate();
+    partial void onUpdating(string text, ReadOnlyParent2 readOnlyParent2, ReadOnlyParent2Nullable? readOnlyParent2Nullable, ref bool isCancelled);
+    partial void onUpdated();
 
 
     /// <summary>
