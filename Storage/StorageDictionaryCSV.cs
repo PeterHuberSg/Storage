@@ -341,6 +341,7 @@ namespace Storage {
         }
         //kickFlushTimer();
       } catch (Exception ex) {
+        csvWriter!.CleanupAfterException();
         CsvConfig.ReportException?.Invoke(ex);
       }
     }

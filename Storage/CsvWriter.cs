@@ -185,7 +185,6 @@ namespace Storage {
     protected virtual void OnDispose(bool disposing) {
       var wasflushTimer = Interlocked.Exchange(ref flushTimer, null);
       if (wasflushTimer!=null) {
-        flushTimer = null;
         try {
           wasflushTimer.Dispose();//Dispose() is multi-threading safe
         } catch (Exception ex) {
@@ -219,8 +218,8 @@ namespace Storage {
 
 #if DEBUG
     bool isLocked = false;
-    int lineStart = 0;
 #endif
+    int lineStart = 0;
 
 
     /// <summary>
@@ -234,6 +233,7 @@ namespace Storage {
       }
       isLocked = true;
 #endif
+      lineStart = writePos;
     }
 
 
@@ -249,13 +249,31 @@ namespace Storage {
       }
       isLocked = true;
 #endif
-      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') throw new Exception($"CsvWriter.WriteFirstLineChar(char) '{FileName}':illegal character '{c}'." + Environment.NewLine + GetPresentContent());
+      lineStart = writePos;
+      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') 
+        throw new Exception($"CsvWriter.WriteFirstLineChar(char) '{FileName}':illegal character '{c.ToPureString()}'." + Environment.NewLine + GetPresentContent());
 
       if (c<0x80) {
         byteArray[writePos++] = (byte)c;
       } else {
         throw new Exception();
       }
+    }
+
+
+    /// <summary>
+    /// If an exception occurs when writing data, the writer gets blocked forever. Calling CleanupAfterException() removes
+    /// from byteArray of the new line, since the line is most likely incomplete and unlocks the buffer.
+    /// </summary>
+    public void CleanupAfterException() {
+#if DEBUG
+      if (!isLocked) {
+        throw new Exception();
+      }
+      isLocked = false;
+#endif
+      writePos = lineStart; //removes the probably half finished line
+      Monitor.Exit(byteArray);
     }
 
 
@@ -297,9 +315,6 @@ namespace Storage {
           }
         }
         kickFlushTimer();
-#if DEBUG
-        lineStart = writePos;
-#endif
 
       } finally {
         Monitor.Exit(byteArray);
@@ -560,7 +575,8 @@ namespace Storage {
     /// Writes a Unicode char, which might take several bytes, into the CSV file, including delimiter.
     /// </summary>
     public void Write(char c) {
-      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') throw new Exception($"CsvWriter.Write(char) '{FileName}':illegal character '{c}'." + Environment.NewLine + GetPresentContent());
+      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') 
+        throw new Exception($"CsvWriter.Write(char) '{FileName}':illegal character '{c.ToPureString()}'." + Environment.NewLine + GetPresentContent());
 
       if (c<0x80) {
         byteArray[writePos++] = (byte)c;
@@ -580,7 +596,8 @@ namespace Storage {
       if (s!=null) {
         for (int readIndex = 0; readIndex < s.Length; readIndex++) {
           var c = s[readIndex];
-          if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') throw new Exception($"CsvWriter.Write(string) '{FileName}':illegal character '{c}'." + Environment.NewLine + GetPresentContent());
+          if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') 
+            throw new Exception($"CsvWriter.Write(string) '{FileName}':illegal character '{c.ToPureString()}'." + Environment.NewLine + GetPresentContent());
 
           if (c<0x80) {
             byteArray[writePos++] = (byte)c;
@@ -740,6 +757,7 @@ namespace Storage {
     //Write Unicode string including carriage return and line feed
     public void WriteLine(string line) {
       lock (byteArray) {
+        lineStart = writePos;
         for (int readIndex = 0; readIndex < line.Length; readIndex++) {
           var c = line[readIndex];
 
@@ -792,16 +810,12 @@ namespace Storage {
     /// Flush() is multi-threading safe.
     /// </summary>
     public void Flush() {
-      flush();
       stopFlushTimer();
+      flush();
     }
 
 
     private void stopFlushTimer() {
-      //var wasFlushTimer = flushTimer;
-      //if (wasFlushTimer!=null) {
-      //  wasFlushTimer.Change(Timeout.Infinite, Timeout.Infinite);//change is multi-threading safe
-      //}
       flushTimer?.Change(Timeout.Infinite, Timeout.Infinite);//change is multi-threading safe
     }
     #endregion

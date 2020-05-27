@@ -36,5 +36,12 @@ namespace Storage {
       return key.ToString();
     }
 
+
+    public static string ToPureString(this char c) => c switch { 
+      '\t'=> "\\t",
+      '\r'=> "\\r",
+      '\n'=> "\\n",
+      _=> c.ToString(),
+    };
   }
 }

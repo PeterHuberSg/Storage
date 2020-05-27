@@ -153,6 +153,31 @@ namespace Storage {
     //      -------
 
     /// <summary>
+    /// Converts the span to a string, while replacing carriage return with \r, line feed with \n and delimiter with \t
+    /// </summary>
+    public string ToPureString(ReadOnlySpan<char> span, StringBuilder sb) {
+      foreach (var c in span) {
+        if (c==Delimiter || c=='\n' || c=='\r') {
+          sb.Clear();
+          foreach (var c1 in span) {
+            if (c==Delimiter) {
+              sb.Append(@"\t"); //it's too complicated to convert all possible delimiters to printable chars
+            } else if (c1=='\n') {
+              sb.Append(@"\n");
+            } else if (c1=='\r') {
+              sb.Append(@"\r");
+            } else {
+              sb.Append(c1);
+            }
+          }
+          return sb.ToString();
+        }
+      }
+      return span.ToString();
+    }
+
+
+    /// <summary>
     /// Write CsvConfig parameters into a string
     /// </summary>
     public override string ToString() {
