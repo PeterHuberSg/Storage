@@ -7,9 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Some comment for PropertyNeedsDictionaryClass
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class PropertyNeedsDictionaryClass: IStorage<PropertyNeedsDictionaryClass> {
 
 
     #region Properties
@@ -64,7 +64,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(int idInt, string? idString, string text, ref bool isCancelled){
    }
 
 

@@ -62,41 +62,41 @@ namespace StorageTest {
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedLookupParent.Count, DC.Data.LookupParents.Count);
-      foreach (var lookupParent in DC.Data.LookupParents) {
+      Assert.AreEqual(expectedLookupParent.Count, DC.Data.Lookup_Parents.Count);
+      foreach (var lookupParent in DC.Data.Lookup_Parents) {
         Assert.AreEqual(expectedLookupParent[lookupParent.Key], lookupParent.ToString());
       }
 
-      Assert.AreEqual(expectedLookupParentNullable.Count, DC.Data.LookupParentNullables.Count);
-      foreach (var lookupParentNullable in DC.Data.LookupParentNullables) {
+      Assert.AreEqual(expectedLookupParentNullable.Count, DC.Data.Lookup_ParentNullables.Count);
+      foreach (var lookupParentNullable in DC.Data.Lookup_ParentNullables) {
         Assert.AreEqual(expectedLookupParent[lookupParentNullable.Key], lookupParentNullable.ToString());
       }
 
-      Assert.AreEqual(expectedLookupChild.Count, DC.Data.LookupChildren.Count);
-      foreach (var lookupChild in DC.Data.LookupChildren) {
+      Assert.AreEqual(expectedLookupChild.Count, DC.Data.Lookup_Children.Count);
+      foreach (var lookupChild in DC.Data.Lookup_Children) {
         Assert.AreEqual(expectedLookupChild[lookupChild.Key], lookupChild.ToString());
       }
     }
 
 
-    private LookupParent addLookupParent(DateTime date, decimal someValue) {
-      var newLookupParent = new LookupParent(date, someValue, isStoring: true);
+    private Lookup_Parent addLookupParent(DateTime date, decimal someValue) {
+      var newLookupParent = new Lookup_Parent(date, someValue, isStoring: true);
       expectedLookupParent.Add(newLookupParent.ToString());
       assertData();
       return newLookupParent;
     }
 
 
-    private LookupParentNullable addLookupParentNullable(DateTime date, decimal someValue) {
-      var newLookupParentNullable = new LookupParentNullable(date, someValue, isStoring: true);
+    private Lookup_ParentNullable addLookupParentNullable(DateTime date, decimal someValue) {
+      var newLookupParentNullable = new Lookup_ParentNullable(date, someValue, isStoring: true);
       expectedLookupParentNullable.Add(newLookupParentNullable.ToString());
       assertData();
       return newLookupParentNullable;
     }
 
 
-    private void addLookupChild(int number, LookupParent lookupParentLookup, LookupParentNullable lookupParentLookupNullable) {
-      var newLookupChild = new LookupChild(number, lookupParentLookup, lookupParentLookupNullable, isStoring: true);
+    private void addLookupChild(int number, Lookup_Parent lookupParentLookup, Lookup_ParentNullable lookupParentLookupNullable) {
+      var newLookupChild = new Lookup_Child(number, lookupParentLookup, lookupParentLookupNullable, isStoring: true);
       expectedLookupChild.Add(newLookupChild.ToString());
       assertData();
     }

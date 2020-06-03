@@ -7,9 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Example of a parent child relationship using a Dictionary where the child's parent property is nullable.
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class MultipleChildrenDictionary_ParentNullable: IStorage<MultipleChildrenDictionary_ParentNullable> {
 
 
     #region Properties
@@ -64,7 +64,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(string text, ref bool isCancelled){
    }
 
 
@@ -86,6 +86,20 @@ namespace StorageModel  {
     /// Called before removal gets executed
     /// </summary>
     partial void onRemove() {
+    }
+
+
+    /// <summary>
+    /// Called after a multipleChildrenDictionary_Child gets added to MultipleChildrenDictionary_Children.
+    /// </summary>
+    partial void onAddedToMultipleChildrenDictionary_Children(MultipleChildrenDictionary_Child multipleChildrenDictionary_Child){
+    }
+
+
+    /// <summary>
+    /// Called after a multipleChildrenDictionary_Child gets removed from MultipleChildrenDictionary_Children.
+    /// </summary>
+    partial void onRemovedFromMultipleChildrenDictionary_Children(MultipleChildrenDictionary_Child multipleChildrenDictionary_Child){
     }
 
 

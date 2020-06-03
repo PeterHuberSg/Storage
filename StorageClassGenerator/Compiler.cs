@@ -34,7 +34,7 @@ namespace Storage {
   /// </summary>
   public class Compiler {
 
-    public const bool IsFullyCommented = true; //set false to create Xxx.cs files where executable code is not commented out
+    public const bool IsFullyCommented = false; //set false to create Xxx.cs files where executable code is not commented out
 
     readonly Dictionary<string, ClassInfo> classes;
     readonly List<ClassInfo> parentChildTree;
@@ -167,6 +167,7 @@ namespace Storage {
             string? defaultValue = null;
             bool? isLookupOnly = null;
             bool needsDictionary = false;
+            bool isParentOneChild = false;
             if (field.AttributeLists.Count==0) {
               if (isPropertyWithDefaultValueFound && !propertyType.StartsWith("List<")) {
                 throw new GeneratorException($"Property {className}.{property.Identifier.Text} should have a " +
@@ -198,6 +199,7 @@ namespace Storage {
                     needsDictionary = bool.Parse(value);
                     if (needsDictionary) isUsingDictionary = true;
                     break;
+                  case "isParentOneChild": isParentOneChild = bool.Parse(value); break;
                   default: throw new Exception();
                   }
                 } catch {
@@ -216,7 +218,12 @@ namespace Storage {
               
               ///////////////////////////////////
             }
-            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly, needsDictionary, isReadOnly);
+            if ((isLookupOnly??false) && isParentOneChild) {
+              throw new GeneratorException($"Property {className}.{property.Identifier.Text} cannot have " + 
+                "isLookupOnly: true and isParentOneChild: true in its StorageProperty attribute.");
+            }
+            classInfo.AddMember(property.Identifier.Text, propertyType, propertyComment, defaultValue, isLookupOnly, 
+              needsDictionary, isParentOneChild, isReadOnly);
             //}
           }
         }
@@ -293,52 +300,84 @@ namespace Storage {
       var topClasses = classes.Values.ToDictionary(c=>c.ClassName);
       foreach (var ci in classes.Values) {
         foreach (var mi in ci.Members.Values) {
-          if (mi.MemberType==MemberTypeEnum.Parent) {
-            if (classes.TryGetValue(mi.ParentType!, out mi.ParentClassInfo)) {
+          var isFound = false;
+          switch (mi.MemberType) {
+          case MemberTypeEnum.LinkToParent:
+            //                -------------
+            if (classes.TryGetValue(mi.ParentTypeString!, out mi.ParentClassInfo)) {
               ci.ParentsAll.Add(mi.ParentClassInfo);
               topClasses.Remove(ci.ClassName);
               mi.ParentClassInfo.Children.Add(ci);
               if (!mi.IsLookupOnly) {
-                ci.ParentsWithList.Add(mi.ParentClassInfo);
-                var isfound = false;
                 foreach (var parentMember in mi.ParentClassInfo.Members.Values) {
                   if (parentMember.MemberName==ci.PluralName) {
-                    isfound = true;
+                    isFound = true;
+                    //ci.ParentsWithList.Add(mi.ParentClassInfo);
+                    mi.ParentMemberInfo = parentMember;
+                    mi.ParentMethodName = ci.PluralName;
                     parentMember.ChildCount++;
+                    break;
+                  } else if (parentMember.ChildTypeName==mi.ClassInfo.ClassName) {
+                    if (parentMember.MemberType!=MemberTypeEnum.ParentOneChild) {
+                      throw new GeneratorException($"{ci.ClassName}.{mi.MemberName}: links to {mi.TypeString}.{parentMember.MemberName}, " +
+                        "which should have StoragePropertyAttribute(isParentOneChild: true). ");
+                    }
+                    isFound = true;
+                    mi.ParentMemberInfo = parentMember;
+                    mi.ParentMethodName = parentMember.MemberName;
                     break;
                   }
                 }
-                if (!isfound) {
+                if (!isFound) {
                   throw new GeneratorException(
-                    $"Class {mi.ParentClassInfo.ClassName}: property 'List<{ci.ClassName}> {ci.PluralName}' is missing." + Environment.NewLine +
-                    $"Normally if a child class {ci.ClassName} references a parent class {mi.ParentClassInfo.ClassName}, the child class {ci.ClassName} " + Environment.NewLine +
-                    $"should be added to {mi.ParentClassInfo.ClassName}.{ci.PluralName}. If no such collection should be generated in parent {mi.ParentClassInfo.ClassName}," + Environment.NewLine +
-                    $"then add [StorageProperty(isLookupOnly: true)] to {ci.ClassName}.{mi.MemberName}.");
+                    $"Property {mi.MemberName} from child class {ci.ClassName} links to parent {mi.ParentClassInfo.ClassName}." + 
+                    $"But the parent does not have a property which links to the child. Add a collection (list, dictionary or sortedList) " + 
+                    $"to the parent if many children are allowed or a property with the [StorageProperty(isParentOneChild: true)] attribute " + 
+                    $"if only 1 child is allowed.");
                 }
               }
+            } else if (enums.TryGetValue(mi.ParentTypeString!, out mi.EnumInfo)) {
+              mi.MemberType = MemberTypeEnum.Enum;
+              mi.ToStringFunc = "";
             } else {
-              if (enums.TryGetValue(mi.ParentType!, out mi.EnumInfo)) {
-                mi.MemberType = MemberTypeEnum.Enum;
-                mi.ToStringFunc = "";
-              } else {
-                throw new GeneratorException($"{ci} '{mi}': can not find class or enum '{mi.MemberName}'.");
+              throw new GeneratorException($"{ci} '{mi}': cannot find class or enum '{mi.MemberName}'.");
+            }
+            break;
+
+          case MemberTypeEnum.ParentOneChild:
+            //                --------------
+            if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
+              throw new GeneratorException($"{ci} '{mi}': cannot find class {mi.ChildTypeName}.");
+
+            foreach (var childMI in mi.ChildClassInfo.Members.Values) {
+              if (childMI.MemberType==MemberTypeEnum.LinkToParent && childMI.ParentTypeString==ci.ClassName) {
+                isFound = true;
+                mi.ChildMemberInfo = childMI;
+                mi.IsChildReadOnly |= childMI.IsReadOnly;
+                break;
               }
             }
+            if (!isFound) {
+              //guarantee that there is a property linking to the parent for each child class.
+              throw new GeneratorException($"{ci} '{mi}' is a property which links to 0 or 1 child. A corresponding " +
+                $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
+            }
+            break;
 
-          //List
-          } else if (mi.MemberType==MemberTypeEnum.List) {
+          case MemberTypeEnum.ParentMultipleChildrenList:
+            //                --------------------------
             if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
               throw new GeneratorException($"{ci} '{mi}': can not find class {mi.ChildTypeName}.");
 
-            bool isFound = false;
             foreach (var childMI in mi.ChildClassInfo.Members.Values) {
-              if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==ci.ClassName) {
+              if (childMI.MemberType==MemberTypeEnum.LinkToParent && childMI.ParentTypeString==ci.ClassName) {
                 isFound = true;
                 mi.IsChildReadOnly |= childMI.IsReadOnly;
                 if (mi.MemberName!=childMI.ClassInfo.PluralName) {
                   throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}.");
                 }
                 //no break here, because child can have 2 properties belonging to the same Parent
+                //mi.ChildMemberInfo = childMI; not done here, because of multiple children
               }
             }
             if (!isFound) {
@@ -346,16 +385,17 @@ namespace Storage {
               throw new GeneratorException($"{ci} '{mi}': has a List<{mi.ChildTypeName}>. The corresponding " +
                 $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
             }
+            break;
 
-          //Dictionary, SortedList
-          } else if (mi.MemberType==MemberTypeEnum.CollectionKeyValue) {
+          case MemberTypeEnum.ParentMultipleChildrenDictionary:
+          case MemberTypeEnum.ParentMultipleChildrenSortedList:
+            //Dictionary, SortedList
             if (!classes.TryGetValue(mi.ChildTypeName!, out mi.ChildClassInfo))
-              throw new GeneratorException($"{ci} '{mi}': can not find class {mi.ChildTypeName}.");
+              throw new GeneratorException($"{ci} '{mi}': cannot find class {mi.ChildTypeName}.");
 
-            bool isFound = false;
             bool isKeyFound = false;
             foreach (var childMI in mi.ChildClassInfo.Members.Values) {
-              if (childMI.MemberType==MemberTypeEnum.Parent && childMI.ParentType==ci.ClassName) {
+              if (childMI.MemberType==MemberTypeEnum.LinkToParent && childMI.ParentTypeString==ci.ClassName) {
                 isFound = true;
                 mi.IsChildReadOnly |= childMI.IsReadOnly;
                 if (mi.MemberName!=childMI.ClassInfo.PluralName) {
@@ -367,7 +407,8 @@ namespace Storage {
                       throw new GeneratorException($"{ci}.{mi.MemberName} {mi.TypeString}: found {childKeyMI.ClassInfo.ClassName}.{childKeyMI.MemberName}, but it has wrong type: {childKeyMI.CsvTypeString}.");
                     }
                     isKeyFound = true;
-                    if (mi.CollectionType==CollectionTypeEnum.SortedList) {
+                    mi.ChildMemberInfo = childMI;
+                    if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenSortedList) {
                       //memberTypeString = $"SortedList<{keyTypeName}, {itemTypeName}>";
                       mi.TypeString = $"SortedList<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
                       mi.ReadOnlyTypeString = $"IReadOnlyDictionary<{childKeyMI.TypeString}, {childKeyMI.ClassInfo.ClassName}>";
@@ -380,10 +421,11 @@ namespace Storage {
                     break;
                   }
                 }
+                if (isKeyFound) break;
               }
             }
             if (!isFound) {
-              if (mi.CollectionType==CollectionTypeEnum.SortedList) {
+              if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenSortedList) {
                 //guarantee that there is a property linking to the parent for each child class.
                 throw new GeneratorException($"{ci} '{mi}': has a SortedList<{mi.ChildTypeName}>. The corresponding " +
                   $"property with type {ci.ClassName} is missing in the class {mi.ChildTypeName}.");
@@ -394,7 +436,7 @@ namespace Storage {
               }
             }
             if (!isKeyFound) {
-              if (mi.CollectionType==CollectionTypeEnum.SortedList) {
+              if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenSortedList) {
                 //guarantee that there is a property that can be used as key into parent's SortedList
                 throw new GeneratorException($"{ci} '{mi}': has a SortedList<{mi.ChildTypeName}>. The corresponding " +
                   $" key property '{mi.ChildKeyPropertyName}' with type {mi.ChildKeyTypeString} is missing in the class {mi.ChildTypeName}.");
@@ -404,6 +446,7 @@ namespace Storage {
                   $" key property '{mi.ChildKeyPropertyName}' with type {mi.ChildKeyTypeString} is missing in the class {mi.ChildTypeName}.");
               }
             }
+            break;
           }
         }
       }
@@ -641,7 +684,8 @@ namespace Storage {
         streamWriter.WriteLine($"          {classInfo.ClassName}.Headers,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Create,");
-        if (classInfo.ParentsWithList.Count>0) {
+        //if (classInfo.ParentsWithList.Count>0) {
+        if (classInfo.ParentsAll.Count>0) {
           streamWriter.WriteLine($"          {classInfo.ClassName}.Verify,");
         } else {
           streamWriter.WriteLine("          null,");

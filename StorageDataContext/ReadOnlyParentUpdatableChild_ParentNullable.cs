@@ -7,9 +7,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+    /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
+    /// is nullable.
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class ReadOnlyParentUpdatableChild_ParentNullable: IStorage<ReadOnlyParentUpdatableChild_ParentNullable> {
 
 
     #region Properties
@@ -62,30 +64,16 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after a readOnlyParentUpdatableChild_Child gets added to ReadOnlyParentUpdatableChild_Children.
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
-   }
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    partial void onUpdated() {
+    partial void onAddedToReadOnlyParentUpdatableChild_Children(ReadOnlyParentUpdatableChild_Child readOnlyParentUpdatableChild_Child){
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after a readOnlyParentUpdatableChild_Child gets removed from ReadOnlyParentUpdatableChild_Children.
     /// </summary>
-    partial void onCsvUpdate() {
-    }
-
-
-    /// <summary>
-    /// Called before removal gets executed
-    /// </summary>
-    partial void onRemove() {
+    partial void onRemovedFromReadOnlyParentUpdatableChild_Children(ReadOnlyParentUpdatableChild_Child readOnlyParentUpdatableChild_Child){
     }
 
 

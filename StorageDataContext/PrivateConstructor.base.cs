@@ -106,7 +106,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"PrivateConstructor can not be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"PrivateConstructor cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DC.Data.PrivateConstructors.Add(this);

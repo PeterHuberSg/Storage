@@ -57,7 +57,11 @@ namespace Storage {
     /// child just wants to link to the parent without the parent having a collection for that child, set isLookupOnly = true.</param>
     /// <param name="needsDictionary">A dictionary gets created in the data context for quick access to an instance using
     /// the value of this property.</param>
-    public StoragePropertyAttribute(string? defaultValue = null, bool isLookupOnly = false, bool needsDictionary = false) { }
+    public StoragePropertyAttribute(
+      string? defaultValue = null, 
+      bool isLookupOnly = false, 
+      bool needsDictionary = false,
+      bool isParentOneChild = false) { }
   }
 #pragma warning restore IDE0060 // Remove unused parameter
 

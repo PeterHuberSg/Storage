@@ -7,9 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to  
+    /// ParentWithDictionary and ParentWithDictionaryNullable
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class MultipleChildrenDictionary_Child: IStorage<MultipleChildrenDictionary_Child> {
 
 
     #region Properties
@@ -64,7 +65,13 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(
+      DateTime dateKey, 
+      string text, 
+      MultipleChildrenDictionary_Parent parentWithDictionary, 
+      MultipleChildrenDictionary_ParentNullable? parentWithDictionaryNullable, 
+      ref bool isCancelled)
+   {
    }
 
 

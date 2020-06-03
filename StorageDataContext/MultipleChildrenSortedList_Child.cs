@@ -7,9 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// SortedListChild has a member providing the key value needed to add SortedListChild to  
+    /// ParentWithSortedList and ParentWithSortedListNullable
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class MultipleChildrenSortedList_Child: IStorage<MultipleChildrenSortedList_Child> {
 
 
     #region Properties
@@ -64,7 +65,13 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(
+      DateTime dateKey, 
+      string text, 
+      MultipleChildrenSortedList_Parent parentWithSortedList, 
+      MultipleChildrenSortedList_ParentNullable? parentWithSortedListNullable, 
+      ref bool isCancelled)
+   {
    }
 
 

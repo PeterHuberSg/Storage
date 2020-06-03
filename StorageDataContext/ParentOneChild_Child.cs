@@ -7,9 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Child class with one parent property which is not nullable and one property to a different parent 
+    /// which is nullable
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class ParentOneChild_Child: IStorage<ParentOneChild_Child> {
 
 
     #region Properties
@@ -64,7 +65,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(string text, ParentOneChild_Parent parent, ParentOneChild_ParentNullable? parentNullable, ref bool isCancelled){
    }
 
 

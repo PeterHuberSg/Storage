@@ -7,9 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Example for parent which can have at most 1 child and the parent property in the child is not nullable.
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class ParentOneChild_Parent: IStorage<ParentOneChild_Parent> {
 
 
     #region Properties
@@ -64,7 +64,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(string text, ref bool isCancelled){
    }
 
 
@@ -86,6 +86,34 @@ namespace StorageModel  {
     /// Called before removal gets executed
     /// </summary>
     partial void onRemove() {
+    }
+
+
+    /// <summary>
+    /// Called after a parentOneChild_Child gets added to ParentOneChild_Children.
+    /// </summary>
+    partial void onAddedToChild(ParentOneChild_Child parentOneChild_Child){
+    }
+
+
+    /// <summary>
+    /// Called after a parentOneChild_Child gets removed from ParentOneChild_Children.
+    /// </summary>
+    partial void onRemovedFromChild(ParentOneChild_Child parentOneChild_Child){
+    }
+
+
+    /// <summary>
+    /// Called after a parentOneChild_ReadonlyChild gets added to ParentOneChild_ReadonlyChildren.
+    /// </summary>
+    partial void onAddedToReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild){
+    }
+
+
+    /// <summary>
+    /// Called after a parentOneChild_ReadonlyChild gets removed from ParentOneChild_ReadonlyChildren.
+    /// </summary>
+    partial void onRemovedFromReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild){
     }
 
 

@@ -124,7 +124,7 @@ namespace StorageModel  {
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SampleMaster can not be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"SampleMaster cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       onStore();
       DC.Data.SampleMasters.Add(this);
@@ -197,7 +197,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes sample from SampleX.
+    /// Removes sample from SampleMaster.
     /// </summary>
     internal void RemoveFromSampleX(Sample sample) {
       //Execute Remove() only when exactly one property in the child still links to this parent. If

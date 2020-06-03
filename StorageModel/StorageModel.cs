@@ -275,18 +275,135 @@ namespace StorageModel {
   #endregion
 
 
-  #region Sample with dictionary
-  //      ----------------------
+  #region Parent with zero or maximal 1 child
+  //      -----------------------------------
+
+  // The parent might or might not have a child.
+  //
+  // The parent class has a nullable property with the child class type, while the child class has a property
+  // with the parent class type.
+
+  /// <summary>
+  /// Example for parent which can have at most 1 child and the parent property in the child is not nullable.
+  /// </summary>
+  public class ParentOneChild_Parent {
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+
+
+    /// <summary>
+    /// Links to conditional child. Parent might or might not have a child, since the parent always gets
+    /// created before the child.
+    /// </summary>
+    [StorageProperty(isParentOneChild: true)]
+    public ParentOneChild_Child? Child;
+
+
+    /// <summary>
+    /// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
+    /// created before the child.
+    /// </summary>
+    [StorageProperty(isParentOneChild: true)]
+    public ParentOneChild_ReadonlyChild? ReadonlyChild;
+  }
+
+
+  /// <summary>
+  /// Example for parent which can have at most 1 child and the parent property in the child is nullable.
+  /// </summary>
+  public class ParentOneChild_ParentNullable {
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+
+
+    /// <summary>
+    /// Links to conditional child. Parent might or might not have a child, since the parent always gets
+    /// created before the child.
+    /// </summary>
+    [StorageProperty(isParentOneChild: true)]
+    public ParentOneChild_Child? Child;
+
+
+    /// <summary>
+    /// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
+    /// created before the child.
+    /// </summary>
+    [StorageProperty(isParentOneChild: true)]
+    public ParentOneChild_ReadonlyChild? ReadonlyChild;
+  }
+
+
+  /// <summary>
+  /// Child class with one parent property which is not nullable and one property to a different parent 
+  /// which is nullable
+  /// </summary>
+  [StorageClass(pluralName: "ParentOneChild_Children")]
+  public class ParentOneChild_Child {
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+
+
+    /// <summary>
+    /// Links to parent
+    /// </summary>
+    public ParentOneChild_Parent Parent;
+
+
+    /// <summary>
+    /// Links to parent conditionally
+    /// </summary>
+    public ParentOneChild_ParentNullable? ParentNullable;
+  }
+
+
+  /// <summary>
+  /// Readonly Child class with one parent property which is not nullable and one property to a different parent 
+  /// which is nullable
+  /// </summary>
+  [StorageClass(pluralName: "ParentOneChild_ReadonlyChildren")]
+  public class ParentOneChild_ReadonlyChild {
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+
+
+    /// <summary>
+    /// Links to parent
+    /// </summary>
+    public ParentOneChild_Parent Parent;
+
+
+    /// <summary>
+    /// Links to parent conditionally
+    /// </summary>
+    public ParentOneChild_ParentNullable? ParentNullable;
+  }
+  #endregion
+
+
+  #region Class where the value of one property are used to build a dictionary for that class
+  //      -----------------------------------------------------------------------------------
 
   // Often, a class has one property which can be used to identify one particular instance. 
   // StorageProperty(needsDictionary: true) adds a Dictionary to the data context, which gets updated whenever
   // an instance get added, that property updated or the instance deleted.
 
   /// <summary>
-  /// Some comment for SampleDetail
+  /// Some comment for PropertyNeedsDictionaryClass
   /// </summary>
-  [StorageClass(pluralName: "SampleWithDictionaries")]
-  public class SampleWithDictionary {
+  [StorageClass(pluralName: "PropertyNeedsDictionaryClasses")]
+  public class PropertyNeedsDictionaryClass {
 
     /// <summary>
     /// Used as key into dictionary SampleWithDictionaryByIdInt
@@ -320,7 +437,7 @@ namespace StorageModel {
   /// Parent of children who use lookup, i.e. parent has no children collection
   /// </summary>
   [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
-  public class LookupParent {
+  public class Lookup_Parent {
     public Date Date;
     public Decimal2 SomeValue;
   }
@@ -331,25 +448,28 @@ namespace StorageModel {
   /// parent property is nullable.
   /// </summary>
   [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: true)]
-  public class LookupParentNullable {
+  public class Lookup_ParentNullable {
     public Date Date;
     public Decimal2 SomeValue;
   }
 
 
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false, pluralName: "LookupChildren")]
-  public class LookupChild {
+  /// <summary>
+  /// Some comment for Lookup_Child
+  /// </summary>
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false, pluralName: "Lookup_Children")]
+  public class Lookup_Child {
     public int Number;
     [StorageProperty(isLookupOnly: true)] //parent LookupParent does not have a collection for LookupChild
-    public LookupParent LookupParent;
+    public Lookup_Parent LookupParent;
     [StorageProperty(isLookupOnly: true)] //parent LookupParentNullable does not have a collection for LookupChild
-    public LookupParentNullable? LookupParentNullable;
+    public Lookup_ParentNullable? LookupParentNullable;
   }
   #endregion
 
 
-  #region ParentWithDictionary -> DictionaryChild, using Dictionary for children
-  //      ----------------------------------------------------------------------
+  #region ParentMultipleChildrenDictionary, using Dictionary for children
+  //      ---------------------------------------------------------------
 
   //Example where parent has a Dictionary instead a List for its children. The child needs an additional field which
   //can be used as Key for the Dictionary. 
@@ -357,8 +477,7 @@ namespace StorageModel {
   /// <summary>
   /// Example of a parent child relationship using a Dictionary.
   /// </summary>
-  [StorageClass(pluralName: "ParentsWithDictionary")]
-  public class ParentWithDictionary {
+  public class MultipleChildrenDictionary_Parent {
 
     /// <summary>
     /// Some Text
@@ -369,15 +488,14 @@ namespace StorageModel {
     /// Dictionary used instead of List. Comment is required and indicates which property of the DictionaryChild to 
     /// use as key
     /// </summary>
-    public Dictionary<Date /*DateKey*/, DictionaryChild> DictionaryChildren;
+    public Dictionary<Date /*DateKey*/, MultipleChildrenDictionary_Child> MultipleChildrenDictionary_Children;
   }
 
 
   /// <summary>
   /// Example of a parent child relationship using a Dictionary where the child's parent property is nullable.
   /// </summary>
-  [StorageClass(pluralName: "ParentsWithDictionaryNullable")]
-  public class ParentWithDictionaryNullable {
+  public class MultipleChildrenDictionary_ParentNullable {
 
     /// <summary>
     /// Some Text
@@ -388,16 +506,16 @@ namespace StorageModel {
     /// Dictionary used instead of List. Comment is required and indicates which property of the DictionaryChild to 
     /// use as key
     /// </summary>
-    public Dictionary<Date /*DateKey*/, DictionaryChild> DictionaryChildren;
+    public Dictionary<Date /*DateKey*/, MultipleChildrenDictionary_Child> MultipleChildrenDictionary_Children;
   }
 
 
   /// <summary>
-  /// DictionaryChild has a member providing the key value needed to add DictionaryChild to the 
-  /// ParentWithDictionary.DictionaryChildren and ParentWithDictionaryNullable.DictionaryChildren
+  /// DictionaryChild has a member providing the key value needed to add DictionaryChild to  
+  /// ParentWithDictionary and ParentWithDictionaryNullable
   /// </summary>
-  [StorageClass(pluralName: "DictionaryChildren")]
-  public class DictionaryChild {
+  [StorageClass(pluralName: "MultipleChildrenDictionary_Children")]
+  public class MultipleChildrenDictionary_Child {
     /// <summary>
     /// Key field used in ParentWithDictionary.DictionaryChildren and 
     /// ParentWithDictionaryNullable.DictionaryChildrenDictionary
@@ -412,18 +530,18 @@ namespace StorageModel {
     /// <summary>
     /// Parent
     /// </summary>
-    public ParentWithDictionary ParentWithDictionary;
+    public MultipleChildrenDictionary_Parent ParentWithDictionary;
 
     /// <summary>
     /// Nullable parent
     /// </summary>
-    public ParentWithDictionaryNullable? ParentWithDictionaryNullable;
+    public MultipleChildrenDictionary_ParentNullable? ParentWithDictionaryNullable;
   }
   #endregion
 
 
-  #region ParentWithSortedList -> SortedListChild, using SortedList for children
-  //      ----------------------------------------------------------------------
+  #region ParentMultipleChildrenSortedList, using SortedList for children
+  //      ---------------------------------------------------------------
 
   //Example where parent has a SortedList instead a List for its children. The child needs an additional field which
   //can be used as Key for the SortedList.
@@ -436,8 +554,7 @@ namespace StorageModel {
   /// <summary>
   /// Example of a parent child relationship using a SortedList.
   /// </summary>
-  [StorageClass(pluralName: "ParentsWithSortedList")]
-  public class ParentWithSortedList {
+  public class MultipleChildrenSortedList_Parent {
 
     /// <summary>
     /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
@@ -453,15 +570,14 @@ namespace StorageModel {
     /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
     /// use as key
     /// </summary>
-    public SortedList<Date /*DateKey*/, SortedListChild> SortedListChildren;
+    public SortedList<Date /*DateKey*/, MultipleChildrenSortedList_Child> MultipleChildrenSortedList_Children;
   }
 
 
   /// <summary>
   /// Example of a parent child relationship using a SortedList where the child's parent property is nullable.
   /// </summary>
-  [StorageClass(pluralName: "ParentsWithSortedListNullable")]
-  public class ParentWithSortedListNullable {
+  public class MultipleChildrenSortedList_ParentNullable {
 
     /// <summary>
     /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
@@ -477,16 +593,16 @@ namespace StorageModel {
     /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
     /// use as key
     /// </summary>
-    public SortedList<Date /*DateKey*/, SortedListChild> SortedListChildren;
+    public SortedList<Date /*DateKey*/, MultipleChildrenSortedList_Child> MultipleChildrenSortedList_Children;
   }
 
 
   /// <summary>
-  /// SortedListChild has a member providing the key value needed to add SortedListChild to the 
-  /// ParentWithSortedList.SortedListChildren and ParentWithSortedListNullable.SortedListChildren
+  /// SortedListChild has a member providing the key value needed to add SortedListChild to  
+  /// ParentWithSortedList and ParentWithSortedListNullable
   /// </summary>
-  [StorageClass(pluralName: "SortedListChildren")]
-  public class SortedListChild {
+  [StorageClass(pluralName: "MultipleChildrenSortedList_Children")]
+  public class MultipleChildrenSortedList_Child {
     /// <summary>
     /// Key field used in ParentWithSortedList.SortedListChildren SortedList
     /// </summary>
@@ -500,12 +616,12 @@ namespace StorageModel {
     /// <summary>
     /// Parent
     /// </summary>
-    public ParentWithSortedList ParentWithSortedList;
+    public MultipleChildrenSortedList_Parent ParentWithSortedList;
 
     /// <summary>
     /// Nullable Parent
     /// </summary>
-    public ParentWithSortedListNullable? ParentWithSortedListNullable;
+    public MultipleChildrenSortedList_ParentNullable? ParentWithSortedListNullable;
   }
   #endregion
 
@@ -521,7 +637,7 @@ namespace StorageModel {
   /// deleted, but it is still possible to add children, but not to remove them.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnlyParent {
+  public class ReadOnly_Parent {
 
     /// <summary>
     /// Readonly Text, because class is not updatable
@@ -531,7 +647,7 @@ namespace StorageModel {
     /// <summary>
     /// List of children
     /// </summary>
-    public List<ReadOnlyChild> ReadOnlyChildren;
+    public List<ReadOnly_Child> ReadOnly_Children;
   }
 
 
@@ -541,7 +657,7 @@ namespace StorageModel {
   /// is nullable.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnlyParentNullable {
+  public class ReadOnly_ParentNullable {
 
     /// <summary>
     /// Readonly Text, because class is not updatable
@@ -551,7 +667,7 @@ namespace StorageModel {
     /// <summary>
     /// List of children
     /// </summary>
-    public List<ReadOnlyChild> ReadOnlyChildren;
+    public List<ReadOnly_Child> ReadOnly_Children;
   }
 
 
@@ -560,8 +676,8 @@ namespace StorageModel {
   /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
   /// either.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, pluralName: "ReadOnlyChildren")]
-  public class ReadOnlyChild {
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, pluralName: "ReadOnly_Children")]
+  public class ReadOnly_Child {
 
     /// <summary>
     /// Readonly Text, because class is not updatable
@@ -571,18 +687,18 @@ namespace StorageModel {
     /// <summary>
     /// Parent
     /// </summary>
-    public ReadOnlyParent ReadOnlyParent;
+    public ReadOnly_Parent ReadOnlyParent;
 
     /// <summary>
     /// Parent
     /// </summary>          
-    public ReadOnlyParentNullable? ReadOnlyParentNullable;
+    public ReadOnly_ParentNullable? ReadOnlyParentNullable;
   }
   #endregion
 
 
-  #region ReadOnlyParent2 -> UpdatableChild, using List for children
-  //      ----------------------------------------------------------
+  #region ReadOnlyParent -> UpdatableChild, using List for children
+  //      ---------------------------------------------------------
 
   //Example where parent is not updatable and not editable. Child can be updated, but not deleted. 
 
@@ -591,7 +707,7 @@ namespace StorageModel {
   /// deleted, but it is still possible to add children, but not to remove them.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnlyParent2 {
+  public class ReadOnlyParentUpdatableChild_Parent {
 
     /// <summary>
     /// Readonly Text, because class is not updatable
@@ -601,7 +717,7 @@ namespace StorageModel {
     /// <summary>
     /// List of children
     /// </summary>
-    public List<UpdatableChild> UpdatableChildren;
+    public List<ReadOnlyParentUpdatableChild_Child> ReadOnlyParentUpdatableChild_Children;
   }
 
 
@@ -611,7 +727,7 @@ namespace StorageModel {
   /// is nullable.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnlyParent2Nullable {
+  public class ReadOnlyParentUpdatableChild_ParentNullable {
 
     /// <summary>
     /// Readonly Text, because class is not updatable
@@ -621,7 +737,7 @@ namespace StorageModel {
     /// <summary>
     /// List of children
     /// </summary>
-    public List<UpdatableChild> UpdatableChildren;
+    public List<ReadOnlyParentUpdatableChild_Child> ReadOnlyParentUpdatableChild_Children;
   }
 
 
@@ -630,8 +746,8 @@ namespace StorageModel {
   /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
   /// either.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: true, pluralName: "UpdatableChildren")]
-  public class UpdatableChild {
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: true, pluralName: "ReadOnlyParentUpdatableChild_Children")]
+  public class ReadOnlyParentUpdatableChild_Child {
 
     /// <summary>
     /// Readonly Text, because class is not updatable
@@ -641,12 +757,12 @@ namespace StorageModel {
     /// <summary>
     /// Parent
     /// </summary>
-    public ReadOnlyParent2 ReadOnlyParent2;
+    public ReadOnlyParentUpdatableChild_Parent Parent;
 
     /// <summary>
     /// Parent
     /// </summary>          
-    public ReadOnlyParent2Nullable? ReadOnlyParent2Nullable;
+    public ReadOnlyParentUpdatableChild_ParentNullable? ParentNullable;
   }
   #endregion
 

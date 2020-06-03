@@ -7,9 +7,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
+    /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
+    /// either.
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class ReadOnly_Child: IStorage<ReadOnly_Child> {
 
 
     #region Properties
@@ -58,34 +60,6 @@ namespace StorageModel  {
     /// Called before the data gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
-    }
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
-   }
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    partial void onUpdated() {
-    }
-
-
-    /// <summary>
-    /// Called after an update is read from a CSV file
-    /// </summary>
-    partial void onCsvUpdate() {
-    }
-
-
-    /// <summary>
-    /// Called before removal gets executed
-    /// </summary>
-    partial void onRemove() {
     }
 
 

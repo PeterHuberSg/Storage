@@ -7,9 +7,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Some comment for SampleDetail
+    /// Example of a parent child relationship using a SortedList.
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class MultipleChildrenSortedList_Parent: IStorage<MultipleChildrenSortedList_Parent> {
 
 
     #region Properties
@@ -64,7 +64,7 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, Sample sample, ref bool isCancelled){
+    partial void onUpdating(string textUpdateable, ref bool isCancelled){
    }
 
 
@@ -86,6 +86,20 @@ namespace StorageModel  {
     /// Called before removal gets executed
     /// </summary>
     partial void onRemove() {
+    }
+
+
+    /// <summary>
+    /// Called after a multipleChildrenSortedList_Child gets added to MultipleChildrenSortedList_Children.
+    /// </summary>
+    partial void onAddedToMultipleChildrenSortedList_Children(MultipleChildrenSortedList_Child multipleChildrenSortedList_Child){
+    }
+
+
+    /// <summary>
+    /// Called after a multipleChildrenSortedList_Child gets removed from MultipleChildrenSortedList_Children.
+    /// </summary>
+    partial void onRemovedFromMultipleChildrenSortedList_Children(MultipleChildrenSortedList_Child multipleChildrenSortedList_Child){
     }
 
 

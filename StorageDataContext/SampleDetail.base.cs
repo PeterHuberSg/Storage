@@ -129,14 +129,14 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds SampleDetail to DC.Data.SampleDetails and Sample.SampleDetails. 
+    /// Adds SampleDetail to DC.Data.SampleDetails and Sample. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SampleDetail can not be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"SampleDetail cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       if (Sample.Key<0) {
-        throw new Exception($"SampleDetail can not be stored in DC.Data, Sample is missing or not stored yet." + Environment.NewLine + ToString());
+        throw new Exception($"SampleDetail cannot be stored in DC.Data, Sample is missing or not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DC.Data.SampleDetails.Add(this);

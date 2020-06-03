@@ -309,17 +309,17 @@ namespace StorageModel  {
     //      -------
 
     /// <summary>
-    /// Adds Sample to DC.Data.SampleX and SampleMaster.SampleX. 
+    /// Adds Sample to DC.Data.SampleX and SampleMaster. 
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"Sample can not be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"Sample cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
       if (OneMaster!=null && OneMaster.Key<0) {
-        throw new Exception($"Sample can not be stored in DC.Data, OneMaster is not stored yet." + Environment.NewLine + ToString());
+        throw new Exception($"Sample cannot be stored in DC.Data, OneMaster is not stored yet." + Environment.NewLine + ToString());
       }
       if (OtherMaster!=null && OtherMaster.Key<0) {
-        throw new Exception($"Sample can not be stored in DC.Data, OtherMaster is not stored yet." + Environment.NewLine + ToString());
+        throw new Exception($"Sample cannot be stored in DC.Data, OtherMaster is not stored yet." + Environment.NewLine + ToString());
       }
       onStore();
       DC.Data.SampleX.Add(this);
@@ -640,7 +640,7 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes sampleDetail from SampleDetails.
+    /// Removes sampleDetail from Sample.
     /// </summary>
     internal void RemoveFromSampleDetails(SampleDetail sampleDetail) {
 #if DEBUG
@@ -657,7 +657,7 @@ namespace StorageModel  {
     /// Removes Sample from DC.Data.SampleX, 
     /// disconnects Sample from SampleMaster because of OneMaster, 
     /// disconnects Sample from SampleMaster because of OtherMaster and 
-    /// deletes all SampleDetail where SampleDetail.Sample links to this Sample.
+    /// deletes any SampleDetail where SampleDetail.Sample links to this Sample.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -672,7 +672,7 @@ namespace StorageModel  {
     /// <summary>
     /// Disconnects Sample from SampleMaster because of OneMaster, 
     /// disconnects Sample from SampleMaster because of OtherMaster and 
-    /// deletes all SampleDetail where SampleDetail.Sample links to this Sample.
+    /// deletes any SampleDetail where SampleDetail.Sample links to this Sample.
     /// </summary>
     internal static void Disconnect(Sample sample) {
       if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {

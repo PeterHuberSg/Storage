@@ -23,9 +23,11 @@ namespace Storage {
     String,
     Enum,
     //---- add new simple types before List ----
-    List, //member of parent being a child collection, is List<TValue>
-    CollectionKeyValue, //member of parent being a child collection<TKey, TValue>, can be Dictionary or SortedList
-    Parent, //member of child linking to parent
+    LinkToParent, //member of child linking to parent
+    ParentOneChild, // parent might have 1 child
+    ParentMultipleChildrenList, //property of parent being a child collection, is List<TValue>
+    ParentMultipleChildrenDictionary, //property of parent being a Dictionary<TKey, TValue>
+    ParentMultipleChildrenSortedList, //property of parent being a SortedList<TKey, TValue>
     Lenght
   }
 
@@ -33,7 +35,7 @@ namespace Storage {
   /// <summary>
   /// Collection types supported by Storage compiler
   /// </summary>
-  public enum CollectionTypeEnum{
+  public enum ParentCollectionTypeEnum{
     Undefined = 0,
     List,
     Dictionary,
