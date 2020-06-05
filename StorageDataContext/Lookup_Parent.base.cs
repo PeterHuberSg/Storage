@@ -179,6 +179,35 @@ namespace StorageModel  {
   }
 
 
+  #region Lookup_ParentRaw
+  //      ----------------
+
+  /// <summary>
+  /// Lookup_ParentRaw is used instead Lookup_Parent to read an instance from a CSV file with Lookup_ParentReader or 
+  /// write with Lookup_ParentWriter instead using DC.Data.
+  /// </summary>
+  public class Lookup_ParentRaw {
+
+    /// <summary>
+    /// Unique identifier for Lookup_ParentRaw.
+    /// </summary>
+    public int Key { get; set; }
+
+
+    /// <summary>
+    /// Stores only dates but no times.
+    ///  </summary>
+    public DateTime Date { get; set; }
+
+
+    /// <summary>
+    /// Stores decimal with 2 digits after comma.
+    ///  </summary>
+    public decimal SomeValue { get; set; }
+  }
+  #endregion
+
+
   #region Lookup_ParentWriter
   //      -------------------
 

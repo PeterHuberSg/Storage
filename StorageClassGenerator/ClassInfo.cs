@@ -41,6 +41,9 @@ namespace Storage {
   public class ClassInfo {
     public readonly string ClassName;
     public readonly string LowerClassName;
+    public readonly string RawName;
+    public readonly string LowerRawName;
+    public readonly string ReaderName;
     public readonly string WriterName;
     public readonly string? ClassComment;
     public readonly int? MaxLineLength;
@@ -49,6 +52,7 @@ namespace Storage {
     public readonly bool AreInstancesUpdatable;
     public readonly bool AreInstancesDeletable;
     public readonly bool IsConstructorPrivate;
+    public readonly bool IsGenerateReaderWriter;
     public bool IsDisconnectNeeded = true;
     public readonly Dictionary<string, MemberInfo> Members;
     public readonly HashSet<ClassInfo> ParentsAll;
@@ -66,10 +70,14 @@ namespace Storage {
       string pluralName, 
       bool areInstancesUpdatable, 
       bool areInstancesDeletable,
-      bool isConstructorPrivate)
+      bool isConstructorPrivate,
+      bool isGenerateReaderWriter)
     {
       ClassName = name;
       LowerClassName = name[0..1].ToLowerInvariant() + name[1..];
+      RawName = name + "Raw";
+      LowerRawName = LowerClassName + "Raw";
+      ReaderName = name + "Reader";
       WriterName = name + "Writer";
       ClassComment = classComment;
       MaxLineLength = maxLineLength;
@@ -78,6 +86,7 @@ namespace Storage {
       AreInstancesUpdatable = areInstancesUpdatable;
       AreInstancesDeletable = areInstancesDeletable;
       IsConstructorPrivate = isConstructorPrivate;
+      IsGenerateReaderWriter = isGenerateReaderWriter;
       Members = new Dictionary<string, MemberInfo>();
       ParentsAll = new HashSet<ClassInfo>();
       //ParentsWithList = new HashSet<ClassInfo>();
@@ -1389,119 +1398,152 @@ namespace Storage {
       #endregion
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine("  }");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
 
-      #region Writer Class
-      streamWriter.WriteLine($"  #region {WriterName}");
-      streamWriter.WriteLine("  //      " + new string('-', WriterName.Length));
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("  /// <summary>");
-      streamWriter.WriteLine($"  /// Writes a CSV file containing records which can be read back as {ClassName}. Note that the keys of linked objects");
-      streamWriter.WriteLine("  /// need to be provided in Write(), since the data context will not be involved.");
-      streamWriter.WriteLine("  /// </summary>");
-      streamWriter.WriteLine($"  public class {WriterName}: IDisposable {{");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    readonly CsvConfig csvConfig;");
-      streamWriter.WriteLine("    readonly CsvWriter csvWriter;");
-      if (AreInstancesDeletable || AreInstancesUpdatable) {
-        streamWriter.WriteLine("    int lastKey = int.MinValue;");
-      }
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Constructor, will write the {ClassName} header line into the CSV file. Dispose {WriterName} once done.");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    public {WriterName}(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {{");
-      streamWriter.WriteLine("      this.csvConfig = csvConfig;");
-      streamWriter.WriteLine("      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);");
-      streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
-      streamWriter.WriteLine("      csvWriter.WriteLine(csvHeaderString);");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Writes the details of one {ClassName} to the CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write("    public void Write(");
-      writeParameters(streamWriter, isConstructor: true, isWriterWrite: true);
-      if (AreInstancesDeletable || AreInstancesUpdatable) {
-        streamWriter.WriteLine("      if (key<0) {");
-        streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} needs to be greater equal 0.\");");
-        streamWriter.WriteLine("      }");
-        streamWriter.WriteLine("      if (key<=lastKey) {");
-        streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
-        streamWriter.WriteLine("      }");
-        streamWriter.WriteLine("      lastKey = key;");
-        streamWriter.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
-        streamWriter.WriteLine("      csvWriter.Write(key);");
-      } else {
-        streamWriter.WriteLine("      csvWriter.StartNewLine();");
-      }
-      foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.LinkToParent) {
-          if (mi.IsNullable) {
-            streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
-            streamWriter.WriteLine("        csvWriter.WriteNull();");
-            streamWriter.WriteLine("      } else {");
-            streamWriter.WriteLine($"        if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write" +
-              $" {LowerClassName} to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine($"        csvWriter.Write({mi.LowerMemberName}Key.ToString());");
-            streamWriter.WriteLine("      }");
-          } else {
-            streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
-              $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine($"      csvWriter.Write({mi.LowerMemberName}Key.ToString());");
-          }
-        } else if (mi.MemberType==MemberTypeEnum.Enum) {
-          streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){mi.LowerMemberName});");
-        } else if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type or LinkToParent
-          streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({mi.LowerMemberName});");
+      if (IsGenerateReaderWriter) {
+        #region Reader Class
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine($"  #region {RawName}");
+        streamWriter.WriteLine("  //      " + new string('-', RawName.Length));
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("  /// <summary>");
+        streamWriter.WriteLine($"  /// {RawName} is used instead {ClassName} to read an instance from a CSV file with {ReaderName} or ");
+        streamWriter.WriteLine($"  /// write with {WriterName} instead using {context}.Data.");
+        streamWriter.WriteLine("  /// </summary>");
+        streamWriter.WriteLine($"  public class {RawName} {{");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Unique identifier for {RawName}.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    public int Key { get; set; }");
+        foreach (var mi in Members.Values) {
+          mi.WriteProperty(streamWriter, isRaw: true);
         }
+        if (AreInstancesUpdatable || AreInstancesDeletable) {
+          streamWriter.WriteLine();
+          streamWriter.WriteLine();
+          streamWriter.WriteLine("    /// <summary>");
+          streamWriter.WriteLine($"    /// How was {RawName} marked in CSV file (read, update, delete) ? If not read from CSV file, RawState is new.");
+          streamWriter.WriteLine("    /// </summary>");
+          streamWriter.WriteLine("    public RawStateEnum RawState { get; set; }");
+        }
+        streamWriter.WriteLine("  }");
+        streamWriter.WriteLine("  #endregion");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        #endregion
+
+        #region Writer Class
+        streamWriter.WriteLine($"  #region {WriterName}");
+        streamWriter.WriteLine("  //      " + new string('-', WriterName.Length));
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("  /// <summary>");
+        streamWriter.WriteLine($"  /// Writes a CSV file containing records which can be read back as {ClassName}. Note that the keys of linked objects");
+        streamWriter.WriteLine("  /// need to be provided in Write(), since the data context will not be involved.");
+        streamWriter.WriteLine("  /// </summary>");
+        streamWriter.WriteLine($"  public class {WriterName}: IDisposable {{");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    readonly CsvConfig csvConfig;");
+        streamWriter.WriteLine("    readonly CsvWriter csvWriter;");
+        if (AreInstancesDeletable || AreInstancesUpdatable) {
+          streamWriter.WriteLine("    int lastKey = int.MinValue;");
+        }
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Constructor, will write the {ClassName} header line into the CSV file. Dispose {WriterName} once done.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    public {WriterName}(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {{");
+        streamWriter.WriteLine("      this.csvConfig = csvConfig;");
+        streamWriter.WriteLine("      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);");
+        streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
+        streamWriter.WriteLine("      csvWriter.WriteLine(csvHeaderString);");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Writes the details of one {ClassName} to the CSV file");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.Write("    public void Write(");
+        writeParameters(streamWriter, isConstructor: true, isWriterWrite: true);
+        if (AreInstancesDeletable || AreInstancesUpdatable) {
+          streamWriter.WriteLine("      if (key<0) {");
+          streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} needs to be greater equal 0.\");");
+          streamWriter.WriteLine("      }");
+          streamWriter.WriteLine("      if (key<=lastKey) {");
+          streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
+          streamWriter.WriteLine("      }");
+          streamWriter.WriteLine("      lastKey = key;");
+          streamWriter.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
+          streamWriter.WriteLine("      csvWriter.Write(key);");
+        } else {
+          streamWriter.WriteLine("      csvWriter.StartNewLine();");
+        }
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+              streamWriter.WriteLine("        csvWriter.WriteNull();");
+              streamWriter.WriteLine("      } else {");
+              streamWriter.WriteLine($"        if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write" +
+                $" {LowerClassName} to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
+              streamWriter.WriteLine();
+              streamWriter.WriteLine($"        csvWriter.Write({mi.LowerMemberName}Key.ToString());");
+              streamWriter.WriteLine("      }");
+            } else {
+              streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
+                $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
+              streamWriter.WriteLine();
+              streamWriter.WriteLine($"      csvWriter.Write({mi.LowerMemberName}Key.ToString());");
+            }
+          } else if (mi.MemberType==MemberTypeEnum.Enum) {
+            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){mi.LowerMemberName});");
+          } else if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type or LinkToParent
+            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({mi.LowerMemberName});");
+          }
+        }
+        streamWriter.WriteLine("      csvWriter.WriteEndOfLine();");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    #region IDisposable Support");
+        streamWriter.WriteLine("    //      -------------------");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Executes disposal of {WriterName} exactly once.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    public void Dispose() {");
+        streamWriter.WriteLine("      Dispose(true);");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("      GC.SuppressFinalize(this);");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Is {WriterName} already exposed ?");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    protected bool IsDisposed {");
+        streamWriter.WriteLine("      get { return isDisposed==1; }");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    int isDisposed = 0;");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    protected void Dispose(bool disposing) {");
+        streamWriter.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
+        streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("      csvWriter.Dispose();");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine("    #endregion");
+        streamWriter.WriteLine("  }");
+        streamWriter.WriteLine("  #endregion");
+        #endregion
       }
-      streamWriter.WriteLine("      csvWriter.WriteEndOfLine();");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #region IDisposable Support");
-      streamWriter.WriteLine("    //      -------------------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Executes disposal of {WriterName} exactly once.");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    public void Dispose() {");
-      streamWriter.WriteLine("      Dispose(true);");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("      GC.SuppressFinalize(this);");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Is {WriterName} already exposed ?");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    protected bool IsDisposed {");
-      streamWriter.WriteLine("      get { return isDisposed==1; }");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    int isDisposed = 0;");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    protected void Dispose(bool disposing) {");
-      streamWriter.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
-      streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("      csvWriter.Dispose();");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine("  }");
-      streamWriter.WriteLine("  #endregion");
-      #endregion
 
       streamWriter.WriteLine("}");
       #endregion

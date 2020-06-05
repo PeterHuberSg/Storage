@@ -266,6 +266,41 @@ namespace StorageModel  {
   }
 
 
+  #region SampleDetailRaw
+  //      ---------------
+
+  /// <summary>
+  /// SampleDetailRaw is used instead SampleDetail to read an instance from a CSV file with SampleDetailReader or 
+  /// write with SampleDetailWriter instead using DC.Data.
+  /// </summary>
+  public class SampleDetailRaw {
+
+    /// <summary>
+    /// Unique identifier for SampleDetailRaw.
+    /// </summary>
+    public int Key { get; set; }
+
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text { get; set; } ="";
+
+
+    /// <summary>
+    /// Link to parent Sample
+    /// </summary>
+    public int SampleKey { get; set; }
+
+
+    /// <summary>
+    /// How was SampleDetailRaw marked in CSV file (read, update, delete) ? If not read from CSV file, RawState is new.
+    /// </summary>
+    public RawStateEnum RawState { get; set; }
+  }
+  #endregion
+
+
   #region SampleDetailWriter
   //      ------------------
 

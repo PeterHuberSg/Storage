@@ -35,12 +35,15 @@ namespace Storage {
     /// <param name="areInstancesUpdatable">Can the properties of the class change ?</param>
     /// <param name="areInstancesDeletable">Can class instance be deleted from StorageDirectory ?</param>
     /// <param name="isConstructorPrivate">Should constructor be private instead of public ?</param>
+    /// <param name="isGenerateReaderWriter">Should code get generated to read instances of that class from
+    /// CSV files without using a data context ? This is mostly used for data administration use cases.</param>
     public StorageClassAttribute(
       int maxLineLength = 0,
       string? pluralName = null,
       bool areInstancesUpdatable = true,
       bool areInstancesDeletable = true,
-      bool isConstructorPrivate = false) { }
+      bool isConstructorPrivate = false,
+      bool isGenerateReaderWriter = false) { }
   }
 
 

@@ -415,7 +415,9 @@ namespace Storage {
     }
 
 
-    internal void WriteProperty(StreamWriter streamWriter) {
+    internal void WriteProperty(StreamWriter streamWriter, bool isRaw = false) {
+      if (isRaw && MemberType>=MemberTypeEnum.ParentOneChild) return;
+
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       bool hasWrittenComment = false;
@@ -454,10 +456,22 @@ namespace Storage {
         streamWriter.WriteLine($"    readonly {TypeString} {LowerMemberName};");
 
       } else {
-        if (IsReadOnly) {
-          streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; }}");
+        if (isRaw) {
+          if (MemberType==MemberTypeEnum.LinkToParent) {
+            streamWriter.WriteLine($"    public int {MemberName}Key {{ get; set; }}");
+          } else {
+            if (TypeString=="string") {
+              streamWriter.WriteLine($"    public string {MemberName} {{ get; set; }} =\"\";");
+            } else {
+              streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; set; }}");
+            }
+          }
         } else {
-          streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
+          if (IsReadOnly) {
+            streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; }}");
+          } else {
+            streamWriter.WriteLine($"    public {TypeString} {MemberName} {{ get; private set; }}");
+          }
         }
       }
     }

@@ -260,7 +260,7 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for SampleDetail
   /// </summary>
-  [StorageClass(maxLineLength: 151)]
+  [StorageClass(maxLineLength: 151, isGenerateReaderWriter: true)]
   public class SampleDetail {
     /// <summary>
     /// Some Text comment
@@ -436,7 +436,7 @@ namespace StorageModel {
   /// <summary>
   /// Parent of children who use lookup, i.e. parent has no children collection
   /// </summary>
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false, isGenerateReaderWriter: true)]
   public class Lookup_Parent {
     public Date Date;
     public Decimal2 SomeValue;

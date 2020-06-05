@@ -78,6 +78,7 @@ namespace Storage {
         bool areInstancesUpdatable = true;
         bool areInstancesDeletable = true;
         bool isConstructorPrivate = false;
+        bool isGenerateReaderWriter = false;
         if (classDeclaration.AttributeLists.Count==0) {
           //use the default values
         } else if (classDeclaration.AttributeLists.Count>1) {
@@ -103,15 +104,19 @@ namespace Storage {
               case "areInstancesUpdatable": areInstancesUpdatable = value=="true"; break;
               case "areInstancesDeletable": areInstancesDeletable = value=="true"; break;
               case "isConstructorPrivate": isConstructorPrivate = value=="true"; break;
-              default: throw new Exception();
+              case "isGenerateReaderWriter": isGenerateReaderWriter = value=="true"; break;
+              default: 
+                throw new GeneratorException($"Class {className} Attribute{attribute}: Argument name {name} can only be: " +
+                  "maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable, isConstructorPrivate or isGenerateReaderWriter.");
               }
             } catch {
-              new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
+              throw new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
             }
           }
 
         }
-        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable, isConstructorPrivate);
+        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, 
+          areInstancesDeletable, isConstructorPrivate, isGenerateReaderWriter);
         classes.Add(className, classInfo);
         var isPropertyWithDefaultValueFound = false;
         foreach (var classMember in classDeclaration.Members) {
