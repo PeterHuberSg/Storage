@@ -412,6 +412,7 @@ namespace Storage {
         item = items[index];
         if (item==null) return true; //item was already deleted
 
+        //todo: StorageDirectionary.Remove(int key): Should disconnect!(item) be moved out of the lock ?
         disconnect!(item);
         items[index] = null;
         item.HasChanged -= item_HasChanged;

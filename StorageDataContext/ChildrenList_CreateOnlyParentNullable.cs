@@ -7,10 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// DictionaryChild has a member providing the key value needed to add DictionaryChild to  
-    /// ParentWithDictionary and ParentWithDictionaryNullable
+    /// Example of none deletable parent using a List for its children. The child can be deletable or none deletable. The 
+    /// child might have a parent (the Parent property is nullable).
     /// </summary>
-  public partial class MultipleChildrenDictionary_Child: IStorage<MultipleChildrenDictionary_Child> {
+  public partial class ChildrenList_CreateOnlyParentNullable: IStorage<ChildrenList_CreateOnlyParentNullable> {
 
 
     #region Properties
@@ -63,36 +63,23 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after a childrenList_Child gets added to ChildrenList_Children.
     /// </summary>
-    partial void onUpdating(
-      DateTime dateKey, 
-      string text, 
-      MultipleChildrenDictionary_Parent parentWithDictionary, 
-      MultipleChildrenDictionary_ParentNullable? parentWithDictionaryNullable, 
-      ref bool isCancelled)
-   {
-   }
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    partial void onUpdated() {
+    partial void onAddedToChildrenList_Children(ChildrenList_Child childrenList_Child){
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after a childrenList_Child gets removed from ChildrenList_Children.
     /// </summary>
-    partial void onCsvUpdate() {
+    partial void onRemovedFromChildrenList_Children(ChildrenList_Child childrenList_Child){
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after a childrenList_CreateOnlyChild gets added to ChildrenList_CreateOnlyChildren.
     /// </summary>
-    partial void onRemove() {
+    partial void onAddedToChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild){
     }
 
 

@@ -436,6 +436,9 @@ namespace Storage {
       streamWriter.WriteLine("#nullable enable");
       streamWriter.WriteLine("using System;");
       streamWriter.WriteLine("using System.Collections.Generic;");
+      if (IsGenerateReaderWriter) {
+        streamWriter.WriteLine("using System.Diagnostics.CodeAnalysis;");
+      }
       streamWriter.WriteLine("using System.Threading;");
       streamWriter.WriteLine("using Storage;");
       streamWriter.WriteLine();
@@ -878,6 +881,7 @@ namespace Storage {
           streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({LowerClassName}.{mi.MemberName});");
         }
       }
+      //Todo: ClassInfo: change methods like onCsvWrite to onCsvWriting and onCsvWriten, add them also to methods like internal void RemoveParentNullable
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine("    partial void onCsvWrite();");
       streamWriter.WriteLine();
@@ -1248,6 +1252,7 @@ namespace Storage {
               }
               streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = null;");
               streamWriter.WriteLine("      }");
+           
             } else if (mi.MemberType>MemberTypeEnum.ParentOneChild) { //ParentMultipleChildren
               switch (mi.MemberType) {
               case MemberTypeEnum.ParentMultipleChildrenList:
@@ -1359,11 +1364,11 @@ namespace Storage {
       streamWriter.WriteLine("      return returnString;");
       streamWriter.WriteLine("    }");
       streamWriter.WriteLine("    partial void onToShortString(ref string returnString);");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
       #endregion
 
       #region ToString()
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Returns all property names and values");
       streamWriter.WriteLine("    /// </summary>");
@@ -1378,7 +1383,7 @@ namespace Storage {
           //list, directory or sortedList
           lines.Add($"        $\" {mi.MemberName}: {{{mi.MemberName}.Count}}");
         } else {
-          //simple data type and link to parent
+          //simple data type and enum
           lines.Add($"        $\" {mi.MemberName}: {{{mi.MemberName}{mi.ToStringFunc}}}");
         }
       }
@@ -1400,15 +1405,16 @@ namespace Storage {
       streamWriter.WriteLine("  }");
 
       if (IsGenerateReaderWriter) {
-        #region Reader Class
+
+        #region Raw Class
         streamWriter.WriteLine();
         streamWriter.WriteLine();
         streamWriter.WriteLine($"  #region {RawName}");
         streamWriter.WriteLine("  //      " + new string('-', RawName.Length));
         streamWriter.WriteLine();
         streamWriter.WriteLine("  /// <summary>");
-        streamWriter.WriteLine($"  /// {RawName} is used instead {ClassName} to read an instance from a CSV file with {ReaderName} or ");
-        streamWriter.WriteLine($"  /// write with {WriterName} instead using {context}.Data.");
+        streamWriter.WriteLine($"  /// {RawName} is used instead {ClassName} and {context}.Data to read an instance from a CSV file with ");
+        streamWriter.WriteLine($"  /// {ReaderName} or write with {WriterName}.");
         streamWriter.WriteLine("  /// </summary>");
         streamWriter.WriteLine($"  public class {RawName} {{");
         streamWriter.WriteLine();
@@ -1427,6 +1433,149 @@ namespace Storage {
           streamWriter.WriteLine("    /// </summary>");
           streamWriter.WriteLine("    public RawStateEnum RawState { get; set; }");
         }
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Returns all property names and values");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    public override string ToString() {");
+        streamWriter.WriteLine("      var returnString =");
+        lines.Clear();
+        lines.Add("        $\"Key: {Key}");
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            lines.Add($"        $\" {mi.MemberName}Key: {{{mi.MemberName}Key}}");
+          } else if (mi.MemberType<MemberTypeEnum.LinkToParent) {
+            //simple data type and enum
+            lines.Add($"        $\" {mi.MemberName}: {{{mi.MemberName}{mi.ToStringFunc}}}");
+          }
+        }
+        for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
+          var line = lines[linesIndex];
+          streamWriter.Write(line);
+          if (linesIndex+1<lines.Count) {
+            streamWriter.WriteLine(",\" +");
+          } else {
+            streamWriter.WriteLine(";\";");
+          }
+        }
+        streamWriter.WriteLine("      return returnString;");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine("  }");
+        streamWriter.WriteLine("  #endregion");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        #endregion
+
+        #region Reader Class
+        streamWriter.WriteLine($"  #region {ReaderName}");
+        streamWriter.WriteLine("  //      " + new string('-', ReaderName.Length));
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("  /// <summary>");
+        streamWriter.WriteLine($"  /// Reads from a CSV file containing {ClassName} instances. Note that the keys of linked objects will be returned ");
+        streamWriter.WriteLine("  /// and not the linked objects themselves, since the data context will not be involved.");
+        streamWriter.WriteLine("  /// </summary>");
+        streamWriter.WriteLine($"  public class {ReaderName}: IDisposable {{");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    readonly CsvConfig csvConfig;");
+        streamWriter.WriteLine("    readonly CsvReader csvReader;");
+        if (!AreInstancesDeletable && !AreInstancesUpdatable) {
+          streamWriter.WriteLine("    int nextKey = 0;");
+        }
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Constructor, will read and verify the {ClassName} header line. You need to dispose {ReaderName} once");
+        streamWriter.WriteLine($"    /// you are done, except when you have read the whole file, then {ReaderName}.ReadLine() disposes automatically.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    public {ReaderName}(string fileNamePath, CsvConfig csvConfig) {{");
+        streamWriter.WriteLine("      this.csvConfig = csvConfig;");
+        streamWriter.WriteLine($"      csvReader = new CsvReader(fileNamePath, csvConfig, {ClassName}.MaxLineLength);");
+        streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
+        streamWriter.WriteLine("      var headerLine = csvReader.ReadLine();");
+        streamWriter.WriteLine("      if (csvHeaderString!=headerLine) throw new Exception($\"Error reading file {csvReader.FileName}{Environment.NewLine}'\" +");
+        streamWriter.WriteLine("        headerLine + \"' should be \" + csvHeaderString + \".\");");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Reads the details of one {ClassName} from the CSV file. Returns false when all lines are");
+        streamWriter.WriteLine($"    /// read and disposes the reader.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    public bool ReadLine([NotNullWhen(true)] out {RawName}? {LowerRawName}){{");
+        streamWriter.WriteLine("      if (csvReader.IsEndOfFileReached()) {");
+        streamWriter.WriteLine("        csvReader.Dispose();");
+        streamWriter.WriteLine($"        {LowerRawName} = null;");
+        streamWriter.WriteLine("        return false;");
+        streamWriter.WriteLine("      }");
+        streamWriter.WriteLine($"      {LowerRawName} = new {RawName}();");
+        if (AreInstancesDeletable || AreInstancesUpdatable) {
+          streamWriter.WriteLine($"      var firstLineChar = csvReader.ReadFirstLineChar();");
+          streamWriter.WriteLine($"      if (firstLineChar==csvConfig.LineCharAdd) {{");
+          streamWriter.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Read;");
+          streamWriter.WriteLine($"      }} else if (firstLineChar==csvConfig.LineCharUpdate) {{");
+          streamWriter.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Updated;");
+          streamWriter.WriteLine($"      }} else if (firstLineChar==csvConfig.LineCharDelete) {{");
+          streamWriter.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Deleted;");
+          streamWriter.WriteLine($"      }} else {{");
+          streamWriter.WriteLine($"        throw new NotSupportedException($\"Illegal first line character '{{firstLineChar}}' found in '{{csvReader.GetPresentContent()}}'.\");");
+          streamWriter.WriteLine($"      }}");
+          streamWriter.WriteLine($"      {LowerRawName}.Key = csvReader.ReadInt();");
+        } else {
+          streamWriter.WriteLine($"      {LowerRawName}.Key = nextKey++;");
+        }
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName}Key = csvReader.ReadIntNull();");
+            } else {
+              streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName}Key = csvReader.ReadInt();");
+            }
+          } else if (mi.MemberType==MemberTypeEnum.Enum) {
+            streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+          } else if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type or LinkToParent
+            streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+          }
+        }
+        streamWriter.WriteLine("      csvReader.ReadEndOfLine();");
+        streamWriter.WriteLine($"      return true;");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    #region IDisposable Support");
+        streamWriter.WriteLine("    //      -------------------");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Executes disposal of {ReaderName} exactly once.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    public void Dispose() {");
+        streamWriter.WriteLine("      Dispose(true);");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("      GC.SuppressFinalize(this);");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Is {ReaderName} already exposed ?");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    protected bool IsDisposed {");
+        streamWriter.WriteLine("      get { return isDisposed==1; }");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    int isDisposed = 0;");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine("    protected void Dispose(bool disposing) {");
+        streamWriter.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
+        streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("      csvReader.Dispose();");
+        streamWriter.WriteLine("    }");
+        streamWriter.WriteLine("    #endregion");
         streamWriter.WriteLine("  }");
         streamWriter.WriteLine("  #endregion");
         streamWriter.WriteLine();
@@ -1447,18 +1596,78 @@ namespace Storage {
         streamWriter.WriteLine("    readonly CsvWriter csvWriter;");
         if (AreInstancesDeletable || AreInstancesUpdatable) {
           streamWriter.WriteLine("    int lastKey = int.MinValue;");
+        } else {
+          streamWriter.WriteLine("    int nextKey = 0;");
         }
         streamWriter.WriteLine();
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
         streamWriter.WriteLine($"    /// Constructor, will write the {ClassName} header line into the CSV file. Dispose {WriterName} once done.");
         streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public {WriterName}(string? fileNamePath, CsvConfig csvConfig, int maxLineCharLenght) {{");
+        streamWriter.WriteLine($"    public {WriterName}(string fileNamePath, CsvConfig csvConfig){{");
         streamWriter.WriteLine("      this.csvConfig = csvConfig;");
-        streamWriter.WriteLine("      csvWriter = new CsvWriter(fileNamePath, csvConfig, maxLineCharLenght, null, 0);");
+        streamWriter.WriteLine($"      csvWriter = new CsvWriter(fileNamePath, csvConfig, {ClassName}.MaxLineLength, null, 0);");
         streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
         streamWriter.WriteLine("      csvWriter.WriteLine(csvHeaderString);");
         streamWriter.WriteLine("    }");
+
+
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine($"    /// Writes the details of one {RawName} to the CSV file");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    public void Write({RawName} {LowerRawName}){{");
+        if (AreInstancesDeletable || AreInstancesUpdatable) {
+          streamWriter.WriteLine($"      if ({LowerRawName}.Key<0) {{");
+          streamWriter.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} needs to be greater equal 0.\");");
+          streamWriter.WriteLine("      }");
+          streamWriter.WriteLine($"      if ({LowerRawName}.Key<=lastKey) {{");
+          streamWriter.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
+          streamWriter.WriteLine("      }");
+          streamWriter.WriteLine($"      lastKey = {LowerRawName}.Key;");
+          streamWriter.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
+          streamWriter.WriteLine($"      csvWriter.Write({LowerRawName}.Key);");
+        } else {
+          streamWriter.WriteLine($"      if ({LowerRawName}.Key!=nextKey) {{");
+          streamWriter.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} should be {{nextKey}}.\");");
+          streamWriter.WriteLine("      }");
+          streamWriter.WriteLine("      nextKey++;");
+          streamWriter.WriteLine("      csvWriter.StartNewLine();");
+        }
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      if ({LowerRawName}.{mi.MemberName}Key is null) {{");
+              streamWriter.WriteLine("        csvWriter.WriteNull();");
+              streamWriter.WriteLine("      } else {");
+              streamWriter.WriteLine($"        if ({LowerRawName}.{mi.MemberName}Key<0) throw new Exception($\"Cannot write" +
+                $" {LowerClassName} to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
+              streamWriter.WriteLine();
+              streamWriter.WriteLine($"        csvWriter.Write({LowerRawName}.{mi.MemberName}Key.ToString());");
+              streamWriter.WriteLine("      }");
+            } else {
+              streamWriter.WriteLine($"      if ({LowerRawName}.{mi.MemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
+                $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
+              streamWriter.WriteLine();
+              streamWriter.WriteLine($"      csvWriter.Write({LowerRawName}.{mi.MemberName}Key.ToString());");
+            }
+          } else if (mi.MemberType==MemberTypeEnum.Enum) {
+            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){LowerRawName}.{mi.MemberName});");
+          } else if (mi.MemberType<MemberTypeEnum.Enum) {//simple data
+            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({LowerRawName}.{mi.MemberName});");
+          }
+        }
+        streamWriter.WriteLine("      csvWriter.WriteEndOfLine();");
+        streamWriter.WriteLine("    }");
+
+
+
+
+
+
+
+
         streamWriter.WriteLine();
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");
@@ -1477,6 +1686,10 @@ namespace Storage {
           streamWriter.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
           streamWriter.WriteLine("      csvWriter.Write(key);");
         } else {
+          streamWriter.WriteLine("      if (key!=nextKey) {");
+          streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} should be {{nextKey}}.\");");
+          streamWriter.WriteLine("      }");
+          streamWriter.WriteLine("      nextKey++;");
           streamWriter.WriteLine("      csvWriter.StartNewLine();");
         }
         foreach (var mi in Members.Values) {
@@ -1498,7 +1711,7 @@ namespace Storage {
             }
           } else if (mi.MemberType==MemberTypeEnum.Enum) {
             streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){mi.LowerMemberName});");
-          } else if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type or LinkToParent
+          } else if (mi.MemberType<MemberTypeEnum.Enum) {//simple data
             streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({mi.LowerMemberName});");
           }
         }
@@ -1556,9 +1769,7 @@ namespace Storage {
 
       var parts = new List<string>();
       if (isWriterWrite) {
-        if (AreInstancesDeletable || AreInstancesUpdatable) {
-          parts.Add("int key");
-        }
+        parts.Add("int key");
       }
       foreach (var mi in Members.Values) {
         if (mi.MemberType<=MemberTypeEnum.LinkToParent && //simple data type and LinkToParent

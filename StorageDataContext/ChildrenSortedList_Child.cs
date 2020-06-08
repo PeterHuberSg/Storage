@@ -7,9 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a parent child relationship using a SortedList.
+    /// SortedListChild has a member providing the key value needed to add SortedListChild to  
+    /// ParentWithSortedList and ParentWithSortedListNullable
     /// </summary>
-  public partial class MultipleChildrenSortedList_Parent: IStorage<MultipleChildrenSortedList_Parent> {
+  public partial class ChildrenSortedList_Child: IStorage<ChildrenSortedList_Child> {
 
 
     #region Properties
@@ -64,7 +65,13 @@ namespace StorageModel  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string textUpdateable, ref bool isCancelled){
+    partial void onUpdating(
+      DateTime dateKey, 
+      string text, 
+      ChildrenSortedList_Parent parentWithSortedList, 
+      ChildrenSortedList_ParentNullable? parentWithSortedListNullable, 
+      ref bool isCancelled)
+   {
    }
 
 
@@ -86,20 +93,6 @@ namespace StorageModel  {
     /// Called before removal gets executed
     /// </summary>
     partial void onRemove() {
-    }
-
-
-    /// <summary>
-    /// Called after a multipleChildrenSortedList_Child gets added to MultipleChildrenSortedList_Children.
-    /// </summary>
-    partial void onAddedToMultipleChildrenSortedList_Children(MultipleChildrenSortedList_Child multipleChildrenSortedList_Child){
-    }
-
-
-    /// <summary>
-    /// Called after a multipleChildrenSortedList_Child gets removed from MultipleChildrenSortedList_Children.
-    /// </summary>
-    partial void onRemovedFromMultipleChildrenSortedList_Children(MultipleChildrenSortedList_Child multipleChildrenSortedList_Child){
     }
 
 

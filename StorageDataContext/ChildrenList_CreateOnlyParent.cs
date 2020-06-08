@@ -7,9 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a parent child relationship using a Dictionary.
+    /// Example of none deletable parent using a List for its children. It can have deletable and none
+    /// deletable children. The child must have a parent (the Parent property is not nullable).
     /// </summary>
-  public partial class MultipleChildrenDictionary_Parent: IStorage<MultipleChildrenDictionary_Parent> {
+  public partial class ChildrenList_CreateOnlyParent: IStorage<ChildrenList_CreateOnlyParent> {
 
 
     #region Properties
@@ -62,44 +63,23 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after a childrenList_Child gets added to ChildrenList_Children.
     /// </summary>
-    partial void onUpdating(string text, ref bool isCancelled){
-   }
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    partial void onUpdated() {
+    partial void onAddedToChildrenList_Children(ChildrenList_Child childrenList_Child){
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after a childrenList_Child gets removed from ChildrenList_Children.
     /// </summary>
-    partial void onCsvUpdate() {
+    partial void onRemovedFromChildrenList_Children(ChildrenList_Child childrenList_Child){
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after a childrenList_CreateOnlyChild gets added to ChildrenList_CreateOnlyChildren.
     /// </summary>
-    partial void onRemove() {
-    }
-
-
-    /// <summary>
-    /// Called after a multipleChildrenDictionary_Child gets added to MultipleChildrenDictionary_Children.
-    /// </summary>
-    partial void onAddedToMultipleChildrenDictionary_Children(MultipleChildrenDictionary_Child multipleChildrenDictionary_Child){
-    }
-
-
-    /// <summary>
-    /// Called after a multipleChildrenDictionary_Child gets removed from MultipleChildrenDictionary_Children.
-    /// </summary>
-    partial void onRemovedFromMultipleChildrenDictionary_Children(MultipleChildrenDictionary_Child multipleChildrenDictionary_Child){
+    partial void onAddedToChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild){
     }
 
 

@@ -260,7 +260,7 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for SampleDetail
   /// </summary>
-  [StorageClass(maxLineLength: 151, isGenerateReaderWriter: true)]
+  [StorageClass(maxLineLength: 151)]
   public class SampleDetail {
     /// <summary>
     /// Some Text comment
@@ -436,7 +436,7 @@ namespace StorageModel {
   /// <summary>
   /// Parent of children who use lookup, i.e. parent has no children collection
   /// </summary>
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false, isGenerateReaderWriter: true)]
+  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
   public class Lookup_Parent {
     public Date Date;
     public Decimal2 SomeValue;
@@ -468,8 +468,161 @@ namespace StorageModel {
   #endregion
 
 
-  #region ParentMultipleChildrenDictionary, using Dictionary for children
-  //      ---------------------------------------------------------------
+  #region ChildrenList, using List for children
+  //      -------------------------------------
+
+  //Example where the parent uses a List for its children. 
+  //If the child is not deletable, the parent must not be not deletable too. It's not possible to delete a parent and
+  //leave the child with a link to that deleted parent.
+  //The child.Parent property can be nullable (conditional parent) or not nullable (parent required)
+  //[StorageClass(isGenerateReaderWriter: true)] creates ClassXyzReader and ClassXyzWriter, which allow to read and write 
+  //the CSV file without using a data context nor StorageDictionary. This is useful for administrative tasks, like deleting
+  //of data which is not deletable within the data context.
+
+  /// <summary>
+  /// Example of deletable parent using a List for its children. It can have only deletable children. The child must have a 
+  /// parent (the child.Parent property is not nullable).
+  /// </summary>
+  [StorageClass(isGenerateReaderWriter: true)]
+  public class ChildrenList_Parent {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Deletable children which must have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+  }
+
+
+  /// <summary>
+  /// Example of deletable parent using a List for its children. It can have only deletable children. The child might have a 
+  /// parent (the child.Parent property is nullable).
+  /// </summary>
+  [StorageClass(isGenerateReaderWriter: true)]
+  public class ChildrenList_ParentNullable {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Deletable children which might or might not have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+  }
+
+
+  /// <summary>
+  /// Example of none deletable parent using a List for its children. It can have deletable and none
+  /// deletable children. The child must have a parent (the Parent property is not nullable).
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, isGenerateReaderWriter: true)]
+  public class ChildrenList_CreateOnlyParent {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// These deletable children must have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+
+    /// <summary>
+    /// These none deletable children must have a none deletable parent
+    /// </summary>
+    public List<ChildrenList_CreateOnlyChild> ChildrenList_CreateOnlyChildren;
+  }
+
+
+  /// <summary>
+  /// Example of none deletable parent using a List for its children. The child can be deletable or none deletable. The 
+  /// child might have a parent (the Parent property is nullable).
+  /// </summary>
+  [StorageClass(areInstancesDeletable:false, areInstancesUpdatable: false, isGenerateReaderWriter: true)]
+  public class ChildrenList_CreateOnlyParentNullable {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// These deletable children might or might not have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+
+    /// <summary>
+    /// These none deletable children might or might not have a parent
+    /// </summary>
+    public List<ChildrenList_CreateOnlyChild> ChildrenList_CreateOnlyChildren;
+  }
+
+
+  /// <summary>
+  /// This deletable child has links to 4 different types of parents
+  /// </summary>
+  [StorageClass(pluralName: "ChildrenList_Children", isGenerateReaderWriter: true)]
+  public class ChildrenList_Child {
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Deletable parent for deletable children which must have a parent
+    /// </summary>
+    public ChildrenList_Parent Parent;
+
+    /// <summary>
+    /// Deletable parent for deletable children which might or might not have a parent
+    /// </summary>
+    public ChildrenList_ParentNullable? ParentNullable;
+
+    /// <summary>
+    /// None deletable parent for deletable children which must have a parent
+    /// </summary>
+    public ChildrenList_CreateOnlyParent CreateOnlyParent;
+
+    /// <summary>
+    /// None deletable parent for deletable children which might or might not have a parent
+    /// </summary>
+    public ChildrenList_CreateOnlyParentNullable? CreateOnlyParentNullable;
+  }
+
+
+  /// <summary>
+  /// This none deletable child has links to 2 different types of parents, which must be none deletable
+  /// </summary>
+  [StorageClass(pluralName: "ChildrenList_CreateOnlyChildren", areInstancesDeletable: false, 
+    areInstancesUpdatable: false, isGenerateReaderWriter: true)]
+  public class ChildrenList_CreateOnlyChild {
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// None deletable parent for none deletable child which must have a none deletable parent
+    /// </summary>
+    public ChildrenList_CreateOnlyParent CreateOnlyParent;
+
+    /// <summary>
+    /// None deletable parent for deletable child which might or might not have a parent which must be none deletable
+    /// </summary>
+    public ChildrenList_CreateOnlyParentNullable? CreateOnlyParentNullable;
+  }
+  #endregion
+
+
+  #region ParentChildrenDictionary, using Dictionary for children
+  //      -------------------------------------------------------
 
   //Example where parent has a Dictionary instead a List for its children. The child needs an additional field which
   //can be used as Key for the Dictionary. 
@@ -477,7 +630,7 @@ namespace StorageModel {
   /// <summary>
   /// Example of a parent child relationship using a Dictionary.
   /// </summary>
-  public class MultipleChildrenDictionary_Parent {
+  public class ChildrenDictionary_Parent {
 
     /// <summary>
     /// Some Text
@@ -488,14 +641,14 @@ namespace StorageModel {
     /// Dictionary used instead of List. Comment is required and indicates which property of the DictionaryChild to 
     /// use as key
     /// </summary>
-    public Dictionary<Date /*DateKey*/, MultipleChildrenDictionary_Child> MultipleChildrenDictionary_Children;
+    public Dictionary<Date /*DateKey*/, ChildrenDictionary_Child> ChildrenDictionary_Children;
   }
 
 
   /// <summary>
   /// Example of a parent child relationship using a Dictionary where the child's parent property is nullable.
   /// </summary>
-  public class MultipleChildrenDictionary_ParentNullable {
+  public class ChildrenDictionary_ParentNullable {
 
     /// <summary>
     /// Some Text
@@ -506,7 +659,7 @@ namespace StorageModel {
     /// Dictionary used instead of List. Comment is required and indicates which property of the DictionaryChild to 
     /// use as key
     /// </summary>
-    public Dictionary<Date /*DateKey*/, MultipleChildrenDictionary_Child> MultipleChildrenDictionary_Children;
+    public Dictionary<Date /*DateKey*/, ChildrenDictionary_Child> ChildrenDictionary_Children;
   }
 
 
@@ -514,8 +667,8 @@ namespace StorageModel {
   /// DictionaryChild has a member providing the key value needed to add DictionaryChild to  
   /// ParentWithDictionary and ParentWithDictionaryNullable
   /// </summary>
-  [StorageClass(pluralName: "MultipleChildrenDictionary_Children")]
-  public class MultipleChildrenDictionary_Child {
+  [StorageClass(pluralName: "ChildrenDictionary_Children")]
+  public class ChildrenDictionary_Child {
     /// <summary>
     /// Key field used in ParentWithDictionary.DictionaryChildren and 
     /// ParentWithDictionaryNullable.DictionaryChildrenDictionary
@@ -530,18 +683,18 @@ namespace StorageModel {
     /// <summary>
     /// Parent
     /// </summary>
-    public MultipleChildrenDictionary_Parent ParentWithDictionary;
+    public ChildrenDictionary_Parent ParentWithDictionary;
 
     /// <summary>
     /// Nullable parent
     /// </summary>
-    public MultipleChildrenDictionary_ParentNullable? ParentWithDictionaryNullable;
+    public ChildrenDictionary_ParentNullable? ParentWithDictionaryNullable;
   }
   #endregion
 
 
-  #region ParentMultipleChildrenSortedList, using SortedList for children
-  //      ---------------------------------------------------------------
+  #region ParentChildrenSortedList, using SortedList for children
+  //      -------------------------------------------------------
 
   //Example where parent has a SortedList instead a List for its children. The child needs an additional field which
   //can be used as Key for the SortedList.
@@ -554,7 +707,7 @@ namespace StorageModel {
   /// <summary>
   /// Example of a parent child relationship using a SortedList.
   /// </summary>
-  public class MultipleChildrenSortedList_Parent {
+  public class ChildrenSortedList_Parent {
 
     /// <summary>
     /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
@@ -570,14 +723,14 @@ namespace StorageModel {
     /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
     /// use as key
     /// </summary>
-    public SortedList<Date /*DateKey*/, MultipleChildrenSortedList_Child> MultipleChildrenSortedList_Children;
+    public SortedList<Date /*DateKey*/, ChildrenSortedList_Child> ChildrenSortedList_Children;
   }
 
 
   /// <summary>
   /// Example of a parent child relationship using a SortedList where the child's parent property is nullable.
   /// </summary>
-  public class MultipleChildrenSortedList_ParentNullable {
+  public class ChildrenSortedList_ParentNullable {
 
     /// <summary>
     /// This text is readonly. Readonly only matters when [StorageClass(areInstancesUpdatable: true)]
@@ -593,7 +746,7 @@ namespace StorageModel {
     /// SortedList used instead of List. Comment is required and indicates which property of the SortedListChild to 
     /// use as key
     /// </summary>
-    public SortedList<Date /*DateKey*/, MultipleChildrenSortedList_Child> MultipleChildrenSortedList_Children;
+    public SortedList<Date /*DateKey*/, ChildrenSortedList_Child> ChildrenSortedList_Children;
   }
 
 
@@ -601,8 +754,8 @@ namespace StorageModel {
   /// SortedListChild has a member providing the key value needed to add SortedListChild to  
   /// ParentWithSortedList and ParentWithSortedListNullable
   /// </summary>
-  [StorageClass(pluralName: "MultipleChildrenSortedList_Children")]
-  public class MultipleChildrenSortedList_Child {
+  [StorageClass(pluralName: "ChildrenSortedList_Children")]
+  public class ChildrenSortedList_Child {
     /// <summary>
     /// Key field used in ParentWithSortedList.SortedListChildren SortedList
     /// </summary>
@@ -616,12 +769,12 @@ namespace StorageModel {
     /// <summary>
     /// Parent
     /// </summary>
-    public MultipleChildrenSortedList_Parent ParentWithSortedList;
+    public ChildrenSortedList_Parent ParentWithSortedList;
 
     /// <summary>
     /// Nullable Parent
     /// </summary>
-    public MultipleChildrenSortedList_ParentNullable? ParentWithSortedListNullable;
+    public ChildrenSortedList_ParentNullable? ParentWithSortedListNullable;
   }
   #endregion
 

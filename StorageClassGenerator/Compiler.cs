@@ -340,7 +340,13 @@ namespace Storage {
                     $"to the parent if many children are allowed or a property with the [StorageProperty(isParentOneChild: true)] attribute " + 
                     $"if only 1 child is allowed.");
                 }
+                if (!mi.ClassInfo.AreInstancesDeletable && mi.ParentClassInfo.AreInstancesDeletable) {
+                  //todo: Compiler.AnalyzeDependencies() Add tests if child is at least updatable, parent property not readonly and nullable
+                  throw new GeneratorException($"Child {mi.ClassInfo.ClassName} does not support deletion. Therefore, the " + 
+                    $"parent {mi.ParentClassInfo.ClassName} can neither support deletion, because it can not delete its children.");
+                }
               }
+
             } else if (enums.TryGetValue(mi.ParentTypeString!, out mi.EnumInfo)) {
               mi.MemberType = MemberTypeEnum.Enum;
               mi.ToStringFunc = "";

@@ -9,7 +9,7 @@ namespace StorageModel  {
     /// <summary>
     /// Example of a parent child relationship using a Dictionary where the child's parent property is nullable.
     /// </summary>
-  public partial class MultipleChildrenDictionary_ParentNullable: IStorage<MultipleChildrenDictionary_ParentNullable> {
+  public partial class ChildrenDictionary_ParentNullable: IStorage<ChildrenDictionary_ParentNullable> {
 
 
     #region Properties
@@ -90,16 +90,16 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a multipleChildrenDictionary_Child gets added to MultipleChildrenDictionary_Children.
+    /// Called after a childrenDictionary_Child gets added to ChildrenDictionary_Children.
     /// </summary>
-    partial void onAddedToMultipleChildrenDictionary_Children(MultipleChildrenDictionary_Child multipleChildrenDictionary_Child){
+    partial void onAddedToChildrenDictionary_Children(ChildrenDictionary_Child childrenDictionary_Child){
     }
 
 
     /// <summary>
-    /// Called after a multipleChildrenDictionary_Child gets removed from MultipleChildrenDictionary_Children.
+    /// Called after a childrenDictionary_Child gets removed from ChildrenDictionary_Children.
     /// </summary>
-    partial void onRemovedFromMultipleChildrenDictionary_Children(MultipleChildrenDictionary_Child multipleChildrenDictionary_Child){
+    partial void onRemovedFromChildrenDictionary_Children(ChildrenDictionary_Child childrenDictionary_Child){
     }
 
 

@@ -458,7 +458,11 @@ namespace Storage {
       } else {
         if (isRaw) {
           if (MemberType==MemberTypeEnum.LinkToParent) {
-            streamWriter.WriteLine($"    public int {MemberName}Key {{ get; set; }}");
+            if (IsNullable) {
+              streamWriter.WriteLine($"    public int? {MemberName}Key {{ get; set; }}");
+            } else {
+              streamWriter.WriteLine($"    public int {MemberName}Key {{ get; set; }}");
+            }
           } else {
             if (TypeString=="string") {
               streamWriter.WriteLine($"    public string {MemberName} {{ get; set; }} =\"\";");

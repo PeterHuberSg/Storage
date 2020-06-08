@@ -89,6 +89,9 @@ namespace Storage {
       FileStream? existingFileStream = null) 
     {
       if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) 
+        throw new Exception("CsvReader constructor: There were an existingFileStream and a fileName provided.");
+
+      if (string.IsNullOrEmpty(fileName) && existingFileStream==null)
         throw new Exception("CsvReader constructor: There was neither an existingFileStream nor a fileName provided.");
 
       if (existingFileStream!=null) {
@@ -112,6 +115,7 @@ namespace Storage {
       if (existingFileStream is null) {
         isFileStreamOwner = true;
         if (string.IsNullOrEmpty(fileName)) throw new Exception("CsvReader constructor: File name is missing.");
+        //Todo: CsvReader constructor: FileName = fileName; is executed twice => simplify code
         FileName = fileName;
         fileStream = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.None, CsvConfig.BufferSize, 
           FileOptions.SequentialScan);

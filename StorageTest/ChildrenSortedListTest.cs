@@ -10,7 +10,7 @@ namespace StorageTest {
 
 
   [TestClass]
-  public class MultipleChildrenSortedListTest {
+  public class ChildrenSortedListTest {
 
 
     CsvConfig? csvConfig;
@@ -20,7 +20,7 @@ namespace StorageTest {
 
 
     [TestMethod]
-    public void TestMultipleChildrenSortedList() {
+    public void TestChildrenSortedList() {
       try {
         var directoryInfo = new DirectoryInfo("TestCsv");
         if (directoryInfo.Exists) {
@@ -119,25 +119,25 @@ namespace StorageTest {
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParents.Count, DC.Data.MultipleChildrenSortedList_Parents.Count);
-      foreach (var parentSortedList in DC.Data.MultipleChildrenSortedList_Parents) {
+      Assert.AreEqual(expectedParents.Count, DC.Data.ChildrenSortedList_Parents.Count);
+      foreach (var parentSortedList in DC.Data.ChildrenSortedList_Parents) {
         Assert.AreEqual(expectedParents[parentSortedList.Key], parentSortedList.ToString());
       }
 
-      Assert.AreEqual(expectedParentsNullable.Count, DC.Data.MultipleChildrenSortedList_ParentNullables.Count);
-      foreach (var parentNullable in DC.Data.MultipleChildrenSortedList_ParentNullables) {
+      Assert.AreEqual(expectedParentsNullable.Count, DC.Data.ChildrenSortedList_ParentNullables.Count);
+      foreach (var parentNullable in DC.Data.ChildrenSortedList_ParentNullables) {
         Assert.AreEqual(expectedParentsNullable[parentNullable.Key], parentNullable.ToString());
       }
 
-      Assert.AreEqual(expectedChildren.Count, DC.Data.MultipleChildrenSortedList_Children.Count);
-      foreach (var sortedListChild in DC.Data.MultipleChildrenSortedList_Children) {
+      Assert.AreEqual(expectedChildren.Count, DC.Data.ChildrenSortedList_Children.Count);
+      foreach (var sortedListChild in DC.Data.ChildrenSortedList_Children) {
         Assert.AreEqual(expectedChildren[sortedListChild.Key], sortedListChild.ToString());
       }
     }
 
 
-    private MultipleChildrenSortedList_Parent addParentSortedList(string readOnlyText, string updateableText, bool isStoring) {
-      var newParent = new MultipleChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
+    private ChildrenSortedList_Parent addParentSortedList(string readOnlyText, string updateableText, bool isStoring) {
+      var newParent = new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
       if (isStoring) {
         expectedParents.Add(newParent.Key, newParent.ToString());
         assertData();
@@ -146,14 +146,14 @@ namespace StorageTest {
     }
 
 
-    private void store(MultipleChildrenSortedList_Parent newParent) {
+    private void store(ChildrenSortedList_Parent newParent) {
       newParent.Store();
       expectedParents.Add(newParent.Key, newParent.ToString());
     }
 
 
-    private MultipleChildrenSortedList_ParentNullable addParentSortedListNullable(string readOnlyText, string updateableText, bool isStoring) {
-      var newParentNullable = new MultipleChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
+    private ChildrenSortedList_ParentNullable addParentSortedListNullable(string readOnlyText, string updateableText, bool isStoring) {
+      var newParentNullable = new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
       if (isStoring) {
         expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
         assertData();
@@ -162,19 +162,19 @@ namespace StorageTest {
     }
 
 
-    private void store(MultipleChildrenSortedList_ParentNullable newParentNullable) {
+    private void store(ChildrenSortedList_ParentNullable newParentNullable) {
       newParentNullable.Store();
       expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
     }
 
 
-    private MultipleChildrenSortedList_Child addSortedListChild(int parentKey, int? parentNullableKey, DateTime date, string text, bool isStoring) {
-      var parent = DC.Data.MultipleChildrenSortedList_Parents[parentKey];
-      MultipleChildrenSortedList_ParentNullable? parentNullable = null;
+    private ChildrenSortedList_Child addSortedListChild(int parentKey, int? parentNullableKey, DateTime date, string text, bool isStoring) {
+      var parent = DC.Data.ChildrenSortedList_Parents[parentKey];
+      ChildrenSortedList_ParentNullable? parentNullable = null;
       if (parentNullableKey.HasValue) {
-        parentNullable = DC.Data.MultipleChildrenSortedList_ParentNullables[parentNullableKey.Value];
+        parentNullable = DC.Data.ChildrenSortedList_ParentNullables[parentNullableKey.Value];
       }
-      var newChild = new MultipleChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
+      var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
       if (isStoring) {
         expectedChildren.Add(newChild.Key, newChild.ToString());
         expectedParents[parent.Key] = parent.ToString();
@@ -187,10 +187,10 @@ namespace StorageTest {
     }
 
 
-    private MultipleChildrenSortedList_Child addSortedListChild(MultipleChildrenSortedList_Parent parent, MultipleChildrenSortedList_ParentNullable? parentNullable, 
+    private ChildrenSortedList_Child addSortedListChild(ChildrenSortedList_Parent parent, ChildrenSortedList_ParentNullable? parentNullable, 
       DateTime date, string text, bool isStoring) 
     {
-      var newChild = new MultipleChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
+      var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
       if (isStoring) {
         expectedChildren.Add(newChild.Key, newChild.ToString());
         expectedParents[parent.Key] = parent.ToString();
@@ -203,7 +203,7 @@ namespace StorageTest {
     }
 
 
-    private void store(MultipleChildrenSortedList_Child newChild) {
+    private void store(ChildrenSortedList_Child newChild) {
       newChild.Store();
       expectedChildren.Add(newChild.Key, newChild.ToString());
       expectedParents[newChild.ParentWithSortedList.Key] = newChild.ParentWithSortedList.ToString();
@@ -215,10 +215,10 @@ namespace StorageTest {
 
 
     private void updateParent(int parentSortedListKey, string textUpdateable) {
-      var parentSortedList = DC.Data.MultipleChildrenSortedList_Parents[parentSortedListKey];
+      var parentSortedList = DC.Data.ChildrenSortedList_Parents[parentSortedListKey];
       parentSortedList.Update(textUpdateable);
       expectedParents[parentSortedList.Key] = parentSortedList.ToString();
-      foreach (var sortedListChild in parentSortedList.MultipleChildrenSortedList_Children.Values) {
+      foreach (var sortedListChild in parentSortedList.ChildrenSortedList_Children.Values) {
         expectedChildren[sortedListChild.Key] = sortedListChild.ToString();
       }
       assertData();
@@ -226,10 +226,10 @@ namespace StorageTest {
 
 
     private void updateParentNullable(int parentSortedListNullableKey, string textUpdateable) {
-      var parentSortedListNullable = DC.Data.MultipleChildrenSortedList_ParentNullables[parentSortedListNullableKey];
+      var parentSortedListNullable = DC.Data.ChildrenSortedList_ParentNullables[parentSortedListNullableKey];
       parentSortedListNullable.Update(textUpdateable);
       expectedParentsNullable[parentSortedListNullable.Key] = parentSortedListNullable.ToString();
-      foreach (var sortedListChild in parentSortedListNullable.MultipleChildrenSortedList_Children.Values) {
+      foreach (var sortedListChild in parentSortedListNullable.ChildrenSortedList_Children.Values) {
         expectedChildren[sortedListChild.Key] = sortedListChild.ToString();
       }
       assertData();
@@ -237,12 +237,12 @@ namespace StorageTest {
 
 
     private void updateChild(int childKey, int parentKey, int? parentNullableKey, DateTime date, string text) {
-      var childSortedList = DC.Data.MultipleChildrenSortedList_Children[childKey];
-      var newParent = DC.Data.MultipleChildrenSortedList_Parents[parentKey];
+      var childSortedList = DC.Data.ChildrenSortedList_Children[childKey];
+      var newParent = DC.Data.ChildrenSortedList_Parents[parentKey];
       var oldParent = childSortedList.ParentWithSortedList;
-      MultipleChildrenSortedList_ParentNullable? newParentNullable = null;
+      ChildrenSortedList_ParentNullable? newParentNullable = null;
       if (parentNullableKey!=null) {
-        newParentNullable = DC.Data.MultipleChildrenSortedList_ParentNullables[parentNullableKey.Value];
+        newParentNullable = DC.Data.ChildrenSortedList_ParentNullables[parentNullableKey.Value];
       }
       var oldParentNullable = childSortedList.ParentWithSortedListNullable;
       childSortedList.Update(date, text, newParent, newParentNullable);
@@ -254,14 +254,14 @@ namespace StorageTest {
     }
 
 
-  private void update(MultipleChildrenSortedList_Parent newParent, MultipleChildrenSortedList_ParentNullable? newParentNullable) {
+  private void update(ChildrenSortedList_Parent newParent, ChildrenSortedList_ParentNullable? newParentNullable) {
     expectedParents[newParent.Key] = newParent.ToString();
-    foreach (var sortedListChild in newParent.MultipleChildrenSortedList_Children.Values) {
+    foreach (var sortedListChild in newParent.ChildrenSortedList_Children.Values) {
       expectedChildren[sortedListChild.Key] = sortedListChild.ToString();
     }
     if (newParentNullable!=null) {
       expectedParentsNullable[newParentNullable.Key] = newParentNullable.ToString();
-      foreach (var sortedListChild in newParentNullable.MultipleChildrenSortedList_Children.Values) {
+      foreach (var sortedListChild in newParentNullable.ChildrenSortedList_Children.Values) {
         expectedChildren[sortedListChild.Key] = sortedListChild.ToString();
       }
     }
@@ -269,8 +269,8 @@ namespace StorageTest {
 
 
     private void removeParent(int parentKey) {
-      var parent = DC.Data.MultipleChildrenSortedList_Parents[parentKey];
-      foreach (var child in parent.MultipleChildrenSortedList_Children.Values) {
+      var parent = DC.Data.ChildrenSortedList_Parents[parentKey];
+      foreach (var child in parent.ChildrenSortedList_Children.Values) {
         expectedChildren.Remove(child.Key);
       }
       expectedParents.Remove(parentKey);
@@ -280,8 +280,8 @@ namespace StorageTest {
 
 
     private void removeParentNullable(int parentNullableKey) {
-      var parentNullable = DC.Data.MultipleChildrenSortedList_ParentNullables[parentNullableKey];
-      foreach (var child in parentNullable.MultipleChildrenSortedList_Children.Values) {
+      var parentNullable = DC.Data.ChildrenSortedList_ParentNullables[parentNullableKey];
+      foreach (var child in parentNullable.ChildrenSortedList_Children.Values) {
         expectedChildren[child.Key] = child.ToString();
       }
       expectedParents.Remove(parentNullableKey);
@@ -291,7 +291,7 @@ namespace StorageTest {
 
 
     private void removeChild(int ChildKey) {
-      var child = DC.Data.MultipleChildrenSortedList_Children[ChildKey];
+      var child = DC.Data.ChildrenSortedList_Children[ChildKey];
       expectedChildren.Remove(child.Key);
       var parent = child.ParentWithSortedList;
       var parentNullable = child.ParentWithSortedListNullable;

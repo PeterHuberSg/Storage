@@ -10,7 +10,7 @@ namespace StorageTest {
 
 
   [TestClass]
-  public class MultipleChildrenDictionaryTest {
+  public class ChildrenDictionaryTest {
 
     CsvConfig? csvConfig;
     readonly Dictionary<int, string> expectedParentDictionary = new Dictionary<int, string>();
@@ -19,7 +19,7 @@ namespace StorageTest {
 
 
     [TestMethod]
-    public void TestMultipleChildrenDictionary() {
+    public void TestChildrenDictionary() {
       try {
         var directoryInfo = new DirectoryInfo("TestCsv");
         if (directoryInfo.Exists) {
@@ -67,36 +67,36 @@ namespace StorageTest {
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParentDictionary.Count, DC.Data.MultipleChildrenDictionary_Parents.Count);
-      foreach (var parentDictionary in DC.Data.MultipleChildrenDictionary_Parents) {
+      Assert.AreEqual(expectedParentDictionary.Count, DC.Data.ChildrenDictionary_Parents.Count);
+      foreach (var parentDictionary in DC.Data.ChildrenDictionary_Parents) {
         Assert.AreEqual(expectedParentDictionary[parentDictionary.Key], parentDictionary.ToString());
       }
 
-      Assert.AreEqual(expectedParentNullableDictionary.Count, DC.Data.MultipleChildrenDictionary_ParentNullables.Count);
-      foreach (var parentDictionaryNullable in DC.Data.MultipleChildrenDictionary_ParentNullables) {
+      Assert.AreEqual(expectedParentNullableDictionary.Count, DC.Data.ChildrenDictionary_ParentNullables.Count);
+      foreach (var parentDictionaryNullable in DC.Data.ChildrenDictionary_ParentNullables) {
         Assert.AreEqual(expectedParentDictionary[parentDictionaryNullable.Key], parentDictionaryNullable.ToString());
       }
 
-      Assert.AreEqual(expectedDictionaryChild.Count, DC.Data.MultipleChildrenDictionary_Children.Count);
-      foreach (var dictionaryChild in DC.Data.MultipleChildrenDictionary_Children) {
+      Assert.AreEqual(expectedDictionaryChild.Count, DC.Data.ChildrenDictionary_Children.Count);
+      foreach (var dictionaryChild in DC.Data.ChildrenDictionary_Children) {
         Assert.AreEqual(expectedDictionaryChild[dictionaryChild.Key], dictionaryChild.ToString());
       }
     }
 
 
     private void addParentDictionary(string someText) {
-      var newParentDictionary = new MultipleChildrenDictionary_Parent(someText, isStoring: true);
+      var newParentDictionary = new ChildrenDictionary_Parent(someText, isStoring: true);
       expectedParentDictionary.Add(newParentDictionary.Key, newParentDictionary.ToString());
-      var newParentDictionaryNullable = new MultipleChildrenDictionary_ParentNullable(someText, isStoring: true);
+      var newParentDictionaryNullable = new ChildrenDictionary_ParentNullable(someText, isStoring: true);
       expectedParentNullableDictionary.Add(newParentDictionaryNullable.Key, newParentDictionaryNullable.ToString());
       assertData();
     }
 
 
     private void addDictionaryChild(int parentDictionaryKey, DateTime date, string text) {
-      var parentDictionary = DC.Data.MultipleChildrenDictionary_Parents[parentDictionaryKey];
-      var parentDictionaryNullable = DC.Data.MultipleChildrenDictionary_ParentNullables[parentDictionaryKey];
-      var newDictionaryChild = new MultipleChildrenDictionary_Child(date, text, parentDictionary, parentDictionaryNullable, isStoring: true);
+      var parentDictionary = DC.Data.ChildrenDictionary_Parents[parentDictionaryKey];
+      var parentDictionaryNullable = DC.Data.ChildrenDictionary_ParentNullables[parentDictionaryKey];
+      var newDictionaryChild = new ChildrenDictionary_Child(date, text, parentDictionary, parentDictionaryNullable, isStoring: true);
       expectedDictionaryChild.Add(newDictionaryChild.Key, newDictionaryChild.ToString());
       expectedParentDictionary[parentDictionary.Key] = parentDictionary.ToString();
       expectedParentNullableDictionary[parentDictionaryNullable.Key] = parentDictionaryNullable.ToString();
@@ -105,8 +105,8 @@ namespace StorageTest {
 
 
     private void removeParentDictionary(int parentDictionaryKey) {
-      var parent = DC.Data.MultipleChildrenDictionary_Parents[parentDictionaryKey];
-      foreach (var child in parent.MultipleChildrenDictionary_Children.Values) {
+      var parent = DC.Data.ChildrenDictionary_Parents[parentDictionaryKey];
+      foreach (var child in parent.ChildrenDictionary_Children.Values) {
         expectedDictionaryChild.Remove(child.Key);
       }
       expectedParentDictionary.Remove(parentDictionaryKey);
@@ -116,7 +116,7 @@ namespace StorageTest {
 
 
     private void removeDictionaryChild(int dictionaryChildKey) {
-      var child = DC.Data.MultipleChildrenDictionary_Children[dictionaryChildKey];
+      var child = DC.Data.ChildrenDictionary_Children[dictionaryChildKey];
       expectedDictionaryChild.Remove(child.Key);
       var parentDictionary = child.ParentWithDictionary;
       var parentDictionaryNullable = child.ParentWithDictionaryNullable;
