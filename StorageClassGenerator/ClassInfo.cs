@@ -222,9 +222,9 @@ namespace Storage {
           if (!isNullable) {
             throw new GeneratorException($"{ClassName}.{name} is a parent for at most 1 child. It must be nullable.");
           }
-          if (isReadOnly) {
-            throw new GeneratorException($"{ClassName}.{name} is a parent for at most 1 child. It cannot be readonly.");
-          }
+          //if (isReadOnly) {
+          //  throw new GeneratorException($"{ClassName}.{name} is a parent for at most 1 child. It cannot be readonly.");
+          //}
           member = new MemberInfo(name, this, csvTypeString, propertyComment, defaultValue);
         } else {
 
@@ -1433,6 +1433,35 @@ namespace Storage {
           streamWriter.WriteLine("    /// </summary>");
           streamWriter.WriteLine("    public RawStateEnum RawState { get; set; }");
         }
+
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Default Constructor.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    public {RawName}() {{");
+        streamWriter.WriteLine("    }");
+
+        streamWriter.WriteLine();
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>");
+        streamWriter.WriteLine("    /// Constructor, will replace links to parents with the parents' key.");
+        streamWriter.WriteLine("    /// </summary>");
+        streamWriter.WriteLine($"    public {RawName}({ClassName} {LowerClassName}) {{");
+        streamWriter.WriteLine($"      Key = {LowerClassName}.Key;");
+        foreach (var mi in Members.Values) {
+          if (mi.MemberType<MemberTypeEnum.LinkToParent) {
+            streamWriter.WriteLine($"      {mi.MemberName} = {LowerClassName}.{mi.MemberName};");
+          } else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            if (mi.IsNullable) {
+              streamWriter.WriteLine($"      {mi.MemberName}Key = {LowerClassName}.{mi.MemberName}?.Key;");
+            } else {
+              streamWriter.WriteLine($"      {mi.MemberName}Key = {LowerClassName}.{mi.MemberName}.Key;");
+            }
+          }
+        }
+        streamWriter.WriteLine("    }");
+
         streamWriter.WriteLine();
         streamWriter.WriteLine();
         streamWriter.WriteLine("    /// <summary>");

@@ -273,6 +273,24 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Default Constructor.
+    /// </summary>
+    public ChildrenList_CreateOnlyChildRaw() {
+    }
+
+
+    /// <summary>
+    /// Constructor, will replace links to parents with the parents' key.
+    /// </summary>
+    public ChildrenList_CreateOnlyChildRaw(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild) {
+      Key = childrenList_CreateOnlyChild.Key;
+      Text = childrenList_CreateOnlyChild.Text;
+      CreateOnlyParentKey = childrenList_CreateOnlyChild.CreateOnlyParent.Key;
+      CreateOnlyParentNullableKey = childrenList_CreateOnlyChild.CreateOnlyParentNullable?.Key;
+    }
+
+
+    /// <summary>
     /// Returns all property names and values
     /// </summary>
     public override string ToString() {
