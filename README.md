@@ -48,6 +48,6 @@ application.
 # Project Status
 Coding completed and tested  
 Used in one application, a second application is presently in work.
-Please note that new functionality gets continously added.
+Please note that new functionality gets continuously added.
  
 

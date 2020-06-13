@@ -282,6 +282,9 @@ namespace StorageModel {
   //
   // The parent class has a nullable property with the child class type, while the child class has a property
   // with the parent class type.
+  //
+  // Since the parent class is deletable, it cannot have a child which is not deletable, because the deletion of
+  // the parent forces also the deletion of the child.
 
   /// <summary>
   /// Example for parent which can have at most 1 child and the parent property in the child is not nullable.
@@ -302,12 +305,12 @@ namespace StorageModel {
     public ParentOneChild_Child? Child;
 
 
-    /// <summary>
-    /// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
-    /// created before the child.
-    /// </summary>
-    [StorageProperty(isParentOneChild: true)]
-    public ParentOneChild_ReadonlyChild? ReadonlyChild;
+    ///// <summary>
+    ///// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
+    ///// created before the child.
+    ///// </summary>
+    //[StorageProperty(isParentOneChild: true)]
+    //public ParentOneChild_ReadonlyChild? ReadonlyChild;
   }
 
 
@@ -330,12 +333,12 @@ namespace StorageModel {
     public ParentOneChild_Child? Child;
 
 
-    /// <summary>
-    /// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
-    /// created before the child.
-    /// </summary>
-    [StorageProperty(isParentOneChild: true)]
-    public ParentOneChild_ReadonlyChild? ReadonlyChild;
+    ///// <summary>
+    ///// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
+    ///// created before the child.
+    ///// </summary>
+    //[StorageProperty(isParentOneChild: true)]
+    //public ParentOneChild_ReadonlyChild? ReadonlyChild;
   }
 
 
@@ -365,30 +368,30 @@ namespace StorageModel {
   }
 
 
-  /// <summary>
-  /// Readonly Child class with one parent property which is not nullable and one property to a different parent 
-  /// which is nullable
-  /// </summary>
-  [StorageClass(pluralName: "ParentOneChild_ReadonlyChildren")]
-  public class ParentOneChild_ReadonlyChild {
+  ///// <summary>
+  ///// Readonly Child class with one parent property which is not nullable and one property to a different parent 
+  ///// which is nullable
+  ///// </summary>
+  //[StorageClass(pluralName: "ParentOneChild_ReadonlyChildren")]
+  //public class ParentOneChild_ReadonlyChild {
 
-    /// <summary>
-    /// Some Text comment
-    /// </summary>
-    public string Text;
-
-
-    /// <summary>
-    /// Links to parent
-    /// </summary>
-    public ParentOneChild_Parent Parent;
+  //  /// <summary>
+  //  /// Some Text comment
+  //  /// </summary>
+  //  public string Text;
 
 
-    /// <summary>
-    /// Links to parent conditionally
-    /// </summary>
-    public ParentOneChild_ParentNullable? ParentNullable;
-  }
+  //  /// <summary>
+  //  /// Links to parent
+  //  /// </summary>
+  //  public ParentOneChild_Parent Parent;
+
+
+  //  /// <summary>
+  //  /// Links to parent conditionally
+  //  /// </summary>
+  //  public ParentOneChild_ParentNullable? ParentNullable;
+  //}
   #endregion
 
 
@@ -779,143 +782,148 @@ namespace StorageModel {
   #endregion
 
 
-  #region ReadOnlyParent -> ReadOnlyChild, using List for children
-  //      --------------------------------------------------------
+  #region CreateOnlyParent -> CreateOnlyChild, using List for children
+  //      ------------------------------------------------------------
 
-  //Example where parent and children are ReadOnly, meaning not updatable and not editable. This should lead to
+  //Example where parent and children are CreateOnly, meaning not updatable and not deletable. This should lead to
   //the smallest amount of generated code.
 
   /// <summary>
-  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
   /// deleted, but it is still possible to add children, but not to remove them.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnly_Parent {
+  public class CreateOnly_Parent {
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Text will be readonly even it is not marked as such, because class is not updatable
     /// </summary>
     public string Text;
 
     /// <summary>
     /// List of children
     /// </summary>
-    public List<ReadOnly_Child> ReadOnly_Children;
+    public List<CreateOnly_Child> CreateOnly_Children;
   }
 
 
   /// <summary>
-  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
   /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
   /// is nullable.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnly_ParentNullable {
+  public class CreateOnly_ParentNullable {
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Text will be readonly even it is not marked as such, because class is not updatable
     /// </summary>
     public string Text;
 
     /// <summary>
     /// List of children
     /// </summary>
-    public List<ReadOnly_Child> ReadOnly_Children;
+    public List<CreateOnly_Child> CreateOnly_Children;
   }
 
 
   /// <summary>
-  /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
-  /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
+  /// Example of a "CreateOnly" Child, i.e. the child's properties will not change. If it is added to a parent during its
+  /// creation, it cannot be removed from the parent, because the Parent property of the child cannot be changed
   /// either.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, pluralName: "ReadOnly_Children")]
-  public class ReadOnly_Child {
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, pluralName: "CreateOnly_Children")]
+  public class CreateOnly_Child {
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Text will be readonly even it is not marked as such, because class is not updatable
     /// </summary>
     public string Text;
 
     /// <summary>
-    /// Parent
+    /// CreateOnlyParent will be readonly even it is not marked as such, because class is not updatable
     /// </summary>
-    public ReadOnly_Parent ReadOnlyParent;
+    public CreateOnly_Parent CreateOnlyParent;
 
     /// <summary>
-    /// Parent
+    /// CreateOnlyParentNullable will be readonly even it is not marked as such, because class is not updatable
     /// </summary>          
-    public ReadOnly_ParentNullable? ReadOnlyParentNullable;
+    public CreateOnly_ParentNullable? CreateOnlyParentNullable;
   }
   #endregion
 
 
-  #region ReadOnlyParent -> UpdatableChild, using List for children
-  //      ---------------------------------------------------------
+  #region CreateOnlyParent -> ChangeableChild (updatable and or deletable), using List for children
+  //      -----------------------------------------------------------------------------------------
 
-  //Example where parent is not updatable and not editable. Child can be updated, but not deleted. 
+  //Example where parent is not updatable and not deletable. Child can be updated and/or deleted. 
 
   /// <summary>
-  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
-  /// deleted, but it is still possible to add children, but not to remove them.
+  /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// deleted, but it is still possible to add and remove children.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnlyParentUpdatableChild_Parent {
+  public class CreateOnlyParentChangeableChild_Parent {
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Text will be readonly even it is not marked as such, because class is not updatable
     /// </summary>
     public string Text;
 
     /// <summary>
     /// List of children
     /// </summary>
-    public List<ReadOnlyParentUpdatableChild_Child> ReadOnlyParentUpdatableChild_Children;
+    public List<CreateOnlyParentChangeableChild_Child> CreateOnlyParentChangeableChild_Children;
   }
 
 
   /// <summary>
-  /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
-  /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
+  /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// deleted, but it is still possible to add and remove children. The parent property in the child 
   /// is nullable.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
-  public class ReadOnlyParentUpdatableChild_ParentNullable {
+  [StorageClass(areInstancesUpdatable: false)]
+  public class CreateOnlyParentChangeableChild_ParentNullable {
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Text will be readonly even it is not marked as such, because class is not updatable
     /// </summary>
     public string Text;
 
     /// <summary>
     /// List of children
     /// </summary>
-    public List<ReadOnlyParentUpdatableChild_Child> ReadOnlyParentUpdatableChild_Children;
+    public List<CreateOnlyParentChangeableChild_Child> CreateOnlyParentChangeableChild_Children;
   }
 
 
   /// <summary>
-  /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
+  /// Example of an updatable and deletable Child, i.e. the child's properties will not change and once it is added to its parent
   /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
   /// either.
   /// </summary>
-  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: true, pluralName: "ReadOnlyParentUpdatableChild_Children")]
-  public class ReadOnlyParentUpdatableChild_Child {
+  [StorageClass(pluralName: "CreateOnlyParentChangeableChild_Children")]
+  public class CreateOnlyParentChangeableChild_Child {
 
     /// <summary>
-    /// Readonly Text, because class is not updatable
+    /// Readonly Text
     /// </summary>
-    public string Text;
+    public readonly string ReadonlyText;
+
+    /// <summary>
+    /// Updatable Text
+    /// </summary>
+    public string UpdatableText;
 
     /// <summary>
     /// Parent
     /// </summary>
-    public ReadOnlyParentUpdatableChild_Parent Parent;
+    public CreateOnlyParentChangeableChild_Parent Parent;
 
     /// <summary>
     /// Parent
     /// </summary>          
-    public ReadOnlyParentUpdatableChild_ParentNullable? ParentNullable;
+    public CreateOnlyParentChangeableChild_ParentNullable? ParentNullable;
   }
   #endregion
 

@@ -7,11 +7,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
+    /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
     /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
     /// is nullable.
     /// </summary>
-  public partial class ReadOnly_ParentNullable: IStorage<ReadOnly_ParentNullable> {
+  public partial class CreateOnly_ParentNullable: IStorage<CreateOnly_ParentNullable> {
 
 
     #region Properties
@@ -64,9 +64,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a readOnly_Child gets added to ReadOnly_Children.
+    /// Called after a createOnly_Child gets added to CreateOnly_Children.
     /// </summary>
-    partial void onAddedToReadOnly_Children(ReadOnly_Child readOnly_Child){
+    partial void onAddedToCreateOnly_Children(CreateOnly_Child createOnly_Child){
     }
 
 

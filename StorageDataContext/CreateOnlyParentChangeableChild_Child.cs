@@ -7,10 +7,11 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
-    /// deleted, but it is still possible to add children, but not to remove them.
+    /// Example of an updatable and deletable Child, i.e. the child's properties will not change and once it is added to its parent
+    /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
+    /// either.
     /// </summary>
-  public partial class ReadOnly_Parent: IStorage<ReadOnly_Parent> {
+  public partial class CreateOnlyParentChangeableChild_Child: IStorage<CreateOnlyParentChangeableChild_Child> {
 
 
     #region Properties
@@ -63,9 +64,30 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a readOnly_Child gets added to ReadOnly_Children.
+    /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onAddedToReadOnly_Children(ReadOnly_Child readOnly_Child){
+    partial void onUpdating(string updatableText, CreateOnlyParentChangeableChild_Parent parent, CreateOnlyParentChangeableChild_ParentNullable? parentNullable, ref bool isCancelled){
+   }
+
+
+    /// <summary>
+    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// </summary>
+    partial void onUpdated() {
+    }
+
+
+    /// <summary>
+    /// Called after an update is read from a CSV file
+    /// </summary>
+    partial void onCsvUpdate() {
+    }
+
+
+    /// <summary>
+    /// Called before removal gets executed
+    /// </summary>
+    partial void onRemove() {
     }
 
 

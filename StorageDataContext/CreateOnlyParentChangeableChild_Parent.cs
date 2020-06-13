@@ -7,11 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a "readonly" Parent, i.e. the parent's properties will not change and the parent will never get
-    /// deleted, but it is still possible to add children, but not to remove them. The parent property in the child 
-    /// is nullable.
+    /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+    /// deleted, but it is still possible to add and remove children.
     /// </summary>
-  public partial class ReadOnlyParentUpdatableChild_ParentNullable: IStorage<ReadOnlyParentUpdatableChild_ParentNullable> {
+  public partial class CreateOnlyParentChangeableChild_Parent: IStorage<CreateOnlyParentChangeableChild_Parent> {
 
 
     #region Properties
@@ -64,16 +63,16 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a readOnlyParentUpdatableChild_Child gets added to ReadOnlyParentUpdatableChild_Children.
+    /// Called after a createOnlyParentChangeableChild_Child gets added to CreateOnlyParentChangeableChild_Children.
     /// </summary>
-    partial void onAddedToReadOnlyParentUpdatableChild_Children(ReadOnlyParentUpdatableChild_Child readOnlyParentUpdatableChild_Child){
+    partial void onAddedToCreateOnlyParentChangeableChild_Children(CreateOnlyParentChangeableChild_Child createOnlyParentChangeableChild_Child){
     }
 
 
     /// <summary>
-    /// Called after a readOnlyParentUpdatableChild_Child gets removed from ReadOnlyParentUpdatableChild_Children.
+    /// Called after a createOnlyParentChangeableChild_Child gets removed from CreateOnlyParentChangeableChild_Children.
     /// </summary>
-    partial void onRemovedFromReadOnlyParentUpdatableChild_Children(ReadOnlyParentUpdatableChild_Child readOnlyParentUpdatableChild_Child){
+    partial void onRemovedFromCreateOnlyParentChangeableChild_Children(CreateOnlyParentChangeableChild_Child createOnlyParentChangeableChild_Child){
     }
 
 

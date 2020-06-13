@@ -16,7 +16,6 @@ namespace StorageTest {
     readonly Dictionary<int, string> expectedParentStrings= new Dictionary<int, string>();
     readonly Dictionary<int, string> expectedParentNullableStrings= new Dictionary<int, string>();
     readonly Dictionary<int, string> expectedChildStrings= new Dictionary<int, string>();
-    readonly Dictionary<int, string> expectedReadonlyChildStrings= new Dictionary<int, string>();
 
 
     [TestMethod]
@@ -42,8 +41,6 @@ namespace StorageTest {
         parent = DC.Data.ParentOneChild_Parents[parent.Key];
         var child = new ParentOneChild_Child("C0", parent, null);
         expectedChildStrings[child.Key] = child.ToString();
-        var childReadonly = new ParentOneChild_ReadonlyChild("C0R", parent, null);
-        expectedReadonlyChildStrings[childReadonly.Key] = childReadonly.ToString();
         expectedParentStrings[parent.Key] = parent.ToString();
         assertData();
 
@@ -54,8 +51,6 @@ namespace StorageTest {
         child = DC.Data.ParentOneChild_Children[child.Key];
         child.Update("C0U", parent1, parentNullable);
         expectedChildStrings[child.Key] = child.ToString();
-        var childReadonly1 = new ParentOneChild_ReadonlyChild("C1R", parent1, parentNullable);
-        expectedReadonlyChildStrings[childReadonly1.Key] = childReadonly1.ToString();
         expectedParentStrings[parent.Key] = parent.ToString();
         expectedParentStrings[parent1.Key] = parent1.ToString();
         expectedParentNullableStrings[parentNullable.Key] = parentNullable.ToString();
@@ -79,9 +74,6 @@ namespace StorageTest {
         child = DC.Data.ParentOneChild_Children[child.Key];
         child.Remove();
         expectedChildStrings.Remove(child.Key);
-        childReadonly = DC.Data.ParentOneChild_ReadonlyChildren[childReadonly.Key];
-        childReadonly.Remove();
-        expectedChildStrings.Remove(childReadonly.Key);
         expectedParentStrings[parent.Key] = parent.ToString();
         expectedParentStrings[parent1.Key] = parent1.ToString();
         expectedParentNullableStrings[parentNullable1.Key] = parentNullable1.ToString();
@@ -115,10 +107,6 @@ namespace StorageTest {
       Assert.AreEqual(expectedChildStrings.Count, DC.Data.ParentOneChild_Children.Count);
       foreach (var child in DC.Data.ParentOneChild_Children) {
         Assert.AreEqual(expectedChildStrings[child.Key], child.ToString());
-      }
-      Assert.AreEqual(expectedReadonlyChildStrings.Count, DC.Data.ParentOneChild_ReadonlyChildren.Count);
-      foreach (var child in DC.Data.ParentOneChild_ReadonlyChildren) {
-        Assert.AreEqual(expectedReadonlyChildStrings[child.Key], child.ToString());
       }
     }
 

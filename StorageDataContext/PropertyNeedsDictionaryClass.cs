@@ -6,6 +6,19 @@ using Storage;
 namespace StorageModel  {
 
 
+    ///// <summary>
+    ///// Readonly Child class with one parent property which is not nullable and one property to a different parent 
+    ///// which is nullable
+    ///// </summary>
+    //  /// <summary>
+    //  /// Some Text comment
+    //  /// </summary>
+    //  /// <summary>
+    //  /// Links to parent
+    //  /// </summary>
+    //  /// <summary>
+    //  /// Links to parent conditionally
+    //  /// </summary>
     /// <summary>
     /// Some comment for PropertyNeedsDictionaryClass
     /// </summary>

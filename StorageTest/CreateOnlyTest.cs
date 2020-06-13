@@ -10,7 +10,7 @@ namespace StorageTest {
 
 
   [TestClass]
-  public class ReadOnlyTest {
+  public class CreateOnlyTest {
     CsvConfig? csvConfig;
     readonly Dictionary<int, string> expectedParents = new Dictionary<int, string>();
     readonly Dictionary<int, string> expectedParentsNullable = new Dictionary<int, string>();
@@ -18,7 +18,7 @@ namespace StorageTest {
 
 
     [TestMethod]
-    public void TestReadOnly() {
+    public void TestCreateOnly() {
       try {
         var directoryInfo = new DirectoryInfo("TestCsv");
         if (directoryInfo.Exists) {
@@ -56,31 +56,31 @@ namespace StorageTest {
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParents.Count, DC.Data.ReadOnly_Parents.Count);
-      foreach (var parent in DC.Data.ReadOnly_Parents) {
+      Assert.AreEqual(expectedParents.Count, DC.Data.CreateOnly_Parents.Count);
+      foreach (var parent in DC.Data.CreateOnly_Parents) {
         Assert.AreEqual(expectedParents[parent.Key], parent.ToString());
       }
 
-      Assert.AreEqual(expectedChildren.Count, DC.Data.ReadOnly_Children.Count);
-      foreach (var child in DC.Data.ReadOnly_Children) {
+      Assert.AreEqual(expectedChildren.Count, DC.Data.CreateOnly_Children.Count);
+      foreach (var child in DC.Data.CreateOnly_Children) {
         Assert.AreEqual(expectedChildren[child.Key], child.ToString());
       }
     }
 
 
     private void addParent(string someText) {
-      var newReadOnlyParent = new ReadOnly_Parent(someText, isStoring: true);
-      expectedParents.Add(newReadOnlyParent.Key, newReadOnlyParent.ToString());
-      var newReadOnlyParenNullablet = new ReadOnly_ParentNullable(someText, isStoring: true);
-      expectedParentsNullable.Add(newReadOnlyParenNullablet.Key, newReadOnlyParenNullablet.ToString());
+      var newCreateOnlyParent = new CreateOnly_Parent(someText, isStoring: true);
+      expectedParents.Add(newCreateOnlyParent.Key, newCreateOnlyParent.ToString());
+      var newCreateOnlyParenNullablet = new CreateOnly_ParentNullable(someText, isStoring: true);
+      expectedParentsNullable.Add(newCreateOnlyParenNullablet.Key, newCreateOnlyParenNullablet.ToString());
       assertData();
     }
 
 
     private void addChild(int parentKey, string text) {
-      var parentDictionary = DC.Data.ReadOnly_Parents[parentKey];
-      var parentDictionaryNullable = DC.Data.ReadOnly_ParentNullables[parentKey];
-      var newChild = new ReadOnly_Child(text, parentDictionary, parentDictionaryNullable, isStoring: true);
+      var parentDictionary = DC.Data.CreateOnly_Parents[parentKey];
+      var parentDictionaryNullable = DC.Data.CreateOnly_ParentNullables[parentKey];
+      var newChild = new CreateOnly_Child(text, parentDictionary, parentDictionaryNullable, isStoring: true);
       expectedChildren.Add(newChild.Key, newChild.ToString());
       expectedParents[parentDictionary.Key] = parentDictionary.ToString();
       assertData();

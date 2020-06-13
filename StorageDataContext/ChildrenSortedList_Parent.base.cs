@@ -175,10 +175,10 @@ namespace StorageModel  {
     /// Updates this ChildrenSortedList_Parent with values from CSV file
     /// </summary>
     internal static void Update(ChildrenSortedList_Parent childrenSortedList_Parent, CsvReader csvReader, DC _) {
-      var value = csvReader.ReadString();
-      if (childrenSortedList_Parent.TextReadOnly!=value) {
+      var textReadOnly = csvReader.ReadString();
+      if (childrenSortedList_Parent.TextReadOnly!=textReadOnly) {
         throw new Exception($"ChildrenSortedList_Parent.Update(): Property TextReadOnly '{childrenSortedList_Parent.TextReadOnly}' is " +
-          $"readonly, the value '{value}' read from the CSV file should be the same." + Environment.NewLine + 
+          $"readonly, textReadOnly '{textReadOnly}' read from the CSV file should be the same." + Environment.NewLine + 
           childrenSortedList_Parent.ToString());
       }
       childrenSortedList_Parent.TextUpdateable = csvReader.ReadString();

@@ -104,20 +104,6 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after a parentOneChild_ReadonlyChild gets added to ParentOneChild_ReadonlyChildren.
-    /// </summary>
-    partial void onAddedToReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild){
-    }
-
-
-    /// <summary>
-    /// Called after a parentOneChild_ReadonlyChild gets removed from ParentOneChild_ReadonlyChildren.
-    /// </summary>
-    partial void onRemovedFromReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild){
-    }
-
-
-    /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>
     partial void onToShortString(ref string returnString) {

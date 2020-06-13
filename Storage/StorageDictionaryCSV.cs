@@ -233,7 +233,7 @@ namespace Storage {
       //verify headers line
       var headerLine = csvReader.ReadLine();
       if (CsvHeaderString!=headerLine) throw new Exception($"Error reading file {csvReader.FileName}{Environment.NewLine}'" + 
-        headerLine + "' should be " + CsvHeaderString + ".");
+        headerLine + "' should be '" + CsvHeaderString + "'.");
 
       //read data lines
       var errorStringBuilder = new StringBuilder();
@@ -258,16 +258,16 @@ namespace Storage {
             if (!Remove(key)) {
               errorStringBuilder.AppendLine($"Deletion Line with key '{key}' did not exist in StorageDictonary.");
             }
-#if DEBUG
-          } else if (firstLineChar!=CsvConfig.LineCharUpdate) {
-            throw new Exception();
-#endif
-          } else {
+          } else if (firstLineChar==CsvConfig.LineCharUpdate) {
             //update
             var key = csvReader.ReadInt();
             var item = this[key];
             update!(item, csvReader, Context!);
             csvReader.ReadEndOfLine();
+          } else {
+            throw new Exception($"Error reading file {csvReader.FileName}{Environment.NewLine}" +
+              $"First character should be '{CsvConfig.LineCharAdd}', '{CsvConfig.LineCharDelete}'or " +
+              $"'{CsvConfig.LineCharUpdate}', but was '{firstLineChar}'.{Environment.NewLine}" + csvReader.GetPresentContent());
           }
         }
       }

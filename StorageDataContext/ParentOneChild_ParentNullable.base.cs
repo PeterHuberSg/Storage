@@ -45,13 +45,6 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
-    /// created before the child.
-    /// </summary>
-    public ParentOneChild_ReadonlyChild? ReadonlyChild { get; private set; }
-
-
-    /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
     internal static readonly string[] Headers = {"Key", "Text"};
@@ -205,37 +198,8 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Add parentOneChild_ReadonlyChild to ReadonlyChild.
-    /// </summary>
-    internal void AddToReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild) {
-      if (ReadonlyChild!=null) {
-        throw new Exception($"ParentOneChild_ParentNullable.AddToReadonlyChild(): '{ReadonlyChild}' is already assigned to ReadonlyChild, it is not possible to assign now '{parentOneChild_ReadonlyChild}'.");
-      }
-      ReadonlyChild = parentOneChild_ReadonlyChild;
-      onAddedToReadonlyChild(parentOneChild_ReadonlyChild);
-    }
-    partial void onAddedToReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild);
-
-
-    /// <summary>
-    /// Removes parentOneChild_ReadonlyChild from ParentOneChild_ParentNullable.
-    /// </summary>
-    internal void RemoveFromReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild) {
-#if DEBUG
-      if (ReadonlyChild!=parentOneChild_ReadonlyChild) {
-        throw new Exception($"ParentOneChild_ParentNullable.RemoveFromReadonlyChild(): ReadonlyChild does not link to parentOneChild_ReadonlyChild '{parentOneChild_ReadonlyChild}' but '{ReadonlyChild}'.");
-      }
-#endif
-      ReadonlyChild = null;
-      onRemovedFromReadonlyChild(parentOneChild_ReadonlyChild);
-    }
-    partial void onRemovedFromReadonlyChild(ParentOneChild_ReadonlyChild parentOneChild_ReadonlyChild);
-
-
-    /// <summary>
-    /// Removes ParentOneChild_ParentNullable from DC.Data.ParentOneChild_ParentNullables, 
-    /// disconnects ParentOneChild_Child.ParentNullable from ParentOneChild_Children and 
-    /// disconnects ParentOneChild_ReadonlyChild.ParentNullable from ParentOneChild_ReadonlyChildren.
+    /// Removes ParentOneChild_ParentNullable from DC.Data.ParentOneChild_ParentNullables and 
+    /// disconnects ParentOneChild_Child.ParentNullable from ParentOneChild_Children.
     /// </summary>
     public void Remove() {
       if (Key<0) {
@@ -248,17 +212,12 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Disconnects ParentOneChild_Child.ParentNullable from ParentOneChild_Children and 
-    /// disconnects ParentOneChild_ReadonlyChild.ParentNullable from ParentOneChild_ReadonlyChildren.
+    /// Disconnects ParentOneChild_Child.ParentNullable from ParentOneChild_Children.
     /// </summary>
     internal static void Disconnect(ParentOneChild_ParentNullable parentOneChild_ParentNullable) {
       if (parentOneChild_ParentNullable.Child!=null) {
         parentOneChild_ParentNullable.Child.Remove();
         parentOneChild_ParentNullable.Child = null;
-      }
-      if (parentOneChild_ParentNullable.ReadonlyChild!=null) {
-        parentOneChild_ParentNullable.ReadonlyChild.Remove();
-        parentOneChild_ParentNullable.ReadonlyChild = null;
       }
     }
 
@@ -283,8 +242,7 @@ namespace StorageModel  {
       var returnString =
         $"Key: {Key}," +
         $" Text: {Text}," +
-        $" Child: {Child?.ToShortString()}," +
-        $" ReadonlyChild: {ReadonlyChild?.ToShortString()};";
+        $" Child: {Child?.ToShortString()};";
       onToString(ref returnString);
       return returnString;
     }

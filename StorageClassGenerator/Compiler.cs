@@ -122,7 +122,8 @@ namespace Storage {
         foreach (var classMember in classDeclaration.Members) {
           //each field has only 1 property
           if (!(classMember is FieldDeclarationSyntax field)) {
-            throw new GeneratorException($"Class {className} should contain only properties, but has '{classMember}'.");
+            throw new GeneratorException($"Class {className} should contain only properties and these properties should " + 
+              $"not contain get and set, but has '{classMember}'.");
           }
 
           string? propertyComment = getComment(field.GetLeadingTrivia());
@@ -660,6 +661,7 @@ namespace Storage {
       streamWriter.WriteLine("        backupResult = Csv.Backup(csvConfig, DateTime.Now);");
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine();
+      streamWriter.WriteLine("      CsvConfig = csvConfig;");
       streamWriter.WriteLine("      onConstructing(backupResult);");
       streamWriter.WriteLine();
 
@@ -671,8 +673,6 @@ namespace Storage {
         }
       }
 
-
-      streamWriter.WriteLine("      CsvConfig = csvConfig;");
       streamWriter.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
         streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionary<{classInfo.ClassName}, {context}>(");

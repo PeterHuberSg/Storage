@@ -119,6 +119,36 @@ namespace StorageModel  {
     public StorageDictionary<ChildrenSortedList_ParentNullable, DC> ChildrenSortedList_ParentNullables { get; private set; }
 
     /// <summary>
+    /// Directory of all CreateOnly_Children
+    /// </summary>
+    public StorageDictionary<CreateOnly_Child, DC> CreateOnly_Children { get; private set; }
+
+    /// <summary>
+    /// Directory of all CreateOnly_Parents
+    /// </summary>
+    public StorageDictionary<CreateOnly_Parent, DC> CreateOnly_Parents { get; private set; }
+
+    /// <summary>
+    /// Directory of all CreateOnly_ParentNullables
+    /// </summary>
+    public StorageDictionary<CreateOnly_ParentNullable, DC> CreateOnly_ParentNullables { get; private set; }
+
+    /// <summary>
+    /// Directory of all CreateOnlyParentChangeableChild_Children
+    /// </summary>
+    public StorageDictionary<CreateOnlyParentChangeableChild_Child, DC> CreateOnlyParentChangeableChild_Children { get; private set; }
+
+    /// <summary>
+    /// Directory of all CreateOnlyParentChangeableChild_Parents
+    /// </summary>
+    public StorageDictionary<CreateOnlyParentChangeableChild_Parent, DC> CreateOnlyParentChangeableChild_Parents { get; private set; }
+
+    /// <summary>
+    /// Directory of all CreateOnlyParentChangeableChild_ParentNullables
+    /// </summary>
+    public StorageDictionary<CreateOnlyParentChangeableChild_ParentNullable, DC> CreateOnlyParentChangeableChild_ParentNullables { get; private set; }
+
+    /// <summary>
     /// Directory of all Lookup_Children
     /// </summary>
     public StorageDictionary<Lookup_Child, DC> Lookup_Children { get; private set; }
@@ -149,11 +179,6 @@ namespace StorageModel  {
     public StorageDictionary<ParentOneChild_ParentNullable, DC> ParentOneChild_ParentNullables { get; private set; }
 
     /// <summary>
-    /// Directory of all ParentOneChild_ReadonlyChildren
-    /// </summary>
-    public StorageDictionary<ParentOneChild_ReadonlyChild, DC> ParentOneChild_ReadonlyChildren { get; private set; }
-
-    /// <summary>
     /// Directory of all PrivateConstructors
     /// </summary>
     public StorageDictionary<PrivateConstructor, DC> PrivateConstructors { get; private set; }
@@ -172,36 +197,6 @@ namespace StorageModel  {
     /// Directory of all PropertyNeedsDictionaryClasses by IdString
     /// </summary>
     public Dictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdString { get; private set; }
-
-    /// <summary>
-    /// Directory of all ReadOnly_Children
-    /// </summary>
-    public StorageDictionary<ReadOnly_Child, DC> ReadOnly_Children { get; private set; }
-
-    /// <summary>
-    /// Directory of all ReadOnly_Parents
-    /// </summary>
-    public StorageDictionary<ReadOnly_Parent, DC> ReadOnly_Parents { get; private set; }
-
-    /// <summary>
-    /// Directory of all ReadOnly_ParentNullables
-    /// </summary>
-    public StorageDictionary<ReadOnly_ParentNullable, DC> ReadOnly_ParentNullables { get; private set; }
-
-    /// <summary>
-    /// Directory of all ReadOnlyParentUpdatableChild_Children
-    /// </summary>
-    public StorageDictionary<ReadOnlyParentUpdatableChild_Child, DC> ReadOnlyParentUpdatableChild_Children { get; private set; }
-
-    /// <summary>
-    /// Directory of all ReadOnlyParentUpdatableChild_Parents
-    /// </summary>
-    public StorageDictionary<ReadOnlyParentUpdatableChild_Parent, DC> ReadOnlyParentUpdatableChild_Parents { get; private set; }
-
-    /// <summary>
-    /// Directory of all ReadOnlyParentUpdatableChild_ParentNullables
-    /// </summary>
-    public StorageDictionary<ReadOnlyParentUpdatableChild_ParentNullable, DC> ReadOnlyParentUpdatableChild_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all SampleX
@@ -247,11 +242,11 @@ namespace StorageModel  {
         backupResult = Csv.Backup(csvConfig, DateTime.Now);
       }
 
+      CsvConfig = csvConfig;
       onConstructing(backupResult);
 
       PropertyNeedsDictionaryClassesByIdInt = new Dictionary<int, PropertyNeedsDictionaryClass>();
       PropertyNeedsDictionaryClassesByIdString = new Dictionary<string, PropertyNeedsDictionaryClass>();
-      CsvConfig = csvConfig;
       if (csvConfig==null) {
         SampleMasters = new StorageDictionary<SampleMaster, DC>(
           this,
@@ -287,12 +282,6 @@ namespace StorageModel  {
           this,
           ParentOneChild_Child.SetKey,
           ParentOneChild_Child.Disconnect,
-          areInstancesUpdatable: true,
-          areInstancesDeletable: true);
-        ParentOneChild_ReadonlyChildren = new StorageDictionary<ParentOneChild_ReadonlyChild, DC>(
-          this,
-          ParentOneChild_ReadonlyChild.SetKey,
-          ParentOneChild_ReadonlyChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
         PropertyNeedsDictionaryClasses = new StorageDictionary<PropertyNeedsDictionaryClass, DC>(
@@ -391,42 +380,42 @@ namespace StorageModel  {
           ChildrenSortedList_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
-        ReadOnly_Parents = new StorageDictionary<ReadOnly_Parent, DC>(
+        CreateOnly_Parents = new StorageDictionary<CreateOnly_Parent, DC>(
           this,
-          ReadOnly_Parent.SetKey,
+          CreateOnly_Parent.SetKey,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnly_ParentNullables = new StorageDictionary<ReadOnly_ParentNullable, DC>(
+        CreateOnly_ParentNullables = new StorageDictionary<CreateOnly_ParentNullable, DC>(
           this,
-          ReadOnly_ParentNullable.SetKey,
+          CreateOnly_ParentNullable.SetKey,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnly_Children = new StorageDictionary<ReadOnly_Child, DC>(
+        CreateOnly_Children = new StorageDictionary<CreateOnly_Child, DC>(
           this,
-          ReadOnly_Child.SetKey,
+          CreateOnly_Child.SetKey,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnlyParentUpdatableChild_Parents = new StorageDictionary<ReadOnlyParentUpdatableChild_Parent, DC>(
+        CreateOnlyParentChangeableChild_Parents = new StorageDictionary<CreateOnlyParentChangeableChild_Parent, DC>(
           this,
-          ReadOnlyParentUpdatableChild_Parent.SetKey,
+          CreateOnlyParentChangeableChild_Parent.SetKey,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnlyParentUpdatableChild_ParentNullables = new StorageDictionary<ReadOnlyParentUpdatableChild_ParentNullable, DC>(
+        CreateOnlyParentChangeableChild_ParentNullables = new StorageDictionary<CreateOnlyParentChangeableChild_ParentNullable, DC>(
           this,
-          ReadOnlyParentUpdatableChild_ParentNullable.SetKey,
-          null,
+          CreateOnlyParentChangeableChild_ParentNullable.SetKey,
+          CreateOnlyParentChangeableChild_ParentNullable.Disconnect,
           areInstancesUpdatable: false,
-          areInstancesDeletable: false);
-        ReadOnlyParentUpdatableChild_Children = new StorageDictionary<ReadOnlyParentUpdatableChild_Child, DC>(
+          areInstancesDeletable: true);
+        CreateOnlyParentChangeableChild_Children = new StorageDictionary<CreateOnlyParentChangeableChild_Child, DC>(
           this,
-          ReadOnlyParentUpdatableChild_Child.SetKey,
-          null,
+          CreateOnlyParentChangeableChild_Child.SetKey,
+          CreateOnlyParentChangeableChild_Child.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: false);
+          areInstancesDeletable: true);
         PrivateConstructors = new StorageDictionary<PrivateConstructor, DC>(
           this,
           PrivateConstructor.SetKey,
@@ -510,19 +499,6 @@ namespace StorageModel  {
           ParentOneChild_Child.Update,
           ParentOneChild_Child.Write,
           ParentOneChild_Child.Disconnect,
-          areInstancesUpdatable: true,
-          areInstancesDeletable: true);
-        ParentOneChild_ReadonlyChildren = new StorageDictionaryCSV<ParentOneChild_ReadonlyChild, DC>(
-          this,
-          csvConfig!,
-          ParentOneChild_ReadonlyChild.MaxLineLength,
-          ParentOneChild_ReadonlyChild.Headers,
-          ParentOneChild_ReadonlyChild.SetKey,
-          ParentOneChild_ReadonlyChild.Create,
-          ParentOneChild_ReadonlyChild.Verify,
-          ParentOneChild_ReadonlyChild.Update,
-          ParentOneChild_ReadonlyChild.Write,
-          ParentOneChild_ReadonlyChild.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
         PropertyNeedsDictionaryClasses = new StorageDictionaryCSV<PropertyNeedsDictionaryClass, DC>(
@@ -733,84 +709,84 @@ namespace StorageModel  {
           ChildrenSortedList_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
-        ReadOnly_Parents = new StorageDictionaryCSV<ReadOnly_Parent, DC>(
+        CreateOnly_Parents = new StorageDictionaryCSV<CreateOnly_Parent, DC>(
           this,
           csvConfig!,
-          ReadOnly_Parent.MaxLineLength,
-          ReadOnly_Parent.Headers,
-          ReadOnly_Parent.SetKey,
-          ReadOnly_Parent.Create,
+          CreateOnly_Parent.MaxLineLength,
+          CreateOnly_Parent.Headers,
+          CreateOnly_Parent.SetKey,
+          CreateOnly_Parent.Create,
           null,
           null,
-          ReadOnly_Parent.Write,
+          CreateOnly_Parent.Write,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnly_ParentNullables = new StorageDictionaryCSV<ReadOnly_ParentNullable, DC>(
+        CreateOnly_ParentNullables = new StorageDictionaryCSV<CreateOnly_ParentNullable, DC>(
           this,
           csvConfig!,
-          ReadOnly_ParentNullable.MaxLineLength,
-          ReadOnly_ParentNullable.Headers,
-          ReadOnly_ParentNullable.SetKey,
-          ReadOnly_ParentNullable.Create,
+          CreateOnly_ParentNullable.MaxLineLength,
+          CreateOnly_ParentNullable.Headers,
+          CreateOnly_ParentNullable.SetKey,
+          CreateOnly_ParentNullable.Create,
           null,
           null,
-          ReadOnly_ParentNullable.Write,
+          CreateOnly_ParentNullable.Write,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnly_Children = new StorageDictionaryCSV<ReadOnly_Child, DC>(
+        CreateOnly_Children = new StorageDictionaryCSV<CreateOnly_Child, DC>(
           this,
           csvConfig!,
-          ReadOnly_Child.MaxLineLength,
-          ReadOnly_Child.Headers,
-          ReadOnly_Child.SetKey,
-          ReadOnly_Child.Create,
-          ReadOnly_Child.Verify,
+          CreateOnly_Child.MaxLineLength,
+          CreateOnly_Child.Headers,
+          CreateOnly_Child.SetKey,
+          CreateOnly_Child.Create,
+          CreateOnly_Child.Verify,
           null,
-          ReadOnly_Child.Write,
+          CreateOnly_Child.Write,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnlyParentUpdatableChild_Parents = new StorageDictionaryCSV<ReadOnlyParentUpdatableChild_Parent, DC>(
+        CreateOnlyParentChangeableChild_Parents = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_Parent, DC>(
           this,
           csvConfig!,
-          ReadOnlyParentUpdatableChild_Parent.MaxLineLength,
-          ReadOnlyParentUpdatableChild_Parent.Headers,
-          ReadOnlyParentUpdatableChild_Parent.SetKey,
-          ReadOnlyParentUpdatableChild_Parent.Create,
+          CreateOnlyParentChangeableChild_Parent.MaxLineLength,
+          CreateOnlyParentChangeableChild_Parent.Headers,
+          CreateOnlyParentChangeableChild_Parent.SetKey,
+          CreateOnlyParentChangeableChild_Parent.Create,
           null,
           null,
-          ReadOnlyParentUpdatableChild_Parent.Write,
+          CreateOnlyParentChangeableChild_Parent.Write,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
-        ReadOnlyParentUpdatableChild_ParentNullables = new StorageDictionaryCSV<ReadOnlyParentUpdatableChild_ParentNullable, DC>(
+        CreateOnlyParentChangeableChild_ParentNullables = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_ParentNullable, DC>(
           this,
           csvConfig!,
-          ReadOnlyParentUpdatableChild_ParentNullable.MaxLineLength,
-          ReadOnlyParentUpdatableChild_ParentNullable.Headers,
-          ReadOnlyParentUpdatableChild_ParentNullable.SetKey,
-          ReadOnlyParentUpdatableChild_ParentNullable.Create,
+          CreateOnlyParentChangeableChild_ParentNullable.MaxLineLength,
+          CreateOnlyParentChangeableChild_ParentNullable.Headers,
+          CreateOnlyParentChangeableChild_ParentNullable.SetKey,
+          CreateOnlyParentChangeableChild_ParentNullable.Create,
           null,
           null,
-          ReadOnlyParentUpdatableChild_ParentNullable.Write,
-          null,
+          CreateOnlyParentChangeableChild_ParentNullable.Write,
+          CreateOnlyParentChangeableChild_ParentNullable.Disconnect,
           areInstancesUpdatable: false,
-          areInstancesDeletable: false);
-        ReadOnlyParentUpdatableChild_Children = new StorageDictionaryCSV<ReadOnlyParentUpdatableChild_Child, DC>(
+          areInstancesDeletable: true);
+        CreateOnlyParentChangeableChild_Children = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_Child, DC>(
           this,
           csvConfig!,
-          ReadOnlyParentUpdatableChild_Child.MaxLineLength,
-          ReadOnlyParentUpdatableChild_Child.Headers,
-          ReadOnlyParentUpdatableChild_Child.SetKey,
-          ReadOnlyParentUpdatableChild_Child.Create,
-          ReadOnlyParentUpdatableChild_Child.Verify,
-          ReadOnlyParentUpdatableChild_Child.Update,
-          ReadOnlyParentUpdatableChild_Child.Write,
-          null,
+          CreateOnlyParentChangeableChild_Child.MaxLineLength,
+          CreateOnlyParentChangeableChild_Child.Headers,
+          CreateOnlyParentChangeableChild_Child.SetKey,
+          CreateOnlyParentChangeableChild_Child.Create,
+          CreateOnlyParentChangeableChild_Child.Verify,
+          CreateOnlyParentChangeableChild_Child.Update,
+          CreateOnlyParentChangeableChild_Child.Write,
+          CreateOnlyParentChangeableChild_Child.Disconnect,
           areInstancesUpdatable: true,
-          areInstancesDeletable: false);
+          areInstancesDeletable: true);
         PrivateConstructors = new StorageDictionaryCSV<PrivateConstructor, DC>(
           this,
           csvConfig!,
@@ -860,12 +836,12 @@ namespace StorageModel  {
       if (disposing) {
         onDispose();
         PrivateConstructors.Dispose();
-        ReadOnlyParentUpdatableChild_Children.Dispose();
-        ReadOnlyParentUpdatableChild_ParentNullables.Dispose();
-        ReadOnlyParentUpdatableChild_Parents.Dispose();
-        ReadOnly_Children.Dispose();
-        ReadOnly_ParentNullables.Dispose();
-        ReadOnly_Parents.Dispose();
+        CreateOnlyParentChangeableChild_Children.Dispose();
+        CreateOnlyParentChangeableChild_ParentNullables.Dispose();
+        CreateOnlyParentChangeableChild_Parents.Dispose();
+        CreateOnly_Children.Dispose();
+        CreateOnly_ParentNullables.Dispose();
+        CreateOnly_Parents.Dispose();
         ChildrenSortedList_Children.Dispose();
         ChildrenSortedList_ParentNullables.Dispose();
         ChildrenSortedList_Parents.Dispose();
@@ -882,7 +858,6 @@ namespace StorageModel  {
         Lookup_ParentNullables.Dispose();
         Lookup_Parents.Dispose();
         PropertyNeedsDictionaryClasses.Dispose();
-        ParentOneChild_ReadonlyChildren.Dispose();
         ParentOneChild_Children.Dispose();
         ParentOneChild_ParentNullables.Dispose();
         ParentOneChild_Parents.Dispose();

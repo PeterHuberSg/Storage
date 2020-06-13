@@ -329,7 +329,7 @@ namespace StorageModel  {
       var csvHeaderString = Csv.ToCsvHeaderString(ChildrenList_CreateOnlyChild.Headers, csvConfig.Delimiter);
       var headerLine = csvReader.ReadLine();
       if (csvHeaderString!=headerLine) throw new Exception($"Error reading file {csvReader.FileName}{Environment.NewLine}'" +
-        headerLine + "' should be " + csvHeaderString + ".");
+        headerLine + "' should be '" + csvHeaderString + "'.");
     }
 
 

@@ -18,6 +18,7 @@ This software is distributed without any warranty.
 using System;
 using System.Text;
 
+
 namespace Storage {
 
 
@@ -185,10 +186,9 @@ namespace Storage {
         "DirectoryPath: " + DirectoryPath +
         "; BackupPath: " + BackupPath +
         "; BackupPeriodicity: " + BackupPeriodicity +
-        "; Delimiter: " + Delimiter +
+        "; Delimiter: '" + Delimiter + "'" +
         "; Encoding: " + Encoding +
         "; BufferSize: " + BufferSize +
-        "; ReportException: " + ReportException +
         ";";
     }
     #endregion

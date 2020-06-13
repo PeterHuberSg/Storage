@@ -7,11 +7,10 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Example of a "readonly" Child, i.e. the child's properties will not change and once it is added to its parent
-    /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
-    /// either.
+    /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+    /// deleted, but it is still possible to add children, but not to remove them.
     /// </summary>
-  public partial class ReadOnlyParentUpdatableChild_Child: IStorage<ReadOnlyParentUpdatableChild_Child> {
+  public partial class CreateOnly_Parent: IStorage<CreateOnly_Parent> {
 
 
     #region Properties
@@ -64,23 +63,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after a createOnly_Child gets added to CreateOnly_Children.
     /// </summary>
-    partial void onUpdating(string text, ReadOnlyParentUpdatableChild_Parent parent, ReadOnlyParentUpdatableChild_ParentNullable? parentNullable, ref bool isCancelled){
-   }
-
-
-    /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
-    /// </summary>
-    partial void onUpdated() {
-    }
-
-
-    /// <summary>
-    /// Called after an update is read from a CSV file
-    /// </summary>
-    partial void onCsvUpdate() {
+    partial void onAddedToCreateOnly_Children(CreateOnly_Child createOnly_Child){
     }
 
 
