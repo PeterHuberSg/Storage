@@ -477,19 +477,27 @@ namespace StorageModel  {
           //nothing to do
         } else {
           OneMaster = oneMaster;
-          OneMaster.AddToSampleX(this);
+          if (Key>=0) {
+            OneMaster.AddToSampleX(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (oneMaster is null) {
-          OneMaster.RemoveFromSampleX(this);
+          if (Key>=0) {
+            OneMaster.RemoveFromSampleX(this);
+          }
           OneMaster = null;
           isChangeDetected = true;
         } else {
           if (OneMaster!=oneMaster) {
-            OneMaster.RemoveFromSampleX(this);
+            if (Key>=0) {
+              OneMaster.RemoveFromSampleX(this);
+            }
             OneMaster = oneMaster;
-            OneMaster.AddToSampleX(this);
+            if (Key>=0) {
+              OneMaster.AddToSampleX(this);
+            }
             isChangeDetected = true;
           }
         }
@@ -499,19 +507,27 @@ namespace StorageModel  {
           //nothing to do
         } else {
           OtherMaster = otherMaster;
-          OtherMaster.AddToSampleX(this);
+          if (Key>=0) {
+            OtherMaster.AddToSampleX(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (otherMaster is null) {
-          OtherMaster.RemoveFromSampleX(this);
+          if (Key>=0) {
+            OtherMaster.RemoveFromSampleX(this);
+          }
           OtherMaster = null;
           isChangeDetected = true;
         } else {
           if (OtherMaster!=otherMaster) {
-            OtherMaster.RemoveFromSampleX(this);
+            if (Key>=0) {
+              OtherMaster.RemoveFromSampleX(this);
+            }
             OtherMaster = otherMaster;
-            OtherMaster.AddToSampleX(this);
+            if (Key>=0) {
+              OtherMaster.AddToSampleX(this);
+            }
             isChangeDetected = true;
           }
         }

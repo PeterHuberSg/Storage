@@ -290,9 +290,13 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (Parent!=parent) {
-        Parent.RemoveFromChildrenList_Children(this);
+        if (Key>=0) {
+          Parent.RemoveFromChildrenList_Children(this);
+        }
         Parent = parent;
-        Parent.AddToChildrenList_Children(this);
+        if (Key>=0) {
+          Parent.AddToChildrenList_Children(this);
+        }
         isChangeDetected = true;
       }
       if (ParentNullable is null) {
@@ -300,27 +304,39 @@ namespace StorageModel  {
           //nothing to do
         } else {
           ParentNullable = parentNullable;
-          ParentNullable.AddToChildrenList_Children(this);
+          if (Key>=0) {
+            ParentNullable.AddToChildrenList_Children(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (parentNullable is null) {
-          ParentNullable.RemoveFromChildrenList_Children(this);
+          if (Key>=0) {
+            ParentNullable.RemoveFromChildrenList_Children(this);
+          }
           ParentNullable = null;
           isChangeDetected = true;
         } else {
           if (ParentNullable!=parentNullable) {
-            ParentNullable.RemoveFromChildrenList_Children(this);
+            if (Key>=0) {
+              ParentNullable.RemoveFromChildrenList_Children(this);
+            }
             ParentNullable = parentNullable;
-            ParentNullable.AddToChildrenList_Children(this);
+            if (Key>=0) {
+              ParentNullable.AddToChildrenList_Children(this);
+            }
             isChangeDetected = true;
           }
         }
       }
       if (CreateOnlyParent!=createOnlyParent) {
-        CreateOnlyParent.RemoveFromChildrenList_Children(this);
+        if (Key>=0) {
+          CreateOnlyParent.RemoveFromChildrenList_Children(this);
+        }
         CreateOnlyParent = createOnlyParent;
-        CreateOnlyParent.AddToChildrenList_Children(this);
+        if (Key>=0) {
+          CreateOnlyParent.AddToChildrenList_Children(this);
+        }
         isChangeDetected = true;
       }
       if (CreateOnlyParentNullable is null) {
@@ -328,19 +344,27 @@ namespace StorageModel  {
           //nothing to do
         } else {
           CreateOnlyParentNullable = createOnlyParentNullable;
-          CreateOnlyParentNullable.AddToChildrenList_Children(this);
+          if (Key>=0) {
+            CreateOnlyParentNullable.AddToChildrenList_Children(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (createOnlyParentNullable is null) {
-          CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
+          if (Key>=0) {
+            CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
+          }
           CreateOnlyParentNullable = null;
           isChangeDetected = true;
         } else {
           if (CreateOnlyParentNullable!=createOnlyParentNullable) {
-            CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
+            if (Key>=0) {
+              CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
+            }
             CreateOnlyParentNullable = createOnlyParentNullable;
-            CreateOnlyParentNullable.AddToChildrenList_Children(this);
+            if (Key>=0) {
+              CreateOnlyParentNullable.AddToChildrenList_Children(this);
+            }
             isChangeDetected = true;
           }
         }

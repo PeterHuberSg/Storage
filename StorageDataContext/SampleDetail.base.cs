@@ -178,9 +178,13 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (Sample!=sample) {
-        Sample.RemoveFromSampleDetails(this);
+        if (Key>=0) {
+          Sample.RemoveFromSampleDetails(this);
+        }
         Sample = sample;
-        Sample.AddToSampleDetails(this);
+        if (Key>=0) {
+          Sample.AddToSampleDetails(this);
+        }
         isChangeDetected = true;
       }
       if (isChangeDetected) {

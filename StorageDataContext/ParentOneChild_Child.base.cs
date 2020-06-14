@@ -211,9 +211,13 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (Parent!=parent) {
-        Parent.RemoveFromChild(this);
+        if (Key>=0) {
+          Parent.RemoveFromChild(this);
+        }
         Parent = parent;
-        Parent.AddToChild(this);
+        if (Key>=0) {
+          Parent.AddToChild(this);
+        }
         isChangeDetected = true;
       }
       if (ParentNullable is null) {
@@ -221,19 +225,27 @@ namespace StorageModel  {
           //nothing to do
         } else {
           ParentNullable = parentNullable;
-          ParentNullable.AddToChild(this);
+          if (Key>=0) {
+            ParentNullable.AddToChild(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (parentNullable is null) {
-          ParentNullable.RemoveFromChild(this);
+          if (Key>=0) {
+            ParentNullable.RemoveFromChild(this);
+          }
           ParentNullable = null;
           isChangeDetected = true;
         } else {
           if (ParentNullable!=parentNullable) {
-            ParentNullable.RemoveFromChild(this);
+            if (Key>=0) {
+              ParentNullable.RemoveFromChild(this);
+            }
             ParentNullable = parentNullable;
-            ParentNullable.AddToChild(this);
+            if (Key>=0) {
+              ParentNullable.AddToChild(this);
+            }
             isChangeDetected = true;
           }
         }

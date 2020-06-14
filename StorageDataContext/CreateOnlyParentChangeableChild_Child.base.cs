@@ -227,9 +227,13 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (Parent!=parent) {
-        Parent.RemoveFromCreateOnlyParentChangeableChild_Children(this);
+        if (Key>=0) {
+          Parent.RemoveFromCreateOnlyParentChangeableChild_Children(this);
+        }
         Parent = parent;
-        Parent.AddToCreateOnlyParentChangeableChild_Children(this);
+        if (Key>=0) {
+          Parent.AddToCreateOnlyParentChangeableChild_Children(this);
+        }
         isChangeDetected = true;
       }
       if (ParentNullable is null) {
@@ -237,19 +241,27 @@ namespace StorageModel  {
           //nothing to do
         } else {
           ParentNullable = parentNullable;
-          ParentNullable.AddToCreateOnlyParentChangeableChild_Children(this);
+          if (Key>=0) {
+            ParentNullable.AddToCreateOnlyParentChangeableChild_Children(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (parentNullable is null) {
-          ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(this);
+          if (Key>=0) {
+            ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(this);
+          }
           ParentNullable = null;
           isChangeDetected = true;
         } else {
           if (ParentNullable!=parentNullable) {
-            ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(this);
+            if (Key>=0) {
+              ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(this);
+            }
             ParentNullable = parentNullable;
-            ParentNullable.AddToCreateOnlyParentChangeableChild_Children(this);
+            if (Key>=0) {
+              ParentNullable.AddToCreateOnlyParentChangeableChild_Children(this);
+            }
             isChangeDetected = true;
           }
         }

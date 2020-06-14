@@ -233,9 +233,13 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (ParentWithDictionary!=parentWithDictionary) {
-        ParentWithDictionary.RemoveFromChildrenDictionary_Children(this);
+        if (Key>=0) {
+          ParentWithDictionary.RemoveFromChildrenDictionary_Children(this);
+        }
         ParentWithDictionary = parentWithDictionary;
-        ParentWithDictionary.AddToChildrenDictionary_Children(this);
+        if (Key>=0) {
+          ParentWithDictionary.AddToChildrenDictionary_Children(this);
+        }
         isChangeDetected = true;
       }
       if (ParentWithDictionaryNullable is null) {
@@ -243,19 +247,27 @@ namespace StorageModel  {
           //nothing to do
         } else {
           ParentWithDictionaryNullable = parentWithDictionaryNullable;
-          ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
+          if (Key>=0) {
+            ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
+          }
           isChangeDetected = true;
         }
       } else {
         if (parentWithDictionaryNullable is null) {
-          ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(this);
+          if (Key>=0) {
+            ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(this);
+          }
           ParentWithDictionaryNullable = null;
           isChangeDetected = true;
         } else {
           if (ParentWithDictionaryNullable!=parentWithDictionaryNullable) {
-            ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(this);
+            if (Key>=0) {
+              ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(this);
+            }
             ParentWithDictionaryNullable = parentWithDictionaryNullable;
-            ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
+            if (Key>=0) {
+              ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
+            }
             isChangeDetected = true;
           }
         }
