@@ -119,10 +119,15 @@ namespace StorageModel  {
       if (Key>=0) {
         throw new Exception($"ChildrenList_Parent cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.ChildrenList_Parents.Add(this);
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

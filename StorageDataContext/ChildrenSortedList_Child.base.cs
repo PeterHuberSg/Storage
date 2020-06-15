@@ -178,12 +178,17 @@ namespace StorageModel  {
       if (ParentWithSortedListNullable!=null && ParentWithSortedListNullable.Key<0) {
         throw new Exception($"ChildrenSortedList_Child cannot be stored in DC.Data, ParentWithSortedListNullable is not stored yet." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.ChildrenSortedList_Children.Add(this);
       ParentWithSortedList.AddToChildrenSortedList_Children(this);
       ParentWithSortedListNullable?.AddToChildrenSortedList_Children(this);
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

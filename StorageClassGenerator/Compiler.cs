@@ -34,7 +34,7 @@ namespace Storage {
   /// </summary>
   public class Compiler {
 
-    public const bool IsFullyCommented = false; //set false to create Xxx.cs files where executable code is not commented out
+    public const bool IsFullyCommented = true; //set false to create Xxx.cs files where executable code is not commented out
 
     readonly Dictionary<string, ClassInfo> classes;
     readonly List<ClassInfo> parentChildTree;

@@ -178,12 +178,17 @@ namespace StorageModel  {
       if (ParentNullable!=null && ParentNullable.Key<0) {
         throw new Exception($"CreateOnlyParentChangeableChild_Child cannot be stored in DC.Data, ParentNullable is not stored yet." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.CreateOnlyParentChangeableChild_Children.Add(this);
       Parent.AddToCreateOnlyParentChangeableChild_Children(this);
       ParentNullable?.AddToCreateOnlyParentChangeableChild_Children(this);
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

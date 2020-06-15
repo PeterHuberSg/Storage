@@ -323,7 +323,14 @@ namespace Storage {
       streamWriter.WriteLine("    /// <summary>");
       streamWriter.WriteLine("    /// Called before storing gets executed");
       streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onStore() {{");
+      streamWriter.WriteLine($"    {cs}partial void onStoring(ref bool isCancelled) {{");
+      streamWriter.WriteLine($"    {cs}}}");
+      streamWriter.WriteLine();
+      streamWriter.WriteLine();
+      streamWriter.WriteLine("    /// <summary>");
+      streamWriter.WriteLine("    /// Called after storing is executed");
+      streamWriter.WriteLine("    /// </summary>");
+      streamWriter.WriteLine($"    {cs}partial void onStored() {{");
       streamWriter.WriteLine($"    {cs}}}");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
@@ -799,7 +806,10 @@ namespace Storage {
           }
         }
       }
-      streamWriter.WriteLine("      onStore();");
+      streamWriter.WriteLine("      var isCancelled = false;");
+      streamWriter.WriteLine("      onStoring(ref isCancelled);");
+      streamWriter.WriteLine("      if (isCancelled) return;");
+      streamWriter.WriteLine();
       streamWriter.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.LinkToParent) {
@@ -825,8 +835,10 @@ namespace Storage {
           }
         }
       }
+      streamWriter.WriteLine("      onStored();");
       streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onStore();");
+      streamWriter.WriteLine("    partial void onStoring(ref bool isCancelled);");
+      streamWriter.WriteLine("    partial void onStored();");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
@@ -1030,7 +1042,11 @@ namespace Storage {
         streamWriter.WriteLine(") {");
         foreach (var mi in Members.Values) {
           if (mi.IsReadOnly) {
-            streamWriter.WriteLine($"      var {mi.LowerMemberName} = csvReader.{mi.CsvReaderRead};");
+            if (mi.MemberType==MemberTypeEnum.Enum) {
+              streamWriter.WriteLine($"      var {mi.LowerMemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+            } else {
+              streamWriter.WriteLine($"      var {mi.LowerMemberName} = csvReader.{mi.CsvReaderRead};");
+            }
             streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
             streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Update(): Property {mi.MemberName}" +
               $" '{{{LowerClassName}.{mi.MemberName}}}' is \" +");

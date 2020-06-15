@@ -321,12 +321,17 @@ namespace StorageModel  {
       if (OtherMaster!=null && OtherMaster.Key<0) {
         throw new Exception($"Sample cannot be stored in DC.Data, OtherMaster is not stored yet." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.SampleX.Add(this);
       OneMaster?.AddToSampleX(this);
       OtherMaster?.AddToSampleX(this);
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

@@ -179,12 +179,17 @@ namespace StorageModel  {
       if (ParentWithDictionaryNullable!=null && ParentWithDictionaryNullable.Key<0) {
         throw new Exception($"ChildrenDictionary_Child cannot be stored in DC.Data, ParentWithDictionaryNullable is not stored yet." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.ChildrenDictionary_Children.Add(this);
       ParentWithDictionary.AddToChildrenDictionary_Children(this);
       ParentWithDictionaryNullable?.AddToChildrenDictionary_Children(this);
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

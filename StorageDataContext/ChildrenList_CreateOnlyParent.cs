@@ -31,15 +31,15 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the constructor has filled all the properties
     /// </summary>
-    partial void onConstruct() {
-    }
+    //partial void onConstruct() {
+    //}
 
 
     /// <summary>
     /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
-    partial void onCsvConstruct(DC context) {
-    }
+    //partial void onCsvConstruct(DC context) {
+    //}
 
 
     #endregion
@@ -51,50 +51,57 @@ namespace StorageModel  {
     /// <summary>
     /// Called before storing gets executed
     /// </summary>
-    partial void onStore() {
-    }
+    //partial void onStoring(ref bool isCancelled) {
+    //}
+
+
+    /// <summary>
+    /// Called after storing is executed
+    /// </summary>
+    //partial void onStored() {
+    //}
 
 
     /// <summary>
     /// Called before the data gets written to a CSV file
     /// </summary>
-    partial void onCsvWrite() {
-    }
+    //partial void onCsvWrite() {
+    //}
 
 
     /// <summary>
     /// Called after a childrenList_Child gets added to ChildrenList_Children.
     /// </summary>
-    partial void onAddedToChildrenList_Children(ChildrenList_Child childrenList_Child){
-    }
+    //partial void onAddedToChildrenList_Children(ChildrenList_Child childrenList_Child){
+    //}
 
 
     /// <summary>
     /// Called after a childrenList_Child gets removed from ChildrenList_Children.
     /// </summary>
-    partial void onRemovedFromChildrenList_Children(ChildrenList_Child childrenList_Child){
-    }
+    //partial void onRemovedFromChildrenList_Children(ChildrenList_Child childrenList_Child){
+    //}
 
 
     /// <summary>
     /// Called after a childrenList_CreateOnlyChild gets added to ChildrenList_CreateOnlyChildren.
     /// </summary>
-    partial void onAddedToChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild){
-    }
+    //partial void onAddedToChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild){
+    //}
 
 
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>
-    partial void onToShortString(ref string returnString) {
-    }
+    //partial void onToShortString(ref string returnString) {
+    //}
 
 
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>
-    partial void onToString(ref string returnString) {
-    }
+    //partial void onToString(ref string returnString) {
+    //}
     #endregion
   }
 }

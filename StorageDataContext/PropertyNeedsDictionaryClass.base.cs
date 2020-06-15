@@ -141,14 +141,19 @@ namespace StorageModel  {
       if (Key>=0) {
         throw new Exception($"PropertyNeedsDictionaryClass cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.PropertyNeedsDictionaryClasses.Add(this);
       DC.Data.PropertyNeedsDictionaryClassesByIdInt.Add(IdInt, this);
       if (IdString!=null) {
         DC.Data.PropertyNeedsDictionaryClassesByIdString.Add(IdString, this);
       }
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

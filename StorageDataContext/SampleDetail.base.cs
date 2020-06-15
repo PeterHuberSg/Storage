@@ -138,11 +138,16 @@ namespace StorageModel  {
       if (Sample.Key<0) {
         throw new Exception($"SampleDetail cannot be stored in DC.Data, Sample is missing or not stored yet." + Environment.NewLine + ToString());
       }
-      onStore();
+      var isCancelled = false;
+      onStoring(ref isCancelled);
+      if (isCancelled) return;
+
       DC.Data.SampleDetails.Add(this);
       Sample.AddToSampleDetails(this);
+      onStored();
     }
-    partial void onStore();
+    partial void onStoring(ref bool isCancelled);
+    partial void onStored();
 
 
     /// <summary>

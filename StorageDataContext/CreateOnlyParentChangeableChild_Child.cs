@@ -32,15 +32,15 @@ namespace StorageModel  {
     /// <summary>
     /// Called once the constructor has filled all the properties
     /// </summary>
-    partial void onConstruct() {
-    }
+    //partial void onConstruct() {
+    //}
 
 
     /// <summary>
     /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties
     /// </summary>
-    partial void onCsvConstruct(DC context) {
-    }
+    //partial void onCsvConstruct(DC context) {
+    //}
 
 
     #endregion
@@ -52,57 +52,64 @@ namespace StorageModel  {
     /// <summary>
     /// Called before storing gets executed
     /// </summary>
-    partial void onStore() {
-    }
+    //partial void onStoring(ref bool isCancelled) {
+    //}
+
+
+    /// <summary>
+    /// Called after storing is executed
+    /// </summary>
+    //partial void onStored() {
+    //}
 
 
     /// <summary>
     /// Called before the data gets written to a CSV file
     /// </summary>
-    partial void onCsvWrite() {
-    }
+    //partial void onCsvWrite() {
+    //}
 
 
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string updatableText, CreateOnlyParentChangeableChild_Parent parent, CreateOnlyParentChangeableChild_ParentNullable? parentNullable, ref bool isCancelled){
-   }
+    //partial void onUpdating(string updatableText, CreateOnlyParentChangeableChild_Parent parent, CreateOnlyParentChangeableChild_ParentNullable? parentNullable, ref bool isCancelled){
+   //}
 
 
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdated() {
-    }
+    //partial void onUpdated() {
+    //}
 
 
     /// <summary>
     /// Called after an update is read from a CSV file
     /// </summary>
-    partial void onCsvUpdate() {
-    }
+    //partial void onCsvUpdate() {
+    //}
 
 
     /// <summary>
     /// Called before removal gets executed
     /// </summary>
-    partial void onRemove() {
-    }
+    //partial void onRemove() {
+    //}
 
 
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>
-    partial void onToShortString(ref string returnString) {
-    }
+    //partial void onToShortString(ref string returnString) {
+    //}
 
 
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>
-    partial void onToString(ref string returnString) {
-    }
+    //partial void onToString(ref string returnString) {
+    //}
     #endregion
   }
 }
