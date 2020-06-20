@@ -685,6 +685,7 @@ namespace Storage {
         }
         streamWriter.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
         streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
+        streamWriter.WriteLine($"        on{classInfo.PluralName}Filled();");
       }
       streamWriter.WriteLine("      } else {");
       foreach (var classInfo in parentChildTree) {
@@ -714,6 +715,7 @@ namespace Storage {
         }
         streamWriter.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
         streamWriter.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
+        streamWriter.WriteLine($"        on{classInfo.PluralName}Filled();");
       }
       streamWriter.WriteLine("      }");
       streamWriter.WriteLine("      onConstructed();");
@@ -729,6 +731,13 @@ namespace Storage {
       streamWriter.WriteLine("    /// Called at end of constructor");
       streamWriter.WriteLine("    /// </summary>}");
       streamWriter.WriteLine("    partial void onConstructed();");
+      foreach (var classInfo in parentChildTree) {
+        streamWriter.WriteLine();
+        streamWriter.WriteLine("    /// <summary>}");
+        streamWriter.WriteLine($"    /// Called once the data for {classInfo.PluralName} is read.");
+        streamWriter.WriteLine("    /// </summary>}");
+        streamWriter.WriteLine($"    partial void on{classInfo.PluralName}Filled();");
+      }
       streamWriter.WriteLine("    #endregion");
       streamWriter.WriteLine();
       streamWriter.WriteLine();

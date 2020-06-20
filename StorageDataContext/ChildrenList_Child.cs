@@ -50,15 +50,15 @@ namespace StorageModel  {
     /// <summary>
     /// Called before storing gets executed
     /// </summary>
-    partial void onStoring(ref bool isCancelled) {
-    }
+    //partial void onStoring(ref bool isCancelled) {
+    //}
 
 
     /// <summary>
     /// Called after storing is executed
     /// </summary>
-    partial void onStored() {
-    }
+    //partial void onStored() {
+    //}
 
 
     /// <summary>
@@ -72,14 +72,14 @@ namespace StorageModel  {
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
     //partial void onUpdating(
-    //string text, 
-    //ChildrenList_Parent parent, 
-    //ChildrenList_ParentNullable? parentNullable, 
-    //ChildrenList_CreateOnlyParent createOnlyParent, 
-    //ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable, 
-    //ref bool isCancelled)
-    //{
-    //}
+      //string text, 
+      //ChildrenList_Parent parent, 
+      //ChildrenList_ParentNullable? parentNullable, 
+      //ChildrenList_CreateOnlyParent createOnlyParent, 
+      //ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable, 
+      //ref bool isCancelled)
+   //{
+   //}
 
 
     /// <summary>
