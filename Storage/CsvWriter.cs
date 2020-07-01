@@ -216,6 +216,9 @@ namespace Storage {
     #region Methods
     //      -------
 
+    #region Write
+    //      -----
+
 #if DEBUG
     bool isLocked = false;
 #endif
@@ -442,6 +445,18 @@ namespace Storage {
         byteArray[start++] = temp;
       }
       byteArray[writePos++] = delimiter;
+    }
+
+
+    /// <summary>
+    /// Write nullable long to UTF8 FileStream including delimiter.
+    /// </summary>
+    public void Write(long? i) {
+      if (i is null) {
+        byteArray[writePos++] = delimiter;
+      } else {
+        Write(i.Value);
+      }
     }
 
 
@@ -756,22 +771,20 @@ namespace Storage {
 
     //Write Unicode string including carriage return and line feed
     public void WriteLine(string line) {
-      lock (byteArray) {
-        lineStart = writePos;
-        for (int readIndex = 0; readIndex < line.Length; readIndex++) {
-          var c = line[readIndex];
+      StartNewLine();
+      lineStart = writePos;
+      for (int readIndex = 0; readIndex < line.Length; readIndex++) {
+        var c = line[readIndex];
 
-          if (c<0x80) {
-            byteArray[writePos++] = (byte)c;
-          } else {
-            var byteLength = Encoding.UTF8.GetBytes(line, readIndex, line.Length-readIndex, byteArray, writePos);
-            writePos += byteLength;
-            break;
-          }
+        if (c<0x80) {
+          byteArray[writePos++] = (byte)c;
+        } else {
+          var byteLength = Encoding.UTF8.GetBytes(line, readIndex, line.Length-readIndex, byteArray, writePos);
+          writePos += byteLength;
+          break;
         }
-        byteArray[writePos++] = 0x0D;
-        byteArray[writePos++] = 0x0A;
       }
+      WriteEndOfLine();
     }
     #endregion
 
@@ -821,6 +834,71 @@ namespace Storage {
     #endregion
 
 
+    #region Transaction
+    //      -----------
+
+    int transactionStart = int.MinValue;
+    long transactionFilePos;
+
+
+    public void StartTransaction() {
+      if (transactionStart!=int.MinValue) {
+        throw new Exception($"CsvWriter.StartTransaction() '{FileName}': Cannot start new transaction, there " +
+          "is already one active.");
+      }
+      if (Monitor.IsEntered(byteArray)) {
+        throw new Exception($"CsvWriter.StartTransaction() '{FileName}': Cannot start new transaction, because " +
+          "CsvWriter is busy writing. Start a transaction before writing any data.");
+      }
+      transactionStart = writePos;
+      transactionFilePos = fileStream!.Position;
+    }
+
+
+    public void CommitTransaction() {
+      if (transactionStart==int.MinValue) {
+        throw new Exception($"CsvWriter.CommitTransaction() '{FileName}': Cannot commit transaction, there " +
+          "is no transaction running.");
+      }
+      if (Monitor.IsEntered(byteArray)) {
+        // It might not be possible to ever arrive here, but better be on the safe side. CleanupAfterException() should
+        // prevent that there is still a lock.
+        throw new Exception($"CsvWriter.CommitTransaction() '{FileName}': Cannot commit transaction, because " +
+          "CsvWriter is busy writing. Commit the transaction once all its data is written.");
+      }
+      //nothing to do
+      transactionStart = int.MinValue;
+    }
+
+
+    public void RollbackTransaction() {
+      if (!Monitor.IsEntered(byteArray)) {
+        Monitor.Enter(byteArray);
+      }
+      if (transactionStart==int.MinValue) {
+        throw new Exception($"CsvWriter.RollbackTransaction() '{FileName}': Cannot rollback transaction, there " +
+          "is no transaction running.");
+      }
+
+      if (transactionFilePos!=fileStream!.Position) {
+        //some data has been written to the file since the transaction started. Shorten the file to the transaction
+        //start and discard the content of byteArray
+        fileStream.SetLength(transactionFilePos + transactionStart);
+        writePos = 0;
+      } else {
+        //nothing has been written to the file since the transaction started. Just shorten the byteArray to the 
+        //start of the transaction
+        writePos = transactionStart;
+      }
+      transactionStart = int.MinValue;
+#if DEBUG
+      isLocked = false;
+#endif
+      Monitor.Exit(byteArray);
+    }
+    #endregion
+
+
     public string GetPresentContent() {
       //byteArray[readPos++]
       int fromPos;
@@ -833,5 +911,6 @@ namespace Storage {
 
       return UTF8Encoding.UTF8.GetString(byteArray, fromPos, presentPos).Replace(CsvConfig.Delimiter, '|') + '^';
     }
+    #endregion
   }
 }

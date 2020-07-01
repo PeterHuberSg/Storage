@@ -20,6 +20,7 @@ namespace Storage {
     Decimal5,
     Bool,
     Int,
+    Long,
     String,
     Enum,
     //---- add new simple types before List ----

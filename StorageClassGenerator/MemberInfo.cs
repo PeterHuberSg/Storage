@@ -241,6 +241,20 @@ namespace Storage {
         ToStringFunc = "";
         break;
 
+      case MemberTypeEnum.Long:
+        TypeString = "long";
+        MaxStorageSize = "-123456789123456789\t".Length;//reasonable limit, but could be long.MinValue
+        if (isNullable) {
+          CsvReaderRead = "ReadLongNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadLong()";
+          NoValue = "long.MinValue";
+        }
+        CsvWriterWrite = "Write";
+        ToStringFunc = "";
+        break;
+
       case MemberTypeEnum.String: 
         TypeString = "string";
         MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and corrects this number for CsvReader

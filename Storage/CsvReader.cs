@@ -367,16 +367,16 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read integer from UTF8 FileStream including delimiter.
+    /// Read possibly null integer from UTF8 FileStream including delimiter.
     /// </summary>
     public int? ReadIntNull() {
-      //check for minus sign
       int readByteAsInt = (int)byteArray[readIndex++];
       //check for null
       if (readByteAsInt==delimiter) {
         return null;
       }
 
+      //check for minus sign
       var isMinus = readByteAsInt=='-';
       if (isMinus) {
         readByteAsInt = (int)byteArray[readIndex++];
@@ -416,6 +416,50 @@ namespace Storage {
     public long ReadLong() {
       //check for minus sign
       int readByteAsInt = (int)byteArray[readIndex++];
+      var isMinus = readByteAsInt=='-';
+      if (isMinus) {
+        readByteAsInt = (int)byteArray[readIndex++];
+      }
+
+      //read first digit. There must be at least 1
+      var l = 0L;
+      if (readByteAsInt>='0' && readByteAsInt<='9') {
+        l = 10*l + readByteAsInt - '0';
+      } else {
+        throw new Exception($"CsvReader.ReadLong() '{FileName}': Illegal character found:" + Environment.NewLine + GetPresentContent());
+      }
+
+      //read other digits until delimiter is reached
+      while (true) {
+        readByteAsInt = (int)byteArray[readIndex++];
+        if (readByteAsInt>='0' && readByteAsInt<='9') {
+          l = 10*l + readByteAsInt - '0';
+          continue;
+        }
+
+        if (readByteAsInt==delimiter) {
+          if (isMinus) {
+            return -l;
+          } else {
+            return l;
+          }
+        }
+        throw new Exception($"CsvReader.ReadLong() '{FileName}': Illegal character found" + Environment.NewLine + GetPresentContent());
+      }
+    }
+
+
+    /// <summary>
+    /// Read possibly null long from UTF8 FileStream including delimiter.
+    /// </summary>
+    public long? ReadLongNull() {
+      int readByteAsInt = (int)byteArray[readIndex++];
+      //check for null
+      if (readByteAsInt==delimiter) {
+        return null;
+      }
+
+      //check for minus sign
       var isMinus = readByteAsInt=='-';
       if (isMinus) {
         readByteAsInt = (int)byteArray[readIndex++];

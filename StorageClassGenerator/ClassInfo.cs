@@ -125,6 +125,7 @@ namespace Storage {
         "decimal5" => MemberTypeEnum.Decimal5,
         "bool" => MemberTypeEnum.Bool,
         "int" => MemberTypeEnum.Int,
+        "long" => MemberTypeEnum.Long,
         "string" => MemberTypeEnum.String,
         _ => MemberTypeEnum.Undefined,
       };
