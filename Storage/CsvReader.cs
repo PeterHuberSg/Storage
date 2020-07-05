@@ -16,6 +16,7 @@ the Creative Commons 0 license (details see COPYING.txt file, see also
 This software is distributed without any warranty. 
 **************************************************************************************/
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -45,9 +46,9 @@ namespace Storage {
 
 
     /// <summary>
-    /// How many chars can a line max contain ?
+    /// Estimated chars in a line for average values. With max values and long strings, the actual length might be much longer.
     /// </summary>
-    public int MaxLineCharLenght { get; }
+    public int EstimatedLineLenght { get; }
 
 
     /// <summary>
@@ -85,7 +86,7 @@ namespace Storage {
     public CsvReader(
       string? fileName, 
       CsvConfig csvConfig, 
-      int maxLineCharLenght, 
+      int estimatedLineLenght, 
       FileStream? existingFileStream = null) 
     {
       if (!string.IsNullOrEmpty(fileName) && existingFileStream!=null) 
@@ -107,11 +108,11 @@ namespace Storage {
       delimiter = (int)csvConfig.Delimiter;
 
       MaxLineByteLenght = CsvConfig.BufferSize/Csv.ByteBufferToReserveRatio;
-      if (maxLineCharLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
+      if (estimatedLineLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
         throw new Exception($"CsvReader constructor: BufferSize {CsvConfig.BufferSize} should be at least " + 
-          $"{Csv.ByteBufferToReserveRatio*Csv.Utf8BytesPerChar} times bigger than MaxLineCharLenght {maxLineCharLenght} for file {fileName}.");
+          $"{Csv.ByteBufferToReserveRatio*Csv.Utf8BytesPerChar} times bigger than MaxLineCharLenght {estimatedLineLenght} for file {fileName}.");
 
-      MaxLineCharLenght = maxLineCharLenght;
+      EstimatedLineLenght = estimatedLineLenght;
       if (existingFileStream is null) {
         isFileStreamOwner = true;
         if (string.IsNullOrEmpty(fileName)) throw new Exception("CsvReader constructor: File name is missing.");
@@ -283,7 +284,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read boolean as 0 or 1 from UTF8 FileStream including delimiter.
+    /// Read boolean as 0 or 1 from UTF8 FileStream including closing delimiter.
     /// </summary>
     public bool ReadBool() {
       bool b;
@@ -304,7 +305,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read boolean? as '', 0 or 1 from UTF8 FileStream including delimiter.
+    /// Read boolean? as '', 0 or 1 from UTF8 FileStream including closing delimiter.
     /// </summary>
     public bool? ReadBoolNull() {
       int readByteAsInt = (int)byteArray[readIndex++];
@@ -328,7 +329,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read integer from UTF8 FileStream including delimiter.
+    /// Read integer from UTF8 FileStream including closing delimiter.
     /// </summary>
     public int ReadInt() {
       //check for minus sign
@@ -367,7 +368,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read possibly null integer from UTF8 FileStream including delimiter.
+    /// Read integer or null from UTF8 FileStream including closing delimiter.
     /// </summary>
     public int? ReadIntNull() {
       int readByteAsInt = (int)byteArray[readIndex++];
@@ -411,7 +412,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read long from UTF8 FileStream including delimiter.
+    /// Read long from UTF8 FileStream including closing delimiter.
     /// </summary>
     public long ReadLong() {
       //check for minus sign
@@ -450,7 +451,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read possibly null long from UTF8 FileStream including delimiter.
+    /// Read long or null from UTF8 FileStream including closing delimiter.
     /// </summary>
     public long? ReadLongNull() {
       int readByteAsInt = (int)byteArray[readIndex++];
@@ -494,7 +495,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read decimal from UTF8 FileStream including delimiter.
+    /// Read decimal from UTF8 FileStream including closing delimiter.
     /// </summary>
     public decimal ReadDecimal() {
       var tempCharsIndex = 0;
@@ -512,7 +513,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read decimal or null from UTF8 FileStream including delimiter.
+    /// Read decimal or null from UTF8 FileStream including closing delimiter.
     /// </summary>
     public decimal? ReadDecimalNull() {
       var tempCharsIndex = 0;
@@ -531,19 +532,52 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read UTF8 character as Unicode from  FileStream including delimiter. Throw exception if Unicode character does not 
+    /// Read UTF8 character as Unicode or null from  FileStream including closing delimiter. Throw exception if Unicode 
+    /// character does not fit in 16 bits. If all Unicode characters need to be supported, use ReadString().
+    /// </summary>
+    public char? ReadCharNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      return ReadChar();
+    }
+
+
+    /// <summary>
+    /// Read UTF8 character as Unicode from  FileStream including closing delimiter. Throw exception if Unicode character does not 
     /// fit in 16 bits. If all Unicode characters need to be supported, use ReadString().
     /// </summary>
     public char ReadChar() {
       char returnChar;
       byte readByte = byteArray[readIndex++];
-      if (readByte<0x80) {
+      if (readByte=='\\') {
+        //control character
+        readByte = byteArray[readIndex++];
+        returnChar = readByte switch
+        {
+          (byte)'t' => CsvConfig.Delimiter,
+          (byte)'r' => '\r',
+          (byte)'n' => '\n',
+          (byte)'\\' => '\\',
+          _ => throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + Environment.NewLine + GetPresentContent()),
+        };
+        readByte = byteArray[readIndex++];
+        if (readByte!=delimiter) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " +
+          Environment.NewLine + GetPresentContent());
+        return returnChar;
+
+      } else if (readByte<0x80) {
+        //single byte ASCII character
         returnChar = (char)readByte;
         readByte = byteArray[readIndex++];
-        if (readByte!=delimiter) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + Environment.NewLine + GetPresentContent());
+        if (readByte!=delimiter) throw new Exception($"CsvReader.ReadChar() '{FileName}': More than 1 character found: " + 
+          Environment.NewLine + GetPresentContent());
         return returnChar;
 
       } else {
+        //UTF character
         var startIndex = readIndex-1;
         do {
           readByte = byteArray[readIndex++];
@@ -573,56 +607,82 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read UTF8 characters as Unicode string from  FileStream including delimiter.
-    /// </summary>
-    public string ReadString() {
-      var tempCharsIndex = 0;
-      var startReadIndex = readIndex;
-      while (true) {
-        var readByte = byteArray[readIndex++];
-        var readChar = (char)readByte;
-        if (readChar==delimiter) {
-          if (tempCharsIndex==0) {
-           return "";
-          }
-          return new string(tempChars, 0, tempCharsIndex);
-        }
-        if (readChar<0x80) {
-          tempChars[tempCharsIndex++] = readChar;
-        } else {
-          while (true) {
-            readChar = (char)byteArray[readIndex++];
-            if (readChar==delimiter) {
-              return Encoding.UTF8.GetString(byteArray, startReadIndex, readIndex-startReadIndex-1);
-            }
-          }
-        }
-      }
-    }
-
-
-    /// <summary>
-    /// Read UTF8 characters as Unicode string from  FileStream including delimiter.
+    /// Read UTF8 characters as Unicode string or null from  FileStream including closing delimiter.
     /// </summary>
     public string? ReadStringNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      return ReadString();
+    }
+
+
+    /// <summary>
+    /// Read UTF8 characters as Unicode string from FileStream including closing delimiter.
+    /// </summary>
+    public string ReadString() {
+      if (byteArray[readIndex]==(byte)'\\' && byteArray[readIndex+1]==(byte)' ' && byteArray[readIndex+2]==CsvConfig.Delimiter) {
+        readIndex += 3;
+        return "";
+      }
+
       var tempCharsIndex = 0;
-      var startReadIndex = readIndex;
       while (true) {
         var readByte = byteArray[readIndex++];
         var readChar = (char)readByte;
+
         if (readChar==delimiter) {
           if (tempCharsIndex==0) {
-            return null;
+            throw new Exception($"CsvReader.ReadString() '{FileName}': string was null: " + Environment.NewLine + GetPresentContent());
           }
           return new string(tempChars, 0, tempCharsIndex);
-        }
-        if (readChar<0x80) {
+
+        } else if (readChar=='\\') {
+          readByte = byteArray[readIndex++];
+          switch (readByte) {
+          case (byte)'t': tempChars[tempCharsIndex++] = CsvConfig.Delimiter; break;
+          case (byte)'r': tempChars[tempCharsIndex++] = '\r'; break;
+          case (byte)'n': tempChars[tempCharsIndex++] = '\n'; break;
+          case (byte)'\\': tempChars[tempCharsIndex++] = '\\'; break;
+          default:
+            throw new Exception($"CsvReader.ReadString() '{FileName}': Illegal control character combination '\\{readByte}' " +
+              $"found. Valid combinations are '\\{CsvConfig.Delimiter}', '\\r' and '\\n'.: " + Environment.NewLine + 
+              GetPresentContent());
+          }
+
+        } else if (readChar<0x80) {
           tempChars[tempCharsIndex++] = readChar;
+
         } else {
+          //UTF8 character found
+          var startReadIndex = readIndex - 1;
           while (true) {
-            readChar = (char)byteArray[readIndex++];
-            if (readChar==delimiter) {
-              return Encoding.UTF8.GetString(byteArray, startReadIndex, readIndex-startReadIndex-1);
+            if (byteArray[readIndex++]==delimiter) {
+              var readString = Encoding.UTF8.GetString(byteArray, startReadIndex, readIndex-startReadIndex-1);
+              var isSlashFound = false;
+              foreach (var ch in readString) {
+                if (isSlashFound) {
+                  isSlashFound = false;
+                  switch (ch) {
+                  case 't': tempChars[tempCharsIndex++] = CsvConfig.Delimiter; break;
+                  case 'r': tempChars[tempCharsIndex++] = '\r'; break;
+                  case 'n': tempChars[tempCharsIndex++] = '\n'; break;
+                  case '\\': tempChars[tempCharsIndex++] = '\\'; break;
+                    throw new Exception($"CsvReader.ReadString() '{FileName}': Illegal control character combination '\\{ch}' " +
+                      $"found. Valid combinations are '\\{CsvConfig.Delimiter}', '\\r' and '\\n'.: " + Environment.NewLine +
+                      GetPresentContent());
+                  }
+                } else {
+                  if (ch=='\\') {
+                    isSlashFound = true;
+                  } else {
+                    tempChars[tempCharsIndex++] = ch;
+                  }
+                }
+              }
+              return new string(tempChars, 0, tempCharsIndex);
             }
           }
         }
@@ -631,7 +691,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read date without time from UTF8 FileStream including delimiter.
+    /// Read date without time or null from UTF8 FileStream including closing delimiter.
     /// </summary>
     public DateTime? ReadDateNull() {
       int readByteAsInt = (int)byteArray[readIndex];
@@ -644,7 +704,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read date without time from UTF8 FileStream including delimiter.
+    /// Read date without time from UTF8 FileStream including closing delimiter.
     /// </summary>
     public DateTime ReadDate() {
       var day = (int)(byteArray[readIndex++] - '0');
@@ -673,7 +733,20 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read date and time down to seconds from UTF8 FileStream including delimiter.
+    /// Read date and time down to seconds or null from UTF8 FileStream including closing delimiter.
+    /// </summary>
+    public DateTime? ReadDateSecondsNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      return ReadDateSeconds();
+    }
+
+
+    /// <summary>
+    /// Read date and time down to seconds from UTF8 FileStream including closing delimiter.
     /// </summary>
     public DateTime ReadDateSeconds() {
       var day = (int)(byteArray[readIndex++] - '0');
@@ -703,7 +776,20 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read time down to seconds from UTF8 FileStream including delimiter.
+    /// Read time down to seconds or null from UTF8 FileStream including closing delimiter.
+    /// </summary>
+    public TimeSpan? ReadTimeNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      return ReadTime();
+    }
+
+
+    /// <summary>
+    /// Read time down to seconds from UTF8 FileStream including closing delimiter.
     /// </summary>
     public TimeSpan ReadTime() {
       // 0: 0: 0 => "0"
@@ -752,11 +838,48 @@ namespace Storage {
 
 
     /// <summary>
-    /// Read DateTime as Ticks from UTF8 FileStream including delimiter.
+    /// Read DateTime as Ticks or null from UTF8 FileStream including closing delimiter.
+    /// </summary>
+    public DateTime? ReadDateTimeTicksNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      var ticks = ReadLong();
+      return new DateTime(ticks);
+    }
+
+
+    /// <summary>
+    /// Read DateTime as Ticks from UTF8 FileStream including closing delimiter.
     /// </summary>
     public DateTime ReadDateTimeTicks() {
       var ticks = ReadLong();
       return new DateTime(ticks);
+    }
+
+
+    /// <summary>
+    /// Read TimeSpan as Ticks or null from UTF8 FileStream including closing delimiter.
+    /// </summary>
+    public TimeSpan? ReadTimeSpanTicksNull() {
+      int readByteAsInt = (int)byteArray[readIndex];
+      if (readByteAsInt==CsvConfig.Delimiter) {
+        readIndex++;
+        return null;
+      }
+      var ticks = ReadLong();
+      return new TimeSpan(ticks);
+    }
+
+
+    /// <summary>
+    /// Read TimeSpan as Ticks from UTF8 FileStream including closing delimiter.
+    /// </summary>
+    public TimeSpan ReadTimeSpanTicks() {
+      var ticks = ReadLong();
+      return new TimeSpan(ticks);
     }
 
 

@@ -89,6 +89,7 @@ namespace Storage {
       Comment = comment;
       DefaultValue = defaultValue;
       NeedsDictionary = needsDictionary;
+
       switch (memberType) {
       case MemberTypeEnum.Date:
         TypeString = "DateTime";
@@ -110,9 +111,14 @@ namespace Storage {
       case MemberTypeEnum.Time:
         TypeString = "TimeSpan";
         MaxStorageSize = "23:59:59\t".Length;
-        CsvReaderRead = "ReadTime()";
         CsvWriterWrite = "WriteTime";
-        NoValue = "TimeSpan.MinValue";
+        if (isNullable) {
+          CsvReaderRead = "ReadTimeNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadTime()";
+          NoValue = "TimeSpan.MinValue";
+        }
         ToStringFunc = "";
         PrecissionComment = "Stores less than 24 hours with second precision.";
         Rounding = ".Round(Rounding.Seconds)";
@@ -121,9 +127,14 @@ namespace Storage {
       case MemberTypeEnum.DateMinutes:
         TypeString = "DateTime";
         MaxStorageSize = "12.12.1234 23:59\t".Length;
-        CsvReaderRead = "ReadDateSeconds()";//can also be used for minutes
         CsvWriterWrite = "WriteDateMinutes";
-        NoValue = "DateTime.MinValue";
+        if (isNullable) {
+          CsvReaderRead = "ReadDateSecondsNull()";//can also be used for minutes
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadDateSeconds()";//can also be used for minutes
+          NoValue = "DateTime.MinValue";
+        }
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with minute preclusion.";
         Rounding = ".Round(Rounding.Minutes)";
@@ -132,22 +143,47 @@ namespace Storage {
       case MemberTypeEnum.DateSeconds:
         TypeString = "DateTime";
         MaxStorageSize = "12.12.1234 23:59:59\t".Length;
-        CsvReaderRead = "ReadDateSeconds()";
         CsvWriterWrite = "WriteDateSeconds";
-        NoValue = "DateTime.MinValue";
+        if (isNullable) {
+          CsvReaderRead = "ReadDateSecondsNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadDateSeconds()";
+          NoValue = "DateTime.MinValue";
+        }
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with seconds precision.";
         Rounding = ".Round(Rounding.Seconds)";
         break;
 
-      case MemberTypeEnum.DateTime: 
+      case MemberTypeEnum.DateTimeTicks: 
         TypeString = "DateTime";
         MaxStorageSize = (long.MaxValue.ToString()+"\t").Length;
-        CsvReaderRead = "ReadDateTimeTicks()";
         CsvWriterWrite = "WriteDateTimeTicks";
-        NoValue = "DateTime.MinValue";
+        if (isNullable) {
+          CsvReaderRead = "ReadDateTimeTicksNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadDateTimeTicks()";
+          NoValue = "DateTime.MinValue";
+        }
         ToStringFunc = "";
         PrecissionComment = "Stores date and time with tick precision.";
+        break;
+
+      case MemberTypeEnum.TimeSpanTicks:
+        TypeString = "TimeSpan";
+        MaxStorageSize = (long.MaxValue.ToString()+"\t").Length;
+        CsvWriterWrite = "WriteTimeSpanTicks";
+        if (isNullable) {
+          CsvReaderRead = "ReadTimeSpanTicksNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadTimeSpanTicks()";
+          NoValue = "TimeSpan.MinValue";
+        }
+        ToStringFunc = "";
+        PrecissionComment = "Stores time duration with tick precision.";
         break;
 
       case MemberTypeEnum.Decimal: 
@@ -255,6 +291,20 @@ namespace Storage {
         ToStringFunc = "";
         break;
 
+      case MemberTypeEnum.Char:
+        TypeString = "char";
+        MaxStorageSize = 1;
+        if (isNullable) {
+          CsvReaderRead = "ReadCharNull()";
+          NoValue = "null";
+        } else {
+          CsvReaderRead = "ReadChar()";
+          NoValue = "char.MaxValue";
+        }
+        CsvWriterWrite = "Write";
+        ToStringFunc = "";
+        break;
+
       case MemberTypeEnum.String: 
         TypeString = "string";
         MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and corrects this number for CsvReader
@@ -283,6 +333,7 @@ namespace Storage {
       default:
         throw new NotSupportedException();
       }
+
       if (isNullable) {
         TypeString += '?';
       }

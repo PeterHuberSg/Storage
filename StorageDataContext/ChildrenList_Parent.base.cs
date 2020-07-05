@@ -131,9 +131,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write ChildrenList_Parent to CSV file
+    /// Estimated number of UTF8 characters needed to write ChildrenList_Parent to CSV file
     /// </summary>
-    public const int MaxLineLength = 150;
+    public const int EstimatedLineLength = 150;
 
 
     /// <summary>
@@ -333,7 +333,7 @@ namespace StorageModel  {
     /// </summary>
     public ChildrenList_ParentReader(string fileNamePath, CsvConfig csvConfig) {
       this.csvConfig = csvConfig;
-      csvReader = new CsvReader(fileNamePath, csvConfig, ChildrenList_Parent.MaxLineLength);
+      csvReader = new CsvReader(fileNamePath, csvConfig, ChildrenList_Parent.EstimatedLineLength);
       var csvHeaderString = Csv.ToCsvHeaderString(ChildrenList_Parent.Headers, csvConfig.Delimiter);
       var headerLine = csvReader.ReadLine();
       if (csvHeaderString!=headerLine) throw new Exception($"Error reading file {csvReader.FileName}{Environment.NewLine}'" +
@@ -426,7 +426,7 @@ namespace StorageModel  {
     /// </summary>
     public ChildrenList_ParentWriter(string fileNamePath, CsvConfig csvConfig){
       this.csvConfig = csvConfig;
-      csvWriter = new CsvWriter(fileNamePath, csvConfig, ChildrenList_Parent.MaxLineLength, null, 0);
+      csvWriter = new CsvWriter(fileNamePath, csvConfig, ChildrenList_Parent.EstimatedLineLength, null, 0);
       var csvHeaderString = Csv.ToCsvHeaderString(ChildrenList_Parent.Headers, csvConfig.Delimiter);
       csvWriter.WriteLine(csvHeaderString);
     }

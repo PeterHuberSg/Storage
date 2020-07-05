@@ -335,7 +335,7 @@ namespace StorageTest {
         Assert.AreEqual(csvConfig.LineCharAdd, line![0]);
         fieldStrings = line![1..].Split(csvConfig.Delimiter);
         Assert.AreEqual("", fieldStrings[0]);
-        Assert.AreEqual("", fieldStrings[1]);
+        Assert.AreEqual("\\ ", fieldStrings[1]);
         Assert.AreEqual("abc", fieldStrings[2]);
         Assert.AreEqual("Ä", fieldStrings[3]);
         Assert.AreEqual("aÄ☹", fieldStrings[4]);
@@ -430,7 +430,7 @@ namespace StorageTest {
 
         var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
         var fileName = csvConfig.DirectoryPath + @"\TestCsvWriterInt.csv";
-        using (var csvWriter = new CsvWriter(fileName, csvConfig, maxLineCharLenght: 250, flushDelay: 50)) {
+        using (var csvWriter = new CsvWriter(fileName, csvConfig, estimatedLineLenght: 250, flushDelay: 50)) {
           csvWriter.WriteLine("Some header");
 
           csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);

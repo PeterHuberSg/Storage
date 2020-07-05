@@ -13,7 +13,8 @@ namespace Storage {
     Time,
     DateMinutes,
     DateSeconds,
-    DateTime,
+    DateTimeTicks,
+    TimeSpanTicks,
     Decimal,
     Decimal2,
     Decimal4,
@@ -21,6 +22,7 @@ namespace Storage {
     Bool,
     Int,
     Long,
+    Char,
     String,
     Enum,
     //---- add new simple types before List ----

@@ -149,6 +149,11 @@ namespace StorageModel  {
     public StorageDictionary<CreateOnlyParentChangeableChild_ParentNullable, DC> CreateOnlyParentChangeableChild_ParentNullables { get; private set; }
 
     /// <summary>
+    /// Directory of all DataTypeSamples
+    /// </summary>
+    public StorageDictionary<DataTypeSample, DC> DataTypeSamples { get; private set; }
+
+    /// <summary>
     /// Directory of all Lookup_Children
     /// </summary>
     public StorageDictionary<Lookup_Child, DC> Lookup_Children { get; private set; }
@@ -248,6 +253,13 @@ namespace StorageModel  {
       PropertyNeedsDictionaryClassesByIdInt = new Dictionary<int, PropertyNeedsDictionaryClass>();
       PropertyNeedsDictionaryClassesByIdString = new Dictionary<string, PropertyNeedsDictionaryClass>();
       if (csvConfig==null) {
+        DataTypeSamples = new StorageDictionary<DataTypeSample, DC>(
+          this,
+          DataTypeSample.SetKey,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        onDataTypeSamplesFilled();
         SampleMasters = new StorageDictionary<SampleMaster, DC>(
           this,
           SampleMaster.SetKey,
@@ -452,10 +464,24 @@ namespace StorageModel  {
           areInstancesDeletable: true);
         onPrivateConstructorsFilled();
       } else {
+        DataTypeSamples = new StorageDictionaryCSV<DataTypeSample, DC>(
+          this,
+          csvConfig!,
+          DataTypeSample.EstimatedLineLength,
+          DataTypeSample.Headers,
+          DataTypeSample.SetKey,
+          DataTypeSample.Create,
+          null,
+          DataTypeSample.Update,
+          DataTypeSample.Write,
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        onDataTypeSamplesFilled();
         SampleMasters = new StorageDictionaryCSV<SampleMaster, DC>(
           this,
           csvConfig!,
-          SampleMaster.MaxLineLength,
+          SampleMaster.EstimatedLineLength,
           SampleMaster.Headers,
           SampleMaster.SetKey,
           SampleMaster.Create,
@@ -469,7 +495,7 @@ namespace StorageModel  {
         SampleX = new StorageDictionaryCSV<Sample, DC>(
           this,
           csvConfig!,
-          Sample.MaxLineLength,
+          Sample.EstimatedLineLength,
           Sample.Headers,
           Sample.SetKey,
           Sample.Create,
@@ -483,7 +509,7 @@ namespace StorageModel  {
         SampleDetails = new StorageDictionaryCSV<SampleDetail, DC>(
           this,
           csvConfig!,
-          SampleDetail.MaxLineLength,
+          SampleDetail.EstimatedLineLength,
           SampleDetail.Headers,
           SampleDetail.SetKey,
           SampleDetail.Create,
@@ -497,7 +523,7 @@ namespace StorageModel  {
         ParentOneChild_Parents = new StorageDictionaryCSV<ParentOneChild_Parent, DC>(
           this,
           csvConfig!,
-          ParentOneChild_Parent.MaxLineLength,
+          ParentOneChild_Parent.EstimatedLineLength,
           ParentOneChild_Parent.Headers,
           ParentOneChild_Parent.SetKey,
           ParentOneChild_Parent.Create,
@@ -511,7 +537,7 @@ namespace StorageModel  {
         ParentOneChild_ParentNullables = new StorageDictionaryCSV<ParentOneChild_ParentNullable, DC>(
           this,
           csvConfig!,
-          ParentOneChild_ParentNullable.MaxLineLength,
+          ParentOneChild_ParentNullable.EstimatedLineLength,
           ParentOneChild_ParentNullable.Headers,
           ParentOneChild_ParentNullable.SetKey,
           ParentOneChild_ParentNullable.Create,
@@ -525,7 +551,7 @@ namespace StorageModel  {
         ParentOneChild_Children = new StorageDictionaryCSV<ParentOneChild_Child, DC>(
           this,
           csvConfig!,
-          ParentOneChild_Child.MaxLineLength,
+          ParentOneChild_Child.EstimatedLineLength,
           ParentOneChild_Child.Headers,
           ParentOneChild_Child.SetKey,
           ParentOneChild_Child.Create,
@@ -539,7 +565,7 @@ namespace StorageModel  {
         PropertyNeedsDictionaryClasses = new StorageDictionaryCSV<PropertyNeedsDictionaryClass, DC>(
           this,
           csvConfig!,
-          PropertyNeedsDictionaryClass.MaxLineLength,
+          PropertyNeedsDictionaryClass.EstimatedLineLength,
           PropertyNeedsDictionaryClass.Headers,
           PropertyNeedsDictionaryClass.SetKey,
           PropertyNeedsDictionaryClass.Create,
@@ -553,7 +579,7 @@ namespace StorageModel  {
         Lookup_Parents = new StorageDictionaryCSV<Lookup_Parent, DC>(
           this,
           csvConfig!,
-          Lookup_Parent.MaxLineLength,
+          Lookup_Parent.EstimatedLineLength,
           Lookup_Parent.Headers,
           Lookup_Parent.SetKey,
           Lookup_Parent.Create,
@@ -567,7 +593,7 @@ namespace StorageModel  {
         Lookup_ParentNullables = new StorageDictionaryCSV<Lookup_ParentNullable, DC>(
           this,
           csvConfig!,
-          Lookup_ParentNullable.MaxLineLength,
+          Lookup_ParentNullable.EstimatedLineLength,
           Lookup_ParentNullable.Headers,
           Lookup_ParentNullable.SetKey,
           Lookup_ParentNullable.Create,
@@ -581,7 +607,7 @@ namespace StorageModel  {
         Lookup_Children = new StorageDictionaryCSV<Lookup_Child, DC>(
           this,
           csvConfig!,
-          Lookup_Child.MaxLineLength,
+          Lookup_Child.EstimatedLineLength,
           Lookup_Child.Headers,
           Lookup_Child.SetKey,
           Lookup_Child.Create,
@@ -595,7 +621,7 @@ namespace StorageModel  {
         ChildrenList_Parents = new StorageDictionaryCSV<ChildrenList_Parent, DC>(
           this,
           csvConfig!,
-          ChildrenList_Parent.MaxLineLength,
+          ChildrenList_Parent.EstimatedLineLength,
           ChildrenList_Parent.Headers,
           ChildrenList_Parent.SetKey,
           ChildrenList_Parent.Create,
@@ -609,7 +635,7 @@ namespace StorageModel  {
         ChildrenList_ParentNullables = new StorageDictionaryCSV<ChildrenList_ParentNullable, DC>(
           this,
           csvConfig!,
-          ChildrenList_ParentNullable.MaxLineLength,
+          ChildrenList_ParentNullable.EstimatedLineLength,
           ChildrenList_ParentNullable.Headers,
           ChildrenList_ParentNullable.SetKey,
           ChildrenList_ParentNullable.Create,
@@ -623,7 +649,7 @@ namespace StorageModel  {
         ChildrenList_CreateOnlyParents = new StorageDictionaryCSV<ChildrenList_CreateOnlyParent, DC>(
           this,
           csvConfig!,
-          ChildrenList_CreateOnlyParent.MaxLineLength,
+          ChildrenList_CreateOnlyParent.EstimatedLineLength,
           ChildrenList_CreateOnlyParent.Headers,
           ChildrenList_CreateOnlyParent.SetKey,
           ChildrenList_CreateOnlyParent.Create,
@@ -637,7 +663,7 @@ namespace StorageModel  {
         ChildrenList_CreateOnlyParentNullables = new StorageDictionaryCSV<ChildrenList_CreateOnlyParentNullable, DC>(
           this,
           csvConfig!,
-          ChildrenList_CreateOnlyParentNullable.MaxLineLength,
+          ChildrenList_CreateOnlyParentNullable.EstimatedLineLength,
           ChildrenList_CreateOnlyParentNullable.Headers,
           ChildrenList_CreateOnlyParentNullable.SetKey,
           ChildrenList_CreateOnlyParentNullable.Create,
@@ -651,7 +677,7 @@ namespace StorageModel  {
         ChildrenList_Children = new StorageDictionaryCSV<ChildrenList_Child, DC>(
           this,
           csvConfig!,
-          ChildrenList_Child.MaxLineLength,
+          ChildrenList_Child.EstimatedLineLength,
           ChildrenList_Child.Headers,
           ChildrenList_Child.SetKey,
           ChildrenList_Child.Create,
@@ -665,7 +691,7 @@ namespace StorageModel  {
         ChildrenList_CreateOnlyChildren = new StorageDictionaryCSV<ChildrenList_CreateOnlyChild, DC>(
           this,
           csvConfig!,
-          ChildrenList_CreateOnlyChild.MaxLineLength,
+          ChildrenList_CreateOnlyChild.EstimatedLineLength,
           ChildrenList_CreateOnlyChild.Headers,
           ChildrenList_CreateOnlyChild.SetKey,
           ChildrenList_CreateOnlyChild.Create,
@@ -679,7 +705,7 @@ namespace StorageModel  {
         ChildrenDictionary_Parents = new StorageDictionaryCSV<ChildrenDictionary_Parent, DC>(
           this,
           csvConfig!,
-          ChildrenDictionary_Parent.MaxLineLength,
+          ChildrenDictionary_Parent.EstimatedLineLength,
           ChildrenDictionary_Parent.Headers,
           ChildrenDictionary_Parent.SetKey,
           ChildrenDictionary_Parent.Create,
@@ -693,7 +719,7 @@ namespace StorageModel  {
         ChildrenDictionary_ParentNullables = new StorageDictionaryCSV<ChildrenDictionary_ParentNullable, DC>(
           this,
           csvConfig!,
-          ChildrenDictionary_ParentNullable.MaxLineLength,
+          ChildrenDictionary_ParentNullable.EstimatedLineLength,
           ChildrenDictionary_ParentNullable.Headers,
           ChildrenDictionary_ParentNullable.SetKey,
           ChildrenDictionary_ParentNullable.Create,
@@ -707,7 +733,7 @@ namespace StorageModel  {
         ChildrenDictionary_Children = new StorageDictionaryCSV<ChildrenDictionary_Child, DC>(
           this,
           csvConfig!,
-          ChildrenDictionary_Child.MaxLineLength,
+          ChildrenDictionary_Child.EstimatedLineLength,
           ChildrenDictionary_Child.Headers,
           ChildrenDictionary_Child.SetKey,
           ChildrenDictionary_Child.Create,
@@ -721,7 +747,7 @@ namespace StorageModel  {
         ChildrenSortedList_Parents = new StorageDictionaryCSV<ChildrenSortedList_Parent, DC>(
           this,
           csvConfig!,
-          ChildrenSortedList_Parent.MaxLineLength,
+          ChildrenSortedList_Parent.EstimatedLineLength,
           ChildrenSortedList_Parent.Headers,
           ChildrenSortedList_Parent.SetKey,
           ChildrenSortedList_Parent.Create,
@@ -735,7 +761,7 @@ namespace StorageModel  {
         ChildrenSortedList_ParentNullables = new StorageDictionaryCSV<ChildrenSortedList_ParentNullable, DC>(
           this,
           csvConfig!,
-          ChildrenSortedList_ParentNullable.MaxLineLength,
+          ChildrenSortedList_ParentNullable.EstimatedLineLength,
           ChildrenSortedList_ParentNullable.Headers,
           ChildrenSortedList_ParentNullable.SetKey,
           ChildrenSortedList_ParentNullable.Create,
@@ -749,7 +775,7 @@ namespace StorageModel  {
         ChildrenSortedList_Children = new StorageDictionaryCSV<ChildrenSortedList_Child, DC>(
           this,
           csvConfig!,
-          ChildrenSortedList_Child.MaxLineLength,
+          ChildrenSortedList_Child.EstimatedLineLength,
           ChildrenSortedList_Child.Headers,
           ChildrenSortedList_Child.SetKey,
           ChildrenSortedList_Child.Create,
@@ -763,7 +789,7 @@ namespace StorageModel  {
         CreateOnly_Parents = new StorageDictionaryCSV<CreateOnly_Parent, DC>(
           this,
           csvConfig!,
-          CreateOnly_Parent.MaxLineLength,
+          CreateOnly_Parent.EstimatedLineLength,
           CreateOnly_Parent.Headers,
           CreateOnly_Parent.SetKey,
           CreateOnly_Parent.Create,
@@ -777,7 +803,7 @@ namespace StorageModel  {
         CreateOnly_ParentNullables = new StorageDictionaryCSV<CreateOnly_ParentNullable, DC>(
           this,
           csvConfig!,
-          CreateOnly_ParentNullable.MaxLineLength,
+          CreateOnly_ParentNullable.EstimatedLineLength,
           CreateOnly_ParentNullable.Headers,
           CreateOnly_ParentNullable.SetKey,
           CreateOnly_ParentNullable.Create,
@@ -791,7 +817,7 @@ namespace StorageModel  {
         CreateOnly_Children = new StorageDictionaryCSV<CreateOnly_Child, DC>(
           this,
           csvConfig!,
-          CreateOnly_Child.MaxLineLength,
+          CreateOnly_Child.EstimatedLineLength,
           CreateOnly_Child.Headers,
           CreateOnly_Child.SetKey,
           CreateOnly_Child.Create,
@@ -805,7 +831,7 @@ namespace StorageModel  {
         CreateOnlyParentChangeableChild_Parents = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_Parent, DC>(
           this,
           csvConfig!,
-          CreateOnlyParentChangeableChild_Parent.MaxLineLength,
+          CreateOnlyParentChangeableChild_Parent.EstimatedLineLength,
           CreateOnlyParentChangeableChild_Parent.Headers,
           CreateOnlyParentChangeableChild_Parent.SetKey,
           CreateOnlyParentChangeableChild_Parent.Create,
@@ -819,7 +845,7 @@ namespace StorageModel  {
         CreateOnlyParentChangeableChild_ParentNullables = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_ParentNullable, DC>(
           this,
           csvConfig!,
-          CreateOnlyParentChangeableChild_ParentNullable.MaxLineLength,
+          CreateOnlyParentChangeableChild_ParentNullable.EstimatedLineLength,
           CreateOnlyParentChangeableChild_ParentNullable.Headers,
           CreateOnlyParentChangeableChild_ParentNullable.SetKey,
           CreateOnlyParentChangeableChild_ParentNullable.Create,
@@ -833,7 +859,7 @@ namespace StorageModel  {
         CreateOnlyParentChangeableChild_Children = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_Child, DC>(
           this,
           csvConfig!,
-          CreateOnlyParentChangeableChild_Child.MaxLineLength,
+          CreateOnlyParentChangeableChild_Child.EstimatedLineLength,
           CreateOnlyParentChangeableChild_Child.Headers,
           CreateOnlyParentChangeableChild_Child.SetKey,
           CreateOnlyParentChangeableChild_Child.Create,
@@ -847,7 +873,7 @@ namespace StorageModel  {
         PrivateConstructors = new StorageDictionaryCSV<PrivateConstructor, DC>(
           this,
           csvConfig!,
-          PrivateConstructor.MaxLineLength,
+          PrivateConstructor.EstimatedLineLength,
           PrivateConstructor.Headers,
           PrivateConstructor.SetKey,
           PrivateConstructor.Create,
@@ -872,6 +898,11 @@ namespace StorageModel  {
     /// Called at end of constructor
     /// </summary>}
     partial void onConstructed();
+
+    /// <summary>}
+    /// Called once the data for DataTypeSamples is read.
+    /// </summary>}
+    partial void onDataTypeSamplesFilled();
 
     /// <summary>}
     /// Called once the data for SampleMasters is read.
@@ -1067,6 +1098,7 @@ namespace StorageModel  {
         SampleDetails.Dispose();
         SampleX.Dispose();
         SampleMasters.Dispose();
+        DataTypeSamples.Dispose();
         data = null;
       }
     }

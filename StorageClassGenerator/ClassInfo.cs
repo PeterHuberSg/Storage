@@ -46,7 +46,6 @@ namespace Storage {
     public readonly string ReaderName;
     public readonly string WriterName;
     public readonly string? ClassComment;
-    public readonly int? MaxLineLength;
     public readonly string PluralName;
     public readonly string LowerPluralName;
     public readonly bool AreInstancesUpdatable;
@@ -60,13 +59,13 @@ namespace Storage {
     public readonly List<ClassInfo> Children;
 
     public int EstimatedMaxByteSize;
+    public int HeaderLength;
     public bool IsAddedToParentChildTree;
 
 
     public ClassInfo(
       string name, 
       string? classComment, 
-      int? maxLineLength, 
       string pluralName, 
       bool areInstancesUpdatable, 
       bool areInstancesDeletable,
@@ -80,7 +79,6 @@ namespace Storage {
       ReaderName = name + "Reader";
       WriterName = name + "Writer";
       ClassComment = classComment;
-      MaxLineLength = maxLineLength;
       PluralName = pluralName;
       LowerPluralName = pluralName[0..1].ToLowerInvariant() + pluralName[1..];
       AreInstancesUpdatable = areInstancesUpdatable;
@@ -92,6 +90,11 @@ namespace Storage {
       //ParentsWithList = new HashSet<ClassInfo>();
       Children = new List<ClassInfo>();
       EstimatedMaxByteSize = 0;
+      if (AreInstancesDeletable || AreInstancesUpdatable) {
+        HeaderLength = "Key".Length + 1;
+      } else {
+        HeaderLength = 0;
+      }
       IsAddedToParentChildTree = false;
     }
 
@@ -118,7 +121,8 @@ namespace Storage {
         "time" => MemberTypeEnum.Time,
         "dateminutes" => MemberTypeEnum.DateMinutes,
         "dateseconds" => MemberTypeEnum.DateSeconds,
-        "datetime" => MemberTypeEnum.DateTime,
+        "datetimeticks" => MemberTypeEnum.DateTimeTicks,
+        "timespanticks" => MemberTypeEnum.TimeSpanTicks,
         "decimal" => MemberTypeEnum.Decimal,
         "decimal2" => MemberTypeEnum.Decimal2,
         "decimal4" => MemberTypeEnum.Decimal4,
@@ -126,6 +130,7 @@ namespace Storage {
         "bool" => MemberTypeEnum.Bool,
         "int" => MemberTypeEnum.Int,
         "long" => MemberTypeEnum.Long,
+        "char" => MemberTypeEnum.Char,
         "string" => MemberTypeEnum.String,
         _ => MemberTypeEnum.Undefined,
       };
@@ -242,22 +247,8 @@ namespace Storage {
       }
       Members.Add(member.MemberName, member);
       EstimatedMaxByteSize +=member.MaxStorageSize;
+      HeaderLength += member.MemberName.Length + 1;
     }
-
-
-    //internal void SetMaxLineLength(int maxLineLength) {
-    //  MaxLineLength = maxLineLength;
-    //}
-
-
-    //internal void SetAreInstancesUpdatable(bool areInstancesUpdatable) {
-    //  AreInstancesUpdatable = areInstancesUpdatable.ToString().ToLowerInvariant();
-    //}
-
-
-    //internal void SetAreInstancesDeletable(bool areInstancesDeletable) {
-    //  AreInstancesDeletable  = areInstancesDeletable.ToString().ToLowerInvariant();
-    //}
 
 
     public override string ToString() {
@@ -525,7 +516,11 @@ namespace Storage {
       foreach (var mi in Members.Values) {
         if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type, link to parent
           if (mi.MemberType==MemberTypeEnum.Enum) {
-            streamWriter.Write(0 + ", ");
+            if (mi.IsNullable) {
+              streamWriter.Write("null, ");
+            } else {
+              streamWriter.Write(0 + ", ");
+            }
           } else {
             streamWriter.Write(mi.NoValue + ", ");
           }
@@ -843,13 +838,9 @@ namespace Storage {
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Maximal number of UTF8 characters needed to write {ClassName} to CSV file");
+      streamWriter.WriteLine($"    /// Estimated number of UTF8 characters needed to write {ClassName} to CSV file");
       streamWriter.WriteLine("    /// </summary>");
-      if (MaxLineLength is null) {
-        streamWriter.WriteLine($"    public const int MaxLineLength = {EstimatedMaxByteSize};");
-      } else {
-        streamWriter.WriteLine($"    public const int MaxLineLength = {MaxLineLength};");
-      }
+      streamWriter.WriteLine($"    public const int EstimatedLineLength = {EstimatedMaxByteSize};");
       streamWriter.WriteLine();
       streamWriter.WriteLine();
       #endregion
@@ -1564,7 +1555,7 @@ namespace Storage {
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine($"    public {ReaderName}(string fileNamePath, CsvConfig csvConfig) {{");
         streamWriter.WriteLine("      this.csvConfig = csvConfig;");
-        streamWriter.WriteLine($"      csvReader = new CsvReader(fileNamePath, csvConfig, {ClassName}.MaxLineLength);");
+        streamWriter.WriteLine($"      csvReader = new CsvReader(fileNamePath, csvConfig, {ClassName}.EstimatedLineLength);");
         streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
         streamWriter.WriteLine("      var headerLine = csvReader.ReadLine();");
         streamWriter.WriteLine("      if (csvHeaderString!=headerLine) throw new Exception($\"Error reading file {csvReader.FileName}{Environment.NewLine}'\" +");
@@ -1680,7 +1671,7 @@ namespace Storage {
         streamWriter.WriteLine("    /// </summary>");
         streamWriter.WriteLine($"    public {WriterName}(string fileNamePath, CsvConfig csvConfig){{");
         streamWriter.WriteLine("      this.csvConfig = csvConfig;");
-        streamWriter.WriteLine($"      csvWriter = new CsvWriter(fileNamePath, csvConfig, {ClassName}.MaxLineLength, null, 0);");
+        streamWriter.WriteLine($"      csvWriter = new CsvWriter(fileNamePath, csvConfig, {ClassName}.EstimatedLineLength, null, 0);");
         streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
         streamWriter.WriteLine("      csvWriter.WriteLine(csvHeaderString);");
         streamWriter.WriteLine("    }");

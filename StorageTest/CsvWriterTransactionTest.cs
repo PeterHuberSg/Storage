@@ -26,7 +26,7 @@ namespace StorageTest {
         directoryInfo.Create();
         directoryInfo.Refresh();
 
-        var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException, bufferSize: 4096);
+        var csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
         var fileName = csvConfig.DirectoryPath + @"\TestCsvWriterTransaction.csv";
         var header = "Some long header";
         var someText = "Some Text followed by character a: ";
@@ -165,7 +165,7 @@ namespace StorageTest {
           csvConfig.BufferSize, FileOptions.SequentialScan)) 
         {
           fileStream.Position = fileStream.Length;
-          using var csvWriter = new CsvWriter(null, csvConfig, 250, fileStream);
+          using var csvWriter = new CsvWriter(null, csvConfig, 1024, fileStream);
           csvWriter.WriteLine(header);
           csvWriter.StartTransaction();
           //write more than CsvWriter buffer can hold;

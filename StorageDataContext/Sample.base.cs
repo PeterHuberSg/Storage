@@ -106,14 +106,14 @@ namespace StorageModel  {
 
     /// <summary>
     /// Stores date and time precisely to a minute
-    /// Stores date and time with tick precision.
+    /// Stores date and time with minute preclusion.
     /// </summary>
     public DateTime DateTimeMinute { get; private set; }
 
 
     /// <summary>
     /// Stores date and time precisely to a second
-    /// Stores date and time with tick precision.
+    /// Stores date and time with seconds precision.
     /// </summary>
     public DateTime DateTimeSecond { get; private set; }
 
@@ -223,8 +223,8 @@ namespace StorageModel  {
       DateOnly = dateOnly.Floor(Rounding.Days);
       TimeOnly = timeOnly.Round(Rounding.Seconds);
       DateTimeTicks = dateTimeTicks;
-      DateTimeMinute = dateTimeMinute;
-      DateTimeSecond = dateTimeSecond;
+      DateTimeMinute = dateTimeMinute.Round(Rounding.Minutes);
+      DateTimeSecond = dateTimeSecond.Round(Rounding.Seconds);
       OneMaster = oneMaster;
       OtherMaster = otherMaster;
       Optional = optional;
@@ -254,8 +254,8 @@ namespace StorageModel  {
       DateOnly = csvReader.ReadDate();
       TimeOnly = csvReader.ReadTime();
       DateTimeTicks = csvReader.ReadDateTimeTicks();
-      DateTimeMinute = csvReader.ReadDateTimeTicks();
-      DateTimeSecond = csvReader.ReadDateTimeTicks();
+      DateTimeMinute = csvReader.ReadDateSeconds();
+      DateTimeSecond = csvReader.ReadDateSeconds();
       var oneMasterKey = csvReader.ReadIntNull();
       if (oneMasterKey.HasValue) {
         if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
@@ -335,9 +335,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write Sample to CSV file
+    /// Estimated number of UTF8 characters needed to write Sample to CSV file
     /// </summary>
-    public const int MaxLineLength = 200;
+    public const int EstimatedLineLength = 457;
 
 
     /// <summary>
@@ -356,8 +356,8 @@ namespace StorageModel  {
       csvWriter.WriteDate(sample.DateOnly);
       csvWriter.WriteTime(sample.TimeOnly);
       csvWriter.WriteDateTimeTicks(sample.DateTimeTicks);
-      csvWriter.WriteDateTimeTicks(sample.DateTimeMinute);
-      csvWriter.WriteDateTimeTicks(sample.DateTimeSecond);
+      csvWriter.WriteDateMinutes(sample.DateTimeMinute);
+      csvWriter.WriteDateSeconds(sample.DateTimeSecond);
       if (sample.OneMaster is null) {
         csvWriter.WriteNull();
       } else {
@@ -469,12 +469,14 @@ namespace StorageModel  {
         DateTimeTicks = dateTimeTicks;
         isChangeDetected = true;
       }
-      if (DateTimeMinute!=dateTimeMinute) {
-        DateTimeMinute = dateTimeMinute;
+      var dateTimeMinuteRounded = dateTimeMinute.Round(Rounding.Minutes);
+      if (DateTimeMinute!=dateTimeMinuteRounded) {
+        DateTimeMinute = dateTimeMinuteRounded;
         isChangeDetected = true;
       }
-      if (DateTimeSecond!=dateTimeSecond) {
-        DateTimeSecond = dateTimeSecond;
+      var dateTimeSecondRounded = dateTimeSecond.Round(Rounding.Seconds);
+      if (DateTimeSecond!=dateTimeSecondRounded) {
+        DateTimeSecond = dateTimeSecondRounded;
         isChangeDetected = true;
       }
       if (OneMaster is null) {
@@ -582,8 +584,8 @@ namespace StorageModel  {
       sample.DateOnly = csvReader.ReadDate();
       sample.TimeOnly = csvReader.ReadTime();
       sample.DateTimeTicks = csvReader.ReadDateTimeTicks();
-      sample.DateTimeMinute = csvReader.ReadDateTimeTicks();
-      sample.DateTimeSecond = csvReader.ReadDateTimeTicks();
+      sample.DateTimeMinute = csvReader.ReadDateSeconds();
+      sample.DateTimeSecond = csvReader.ReadDateSeconds();
       var oneMasterKey = csvReader.ReadIntNull();
       SampleMaster? oneMaster;
       if (oneMasterKey is null) {

@@ -49,7 +49,6 @@ namespace Storage {
     /// 
     /// The following arguments can be used in the class attribute StorageClass to configure its behavior:<para/>
     /// 
-    /// maxLineLength: Maximum number of UTF8 bytes needed to write class to CSV file.<para/>
     /// pluralName: used if class name has an irregular plural. Example: Activity => Activities<para/>
     /// areInstancesUpdatable: Can the properties of the class change ?<para/>
     /// areInstancesDeletable: Can class instance be deleted from StorageDirectory ?<para/>

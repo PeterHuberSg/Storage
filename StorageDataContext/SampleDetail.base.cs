@@ -151,9 +151,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write SampleDetail to CSV file
+    /// Estimated number of UTF8 characters needed to write SampleDetail to CSV file
     /// </summary>
-    public const int MaxLineLength = 151;
+    public const int EstimatedLineLength = 150;
 
 
     /// <summary>

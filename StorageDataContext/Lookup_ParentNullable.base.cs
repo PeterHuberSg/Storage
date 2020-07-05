@@ -131,9 +131,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write Lookup_ParentNullable to CSV file
+    /// Estimated number of UTF8 characters needed to write Lookup_ParentNullable to CSV file
     /// </summary>
-    public const int MaxLineLength = 23;
+    public const int EstimatedLineLength = 23;
 
 
     /// <summary>

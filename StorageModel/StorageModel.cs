@@ -120,6 +120,89 @@ using Storage;
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 namespace StorageModel {
 
+  #region Class using all supported data types 
+  //      ------------------------------------
+
+  // check this class to find all available data types.
+
+  // The goal is to use as little storage space in the CSV file as possible. It is better to use the data type Date
+  // then DateTime, if the time portion is not use. It is better to use Decimal2, which stores maximally 2 digits
+  // after the decimal point than decimal, which gets stored with full precision.
+
+  // In general, it is better to use none nullable value types, they give the garbage collector less work to do.
+
+
+  /// <summary>
+  /// Class having every possible data type used for a property
+  /// </summary>
+  public class DataTypeSample {
+    //A DateTime with only Date, but no Time
+    public Date ADate;
+    public Date? ANullableDate;
+
+    //A TimeSpan covering only positive 23 hours, 59 minutes and 59 seconds 
+    public Time ATime;
+    public Time? ANullableTime;
+
+    //A DateTime with a precision of minutes
+    public DateMinutes ADateMinutes;
+    public DateMinutes? ANullableDateMinutes;
+
+    //A DateTime with a precision of seconds
+    public DateSeconds ADateSeconds;
+    public DateSeconds? ANullableDateSeconds;
+
+    //A DateTime with a precision of ticks
+    public DateTimeTicks ADateTime;
+    public DateTimeTicks? ANullableDateTime;
+
+    //A TimeSpan with a precision of ticks
+    public TimeSpanTicks ATimeSpan;
+    public TimeSpanTicks? ANullableTimeSpan;
+
+    //A decimal with full precision. If possible, use DecimalX, which uses less CSV file storage space
+    public decimal ADecimal;
+    public decimal? ANullableDecimal;
+
+    //A decimal with up to 2 digits after decimal point
+    public Decimal2 ADecimal2;
+    public Decimal2? ANullableDecimal2;
+
+    //A decimal with up to 4 digits after decimal point
+    public Decimal4 ADecimal4;
+    public Decimal4? ANullableDecimal4;
+
+    //A decimal with up to 5 digits after decimal point
+    public Decimal5 ADecimal5;
+    public Decimal5? ANullableDecimal5;
+
+    //A boolean
+    public bool ABool;
+    public bool? ANullableBool;
+
+    //An integer
+    public int AInt;
+    public int? ANullableInt;
+
+    //A long
+    public long ALong;
+    public long? ANullableLong;
+
+    //A character
+    public char AChar;
+    public char? ANullableChar;
+
+    //A string, full Unicode supported, but ASCII only strings get faster processed
+    public string AString;
+    public string? ANullableString;
+
+    //any enum defined in this file
+    public SampleStateEnum AEnum;
+    public SampleStateEnum? ANullableEnum;
+  }
+  #endregion
+
+
   #region SampleMaster -> Sample -> SampleDetail, using List for children
   //      ---------------------------------------------------------------
 
@@ -168,7 +251,7 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for Sample
   /// </summary>
-  [StorageClass(maxLineLength: 200, pluralName: "SampleX")]
+  [StorageClass(pluralName: "SampleX")]
   public class Sample {
     /// <summary>
     /// Some Text comment
@@ -223,17 +306,17 @@ namespace StorageModel {
     /// <summary>
     /// Stores date and time precisely to a tick
     /// </summary>
-    public DateTime DateTimeTicks;
+    public DateTimeTicks DateTimeTicks;
 
     /// <summary>
     /// Stores date and time precisely to a minute
     /// </summary>
-    public DateTime DateTimeMinute;
+    public DateMinutes DateTimeMinute;
 
     /// <summary>
     /// Stores date and time precisely to a second
     /// </summary>
-    public DateTime DateTimeSecond;
+    public DateSeconds DateTimeSecond;
 
     /// <summary>
     /// Some OneMaster comment
@@ -260,7 +343,6 @@ namespace StorageModel {
   /// <summary>
   /// Some comment for SampleDetail
   /// </summary>
-  [StorageClass(maxLineLength: 151)]
   public class SampleDetail {
     /// <summary>
     /// Some Text comment

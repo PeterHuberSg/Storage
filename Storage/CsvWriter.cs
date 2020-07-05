@@ -51,9 +51,9 @@ namespace Storage {
 
 
     /// <summary>
-    /// How many UTF8 chars can a line max contain ?
+    /// Estimated chars in a line for average values. With max values and long strings, the actual length might be much longer.
     /// </summary>
-    public int MaxLineCharLenght { get; }
+    public int EstimatedLineLenght { get; }
 
 
     /// <summary>
@@ -98,7 +98,7 @@ namespace Storage {
     public CsvWriter(
       string? fileName, 
       CsvConfig csvConfig, 
-      int maxLineCharLenght, 
+      int estimatedLineLenght, 
       FileStream? existingFileStream = null, 
       int flushDelay = 200) 
     {
@@ -117,11 +117,12 @@ namespace Storage {
       
       delimiter = (byte)csvConfig.Delimiter;
       MaxLineByteLenght = CsvConfig.BufferSize/Csv.ByteBufferToReserveRatio;
-      if (maxLineCharLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
+      if (estimatedLineLenght*Csv.Utf8BytesPerChar>MaxLineByteLenght)
         throw new Exception($"CsvWriter constructor: BufferSize {CsvConfig.BufferSize} should be at least " + 
-          $"{Csv.ByteBufferToReserveRatio*Csv.Utf8BytesPerChar} times bigger than MaxLineCharLenght {maxLineCharLenght} for file {fileName}.");
+          $"{Csv.ByteBufferToReserveRatio*Csv.Utf8BytesPerChar} times bigger than the estimated length needed of " +
+          $"{estimatedLineLenght} for file {fileName}.");
 
-      MaxLineCharLenght = maxLineCharLenght;
+      EstimatedLineLenght = estimatedLineLenght;
       tempChars = new char[50]; //tempChars is only used for formating decimals, which needs maybe 10-30 chars
       FlushDelay = flushDelay;
       if (existingFileStream is null) {
@@ -334,7 +335,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Write boolean as 0 or 1 to UTF8 FileStream including delimiter.
+    /// Write boolean as 0 or 1 to UTF8 FileStream followed by delimiter.
     /// </summary>
     public void Write(bool b) {
       if (b) {
@@ -347,7 +348,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Write boolean? as '', 0 or 1 to UTF8 FileStream including delimiter.
+    /// Write boolean? as '', 0 or 1 to UTF8 FileStream followed by delimiter.
     /// </summary>
     public void Write(bool? b) {
       if (b.HasValue) {
@@ -365,7 +366,19 @@ namespace Storage {
 
 
     /// <summary>
-    /// Write integer to UTF8 FileStream including delimiter.
+    /// Write nullable integer to UTF8 FileStream followed by delimiter.
+    /// </summary>
+    public void Write(int? i) {
+      if (i is null) {
+        byteArray[writePos++] = delimiter;
+      } else {
+        Write(i.Value);
+      }
+    }
+
+
+    /// <summary>
+    /// Write integer to UTF8 FileStream followed by delimiter.
     /// </summary>
     public void Write(int i) {
       int start;
@@ -401,9 +414,9 @@ namespace Storage {
 
 
     /// <summary>
-    /// Write nullable integer to UTF8 FileStream including delimiter.
+    /// Write nullable long to UTF8 FileStream followed by delimiter.
     /// </summary>
-    public void Write(int? i) {
+    public void Write(long? i) {
       if (i is null) {
         byteArray[writePos++] = delimiter;
       } else {
@@ -413,7 +426,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Write integer to UTF8 FileStream including delimiter.
+    /// Write integer to UTF8 FileStream followed by delimiter.
     /// </summary>
     public void Write(long l) {
       int start;
@@ -448,18 +461,6 @@ namespace Storage {
     }
 
 
-    /// <summary>
-    /// Write nullable long to UTF8 FileStream including delimiter.
-    /// </summary>
-    public void Write(long? i) {
-      if (i is null) {
-        byteArray[writePos++] = delimiter;
-      } else {
-        Write(i.Value);
-      }
-    }
-
-
     static readonly string[] formats = {
       "0",
       ".#",
@@ -474,7 +475,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes at most 2 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most 2 digits after comma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
     public void WriteDecimal2(decimal d) {
       Write(d, 2);
@@ -482,7 +483,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes at most 2 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most 2 digits after comma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
     public void WriteDecimal2(decimal? d) {
       Write(d, 2);
@@ -490,15 +491,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes at most 4 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
-    /// </summary>
-    public void WriteDecimal4(decimal d) {
-      Write(d, 4);
-    }
-
-
-    /// <summary>
-    /// Writes at most 4 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most 4 digits after comma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
     public void WriteDecimal4(decimal? d) {
       Write(d, 4);
@@ -506,15 +499,15 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes at most 4 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most 4 digits after comma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
-    public void WriteDecimal5(decimal d) {
-      Write(d, 5);
+    public void WriteDecimal4(decimal d) {
+      Write(d, 4);
     }
 
 
     /// <summary>
-    /// Writes at most 4 digits after comma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most 4 digits after comma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
     public void WriteDecimal5(decimal? d) {
       Write(d, 5);
@@ -522,38 +515,15 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes at most number of digitsAfterComma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most 4 digits after comma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
-    public void Write(decimal d, int digitsAfterComma = int.MaxValue) {
-      int charsWritten;
-      if (digitsAfterComma<=8) {
-        if (!d.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
-      } else {
-        if (!d.TryFormat(tempChars, out charsWritten)) throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
-      }
-
-      ////deal with zero here, this simplifies the code for removing trailing 0. Any other single digit value
-      ////can also be handled here.
-      if (charsWritten==0) {
-        //code like csvWriter.Write(0.4m, 0) results in charsWritten==0
-        byteArray[writePos++] = (byte)'0';
-        byteArray[writePos++] = delimiter;
-        return;
-      } else if (charsWritten==1) {
-        byteArray[writePos++] = (byte)tempChars[0];
-        byteArray[writePos++] = delimiter;
-        return;
-      }
-
-      for (int copyIndex = 0; copyIndex<charsWritten; copyIndex++) {
-        byteArray[writePos++] = (byte)tempChars[copyIndex];
-      }
-      byteArray[writePos++] = delimiter;
+    public void WriteDecimal5(decimal d) {
+      Write(d, 5);
     }
 
 
     /// <summary>
-    /// Writes at most number of digitsAfterComma, if they are not zero, including delimiter. Trailing zeros get truncated.
+    /// Writes at most number of digitsAfterComma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
     /// </summary>
     public void Write(decimal? d, int digitsAfterComma = int.MaxValue) {
       if (d is null) {
@@ -587,15 +557,75 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes a Unicode char, which might take several bytes, into the CSV file, including delimiter.
+    /// Writes at most number of digitsAfterComma, if they are not zero, followed by delimiter. Trailing zeros get truncated.
+    /// </summary>
+    public void Write(decimal d, int digitsAfterComma = int.MaxValue) {
+      int charsWritten;
+      if (digitsAfterComma<=8) {
+        if (!d.TryFormat(tempChars, out charsWritten, formats[digitsAfterComma])) 
+          throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
+      } else {
+        if (!d.TryFormat(tempChars, out charsWritten)) 
+          throw new Exception($"CsvWriter.Write(decimal) '{FileName}': Cannot format {d}." + Environment.NewLine + GetPresentContent());
+      }
+
+      ////deal with zero here, this simplifies the code for removing trailing 0. Any other single digit value
+      ////can also be handled here.
+      if (charsWritten==0) {
+        //code like csvWriter.Write(0.4m, 0) results in charsWritten==0
+        byteArray[writePos++] = (byte)'0';
+        byteArray[writePos++] = delimiter;
+        return;
+      } else if (charsWritten==1) {
+        byteArray[writePos++] = (byte)tempChars[0];
+        byteArray[writePos++] = delimiter;
+        return;
+      }
+
+      for (int copyIndex = 0; copyIndex<charsWritten; copyIndex++) {
+        byteArray[writePos++] = (byte)tempChars[copyIndex];
+      }
+      byteArray[writePos++] = delimiter;
+    }
+
+
+    /// <summary>
+    /// Writes a Unicode char, which might take several bytes, or null into the CSV file, followed by delimiter. If the 
+    /// character itself is the same as the delimiter char, it gets written as "\t". Carriage Return as "\r". Line feed 
+    /// as "\n". The character '\' as "\\"
+    /// </summary>
+    public void Write(char? c) {
+      if (c is null) {
+        byteArray[writePos++] = delimiter;
+      } else {
+        Write(c.Value);
+      }
+    }
+
+
+    /// <summary>
+    /// Writes a Unicode char, which might take several bytes, into the CSV file, followed by delimiter. If the character
+    /// itself is the same as the delimiter char, it gets written as "\t". Carriage Return as "\r". Line feed as "\n". 
+    /// The character '\' as "\\"
     /// </summary>
     public void Write(char c) {
-      if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') 
-        throw new Exception($"CsvWriter.Write(char) '{FileName}':illegal character '{c.ToPureString()}'." + Environment.NewLine + GetPresentContent());
-
-      if (c<0x80) {
+      if (c==CsvConfig.Delimiter) {
+        byteArray[writePos++] = (byte)'\\';
+        byteArray[writePos++] = (byte)'t';
+      } else if (c=='\r') {
+        byteArray[writePos++] = (byte)'\\';
+        byteArray[writePos++] = (byte)'r';
+      } else if (c=='\n') {
+        byteArray[writePos++] = (byte)'\\';
+        byteArray[writePos++] = (byte)'n';
+      } else if (c=='\\') {
+        byteArray[writePos++] = (byte)'\\';
+        byteArray[writePos++] = (byte)'\\';
+      } else if (c<0x80) {
+        //one byte ASCII
         byteArray[writePos++] = (byte)c;
       } else {
+        //UTF
         foreach (var utf8Byte in Encoding.UTF8.GetBytes(new string(c, 1))) {
           byteArray[writePos++] = utf8Byte;
         }
@@ -605,21 +635,69 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes a Unicode string to the CSV file, including delimiter.
+    /// Writes a Unicode string to the CSV file, followed by a delimiter. A null string writes only the delimiter, an
+    /// empty string writes "\ ". If string contains a character with the value of the delimiter char, it gets written as 
+    /// "\t". Carriage Return as "\r". Line Feed as "\n". The character '\' as "\\".
     /// </summary>
     public void Write(string? s) {
       if (s!=null) {
-        for (int readIndex = 0; readIndex < s.Length; readIndex++) {
-          var c = s[readIndex];
-          if (c==CsvConfig.Delimiter || c=='\r' || c=='\n') 
-            throw new Exception($"CsvWriter.Write(string) '{FileName}':illegal character '{c.ToPureString()}'." + Environment.NewLine + GetPresentContent());
+        if (s.Length==0) {
+          byteArray[writePos++] = (byte)'\\';
+          byteArray[writePos++] = (byte)' ';
 
-          if (c<0x80) {
-            byteArray[writePos++] = (byte)c;
-          } else {
-            var byteLength = Encoding.UTF8.GetBytes(s, readIndex, s.Length-readIndex, byteArray, writePos);
-            writePos += byteLength;
-            break;
+        } else {
+          if (s.Length>MaxLineByteLenght) {
+            throw new Exception($"CsvWriter.Write() '{FileName}': The length {s.Length} of string 's.[..30]' is longer " +
+              $"than MaxLineLenght {MaxLineByteLenght}." + Environment.NewLine + GetPresentContent());
+          }
+          var startWritePos = writePos;
+          for (int readIndex = 0; readIndex < s.Length; readIndex++) {
+            var c = s[readIndex];
+            if (c==CsvConfig.Delimiter) {
+              byteArray[writePos++] = (byte)'\\';
+              byteArray[writePos++] = (byte)'t';
+            } else if (c=='\r') {
+              byteArray[writePos++] = (byte)'\\';
+              byteArray[writePos++] = (byte)'r';
+            } else if (c=='\n') {
+              byteArray[writePos++] = (byte)'\\';
+              byteArray[writePos++] = (byte)'n';
+            } else if (c=='\\') {
+              byteArray[writePos++] = (byte)'\\';
+              byteArray[writePos++] = (byte)'\\';
+            } else if (c<0x80) {
+              //one byte ASCII
+              byteArray[writePos++] = (byte)c;
+            } else {
+              //UTF
+              //start again, write string with replaced control characters into chars on the stack and copy that as UTF8 to
+              //byteArray
+              Span<char> chars = stackalloc char[s.Length*2];//too big, but exact size needed is not known
+              var charsIndex = 0;
+              for (readIndex = 0; readIndex < s.Length; readIndex++) {
+                c = s[readIndex];
+                if (c==CsvConfig.Delimiter) {
+                  chars[charsIndex++] = '\\';
+                  chars[charsIndex++] = 't';
+                } else if (c=='\r') {
+                  chars[charsIndex++] = '\\';
+                  chars[charsIndex++] = 'r';
+                } else if (c=='\n') {
+                  chars[charsIndex++] = '\\';
+                  chars[charsIndex++] = 'n';
+                } else if (c=='\\') {
+                  chars[charsIndex++] = '\\';
+                  chars[charsIndex++] = '\\';
+                } else {
+                  chars[charsIndex++] = c;
+                }
+              }
+
+              //var byteLength = Encoding.UTF8.GetBytes(chars[..charsIndex], byteArray[startWritePos..]);
+              var byteLength = Encoding.UTF8.GetBytes(chars[..charsIndex], byteArray.AsSpan()[startWritePos..]);
+              writePos = startWritePos + byteLength;
+              break;
+            }
           }
         }
       }
@@ -628,7 +706,45 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes a date without time to the CSV file, including delimiter.
+    /// Writes a Unicode string to the CSV file, followed by a carriage return and line feed. An empty string writes only 
+    /// the carriage return and line feed. If string contains a Carriage Return or Line Feed, an Exception gets thrown.
+    /// </summary>
+    public void WriteLine(string line) {
+      if (line.Length>MaxLineByteLenght) {
+        throw new Exception($"CsvWriter.Write() '{FileName}': The length {line.Length} of string 'line.[..30]' is longer " +
+          $"than MaxLineLenght {MaxLineByteLenght}." + Environment.NewLine + GetPresentContent());
+      }
+
+      StartNewLine();
+      for (int readIndex = 0; readIndex<line.Length; readIndex++) {
+        var c = line[readIndex];
+        if (c=='\r' || c=='\n') {
+          throw new Exception($"CsvWriter.Write() '{FileName}': Carriage Return and Line Feed characters are not supported." +
+            Environment.NewLine + GetPresentContent());
+
+        } else if (c<0x80) {
+          //ASCII
+          byteArray[writePos++] = (byte)c;
+        } else {
+          //higher than ASCII
+          for (int readIndex2 = readIndex; readIndex2<line.Length; readIndex2++) {
+            c = line[readIndex];
+            if (c=='\r' || c=='\n') {
+              throw new Exception($"CsvWriter.Write() '{FileName}': Carriage Return and Line Feed characters are not supported." +
+                Environment.NewLine + GetPresentContent());
+            }
+          }
+          var byteLength = Encoding.UTF8.GetBytes(line, readIndex, line.Length-readIndex, byteArray, writePos);
+          writePos += byteLength;
+          break;
+        }
+      }
+      WriteEndOfLine();
+    }
+
+
+    /// <summary>
+    /// Writes a date without time to the CSV file, followed by delimiter.
     /// </summary>
     public void WriteDate(DateTime? date) {
       if (date.HasValue) {
@@ -641,7 +757,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes a date without time to the CSV file, including delimiter.
+    /// Writes a date without time to the CSV file, followed by delimiter.
     /// </summary>
     public void WriteDate(DateTime date) {
       if (date!=date.Date) throw new Exception($"CsvWriter.WriteDate() '{FileName}':does not support storing time '{date}'." + Environment.NewLine + GetPresentContent());
@@ -686,7 +802,19 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes a time with a precision of seconds to the CSV file, including delimiter.
+    /// Writes a time with a precision of seconds or nothing for null to the CSV file, followed by delimiter.
+    /// </summary>
+    public void WriteTime(TimeSpan? time) {
+      if (time.HasValue) {
+        WriteTime(time.Value);
+      } else {
+        byteArray[writePos++] = delimiter;
+      }
+    }
+
+
+    /// <summary>
+    /// Writes a time with a precision of seconds to the CSV file, followed by delimiter.
     /// </summary>
     public void WriteTime(TimeSpan time) {
       var hours = time.Hours;
@@ -733,7 +861,19 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes a time with a precision of minutes to the CSV file, including delimiter.
+    /// Writes a date with a precision of minutes or nothing for null to the CSV file, followed by delimiter.
+    /// </summary>
+    public void WriteDateMinutes(DateTime? time) {
+      if (time.HasValue) {
+        WriteDateMinutes(time.Value);
+      } else {
+        byteArray[writePos++] = delimiter;
+      }
+    }
+
+
+    /// <summary>
+    /// Writes a date with a precision of minutes to the CSV file, followed by delimiter.
     /// </summary>
     public void WriteDateMinutes(DateTime dateTime) {
       writeDate(dateTime.Date);
@@ -748,7 +888,19 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes DateTime with a precision of seconds to the CSV file, including delimiter.
+    /// Writes a date with a precision of seconds or nothing for null to the CSV file, followed by delimiter.
+    /// </summary>
+    public void WriteDateSeconds(DateTime? time) {
+      if (time.HasValue) {
+        WriteDateSeconds(time.Value);
+      } else {
+        byteArray[writePos++] = delimiter;
+      }
+    }
+
+
+    /// <summary>
+    /// Writes date with a precision of seconds to the CSV file, followed by delimiter.
     /// </summary>
     public void WriteDateSeconds(DateTime dateTime) {
       writeDate(dateTime.Date);
@@ -762,29 +914,42 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes DateTime with a precision of ticks to the CSV file, including delimiter.
+    /// Writes DateTime with a precision of ticks to the CSV file, followed by delimiter.
+    /// </summary>
+    public void WriteDateTimeTicks(DateTime? dateTime) {
+      if (dateTime.HasValue) {
+        Write(dateTime.Value.Ticks);
+      } else {
+        byteArray[writePos++] = delimiter;
+      }
+    }
+
+
+    /// <summary>
+    /// Writes DateTime with a precision of ticks to the CSV file, followed by delimiter.
     /// </summary>
     public void WriteDateTimeTicks(DateTime dateTime) {
       Write(dateTime.Ticks);
     }
 
 
-    //Write Unicode string including carriage return and line feed
-    public void WriteLine(string line) {
-      StartNewLine();
-      lineStart = writePos;
-      for (int readIndex = 0; readIndex < line.Length; readIndex++) {
-        var c = line[readIndex];
-
-        if (c<0x80) {
-          byteArray[writePos++] = (byte)c;
-        } else {
-          var byteLength = Encoding.UTF8.GetBytes(line, readIndex, line.Length-readIndex, byteArray, writePos);
-          writePos += byteLength;
-          break;
-        }
+    /// <summary>
+    /// Writes TimeSpan with a precision of ticks to the CSV file, followed by delimiter.
+    /// </summary>
+    public void WriteTimeSpanTicks(TimeSpan? duration) {
+      if (duration.HasValue) {
+        Write(duration.Value.Ticks);
+      } else {
+        byteArray[writePos++] = delimiter;
       }
-      WriteEndOfLine();
+    }
+
+
+    /// <summary>
+    /// Writes TimeSpan with a precision of ticks to the CSV file, followed by delimiter.
+    /// </summary>
+    public void WriteTimeSpanTicks(TimeSpan duration) {
+      Write(duration.Ticks);
     }
     #endregion
 

@@ -133,9 +133,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write CreateOnlyParentChangeableChild_ParentNullable to CSV file
+    /// Estimated number of UTF8 characters needed to write CreateOnlyParentChangeableChild_ParentNullable to CSV file
     /// </summary>
-    public const int MaxLineLength = 150;
+    public const int EstimatedLineLength = 150;
 
 
     /// <summary>

@@ -73,7 +73,6 @@ namespace Storage {
         }
         var className = classDeclaration.Identifier.Text;
         string? classComment = getXmlComment(classDeclaration.GetLeadingTrivia());
-        int? maxLineLength = null;
         string? pluralName = className + 's';
         bool areInstancesUpdatable = true;
         bool areInstancesDeletable = true;
@@ -96,26 +95,31 @@ namespace Storage {
             if (argument.NameColon is null) throw new GeneratorException($"Class {className} Attribute{attribute}: the argument name is missing, like 'areInstancesUpdatable: true'.");
 
             var name = argument.NameColon.Name.Identifier.Text;
+            var isException = false;
             try {
               var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
               switch (name) {
-              case "maxLineLength": maxLineLength = int.Parse(value); break;
               case "pluralName": pluralName = value[1..^1]; break;
               case "areInstancesUpdatable": areInstancesUpdatable = value=="true"; break;
               case "areInstancesDeletable": areInstancesDeletable = value=="true"; break;
               case "isConstructorPrivate": isConstructorPrivate = value=="true"; break;
               case "isGenerateReaderWriter": isGenerateReaderWriter = value=="true"; break;
-              default: 
-                throw new GeneratorException($"Class {className} Attribute{attribute}: Argument name {name} can only be: " +
-                  "maxLineLength, pluralName, areInstancesUpdatable, areInstancesDeletable, isConstructorPrivate or isGenerateReaderWriter.");
+              default:
+                isException = true;
+                throw new GeneratorException($"Class {className} Attribute{attribute}: Illegal argument name {name}. It " +
+                  "can only be: pluralName, areInstancesUpdatable, areInstancesDeletable, isConstructorPrivate or " +
+                  "isGenerateReaderWriter.");
               }
             } catch {
+              if (isException) {
+                throw;
+              }
               throw new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
             }
           }
 
         }
-        var classInfo = new ClassInfo(className, classComment, maxLineLength, pluralName, areInstancesUpdatable, 
+        var classInfo = new ClassInfo(className, classComment, pluralName, areInstancesUpdatable, 
           areInstancesDeletable, isConstructorPrivate, isGenerateReaderWriter);
         classes.Add(className, classInfo);
         var isPropertyWithDefaultValueFound = false;
@@ -144,32 +148,7 @@ namespace Storage {
             throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{field.Declaration}'.");
           }
           var propertyType = variableDeclaration.Type.ToString();
-          //if (isConst) {
-          //  foreach (var variableDeclarator in variableDeclaration.Variables) {
-          //    var constValue = variableDeclarator.Initializer?.Value as LiteralExpressionSyntax;
-          //    if (constValue!=null) {
-          //      if (variableDeclarator.Identifier.Text=="MaxLineLenght") {
-          //        if (constValue!=null) {
-          //          classInfo.SetMaxLineLength(int.Parse(constValue.Token.Text));
-          //          continue;
-          //        }
-          //      } else if (variableDeclarator.Identifier.Text=="AreInstancesUpdatable") {
-          //        if (constValue!=null) {
-          //          classInfo.SetAreInstancesUpdatable(bool.Parse(constValue.Token.Text));
-          //          continue;
-          //        }
-          //      } else if (variableDeclarator.Identifier.Text=="AreInstancesDeletable") {
-          //        if (constValue!=null) {
-          //          classInfo.SetAreInstancesDeletable(bool.Parse(constValue.Token.Text));
-          //          continue;
-          //        }
-          //      }
-          //    }
-          //    throw new GeneratorException($"Class {className} {onlyAcceptableConsts} '{classMember}'.");
-          //  }
-          //} else {
           foreach (var property in variableDeclaration.Variables) {
-            //////////////////////////////////
             string? defaultValue = null;
             bool? isLookupOnly = null;
             bool needsDictionary = false;
@@ -211,18 +190,7 @@ namespace Storage {
                 } catch {
                   new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
                 }
-                //try {
-                //  var value = ((LiteralExpressionSyntax)argument.Expression).Token.Text;
-                //  defaultValue = name switch {
-                //    "defaultValue" => value[1..^1],
-                //    _ => throw new Exception(),
-                //  };
-                //} catch {
-                //  new GeneratorException($"Class {className} Attribute{attribute}: Something wrong with assigning a value to argument {name}.");
-                //}
               }
-              
-              ///////////////////////////////////
             }
             if ((isLookupOnly??false) && isParentOneChild) {
               throw new GeneratorException($"Property {className}.{property.Identifier.Text} cannot have " + 
@@ -352,7 +320,8 @@ namespace Storage {
               mi.MemberType = MemberTypeEnum.Enum;
               mi.ToStringFunc = "";
             } else {
-              throw new GeneratorException($"{ci} '{mi}': cannot find class or enum '{mi.MemberName}'.");
+              throw new GeneratorException($"{ci.ClassName}.{mi.MemberName}: cannot find '{mi.ParentTypeString}'. Should this be a data type " +
+                "defined by Storage, a user defined enum or a link to a user defined class ?");
             }
             break;
 
@@ -515,13 +484,8 @@ namespace Storage {
         }
         using (var streamWriter = new StreamWriter(baseFileNameAndPath)) {
           Console.Write(classInfo.ClassName + ".base.cs");
-          if (classInfo.MaxLineLength is null) {
-            Console.WriteLine($"  MaxBytes: {classInfo.EstimatedMaxByteSize}, default");
-          } else if (classInfo.MaxLineLength<classInfo.EstimatedMaxByteSize) {
-            Console.WriteLine($"  MaxBytes: {classInfo.MaxLineLength}, default would be: {classInfo.EstimatedMaxByteSize}");
-          } else {
-            Console.WriteLine($"  MaxBytes: {classInfo.MaxLineLength}, longer than default");
-          }
+          classInfo.EstimatedMaxByteSize = Math.Max(classInfo.EstimatedMaxByteSize, classInfo.HeaderLength);
+          Console.WriteLine($"  Estimates bytes for 1 line: {classInfo.EstimatedMaxByteSize}, default");
           classInfo.WriteBaseClassFile(streamWriter, nameSpaceString!, context);
         }
 
@@ -692,7 +656,7 @@ namespace Storage {
         streamWriter.WriteLine($"        {classInfo.PluralName} = new StorageDictionaryCSV<{classInfo.ClassName}, {context}>(");
         streamWriter.WriteLine("          this,");
         streamWriter.WriteLine("          csvConfig!,");
-        streamWriter.WriteLine($"          {classInfo.ClassName}.MaxLineLength,");
+        streamWriter.WriteLine($"          {classInfo.ClassName}.EstimatedLineLength,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Headers,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.SetKey,");
         streamWriter.WriteLine($"          {classInfo.ClassName}.Create,");

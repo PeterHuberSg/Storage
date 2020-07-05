@@ -157,9 +157,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write PropertyNeedsDictionaryClass to CSV file
+    /// Estimated number of UTF8 characters needed to write PropertyNeedsDictionaryClass to CSV file
     /// </summary>
-    public const int MaxLineLength = 311;
+    public const int EstimatedLineLength = 311;
 
 
     /// <summary>

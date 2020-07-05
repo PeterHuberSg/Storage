@@ -155,9 +155,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write Lookup_Child to CSV file
+    /// Estimated number of UTF8 characters needed to write Lookup_Child to CSV file
     /// </summary>
-    public const int MaxLineLength = 11;
+    public const int EstimatedLineLength = 41;
 
 
     /// <summary>

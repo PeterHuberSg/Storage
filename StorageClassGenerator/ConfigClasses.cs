@@ -30,7 +30,6 @@ namespace Storage {
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="maxLineLength">Maximum number of UTF8 bytes needed to write class to CSV file.</param>
     /// <param name="pluralName">used if class name has an irregular plural. Example: Activity => Activities</param>
     /// <param name="areInstancesUpdatable">Can the properties of the class change ?</param>
     /// <param name="areInstancesDeletable">Can class instance be deleted from StorageDirectory ?</param>
@@ -38,7 +37,6 @@ namespace Storage {
     /// <param name="isGenerateReaderWriter">Should code get generated to read instances of that class from
     /// CSV files without using a data context ? This is mostly used for data administration use cases.</param>
     public StorageClassAttribute(
-      int maxLineLength = 0,
       string? pluralName = null,
       bool areInstancesUpdatable = true,
       bool areInstancesDeletable = true,
@@ -91,6 +89,18 @@ namespace Storage {
   /// Stores dates and time with a precision of seconds
   /// </summary>
   public class DateSeconds { }
+
+
+  /// <summary>
+  /// Stores dates and time with a precision of ticks
+  /// </summary>
+  public class DateTimeTicks { }
+
+
+  /// <summary>
+  /// Stores TimeSpan with a precision of ticks
+  /// </summary>
+  public class TimeSpanTicks { }
 
 
   /// <summary>

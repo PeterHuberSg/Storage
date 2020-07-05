@@ -138,9 +138,9 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Maximal number of UTF8 characters needed to write ChildrenSortedList_Parent to CSV file
+    /// Estimated number of UTF8 characters needed to write ChildrenSortedList_Parent to CSV file
     /// </summary>
-    public const int MaxLineLength = 300;
+    public const int EstimatedLineLength = 300;
 
 
     /// <summary>
