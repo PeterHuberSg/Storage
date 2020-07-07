@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Example with private constructor.
     /// </summary>
-  public partial class PrivateConstructor: IStorage<PrivateConstructor> {
+  public partial class PrivateConstructor: IStorageItemGeneric<PrivateConstructor> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for PrivateConstructor. Gets set once PrivateConstructor gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(PrivateConstructor privateConstructor, int key) { privateConstructor.Key = key; }
+    internal static void SetKey(IStorageItem privateConstructor, int key) {
+      ((PrivateConstructor)privateConstructor).Key = key;
+    }
 
 
     /// <summary>
@@ -56,7 +58,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of PrivateConstructor has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<PrivateConstructor>? HasChanged;
+    public event Action</*old*/PrivateConstructor, /*new*/PrivateConstructor>? HasChanged;
     #endregion
 
 
@@ -79,21 +81,34 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public PrivateConstructor(PrivateConstructor original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      onCloned(this);
+    }
+    partial void onCloned(PrivateConstructor clone);
+
+
+    /// <summary>
     /// Constructor for PrivateConstructor read from CSV file
     /// </summary>
-    private PrivateConstructor(int key, CsvReader csvReader, DC context) {
+    private PrivateConstructor(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New PrivateConstructor read from CSV file
     /// </summary>
-    internal static PrivateConstructor Create(int key, CsvReader csvReader, DC context) {
-      return new PrivateConstructor(key, csvReader, context);
+    internal static PrivateConstructor Create(int key, CsvReader csvReader) {
+      return new PrivateConstructor(key, csvReader);
     }
     #endregion
 
@@ -139,6 +154,7 @@ namespace StorageModel  {
     /// Updates PrivateConstructor with the provided values
     /// </summary>
     public void Update(string text) {
+      var clone = new PrivateConstructor(this);
       var isCancelled = false;
       onUpdating(text, ref isCancelled);
       if (isCancelled) return;
@@ -149,18 +165,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.PrivateConstructors.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(PrivateConstructor old);
 
 
     /// <summary>
     /// Updates this PrivateConstructor with values from CSV file
     /// </summary>
-    internal static void Update(PrivateConstructor privateConstructor, CsvReader csvReader, DC _) {
+    internal static void Update(PrivateConstructor privateConstructor, CsvReader csvReader){
       privateConstructor.Text = csvReader.ReadString();
       privateConstructor.onCsvUpdate();
     }
@@ -178,6 +197,38 @@ namespace StorageModel  {
       DC.Data.PrivateConstructors.Remove(Key);
     }
     partial void onRemove();
+
+
+    /// <summary>
+    /// Removes PrivateConstructor from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var privateConstructor = (PrivateConstructor) item;
+      privateConstructor.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the PrivateConstructor item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var privateConstructorOld = (PrivateConstructor) oldItem;
+      var privateConstructorNew = (PrivateConstructor) newItem;
+      privateConstructorNew.Text = privateConstructorOld.Text;
+      privateConstructorNew.onRollbackItemUpdated(privateConstructorOld);
+    }
+    partial void onRollbackItemUpdated(PrivateConstructor oldPrivateConstructor);
+
+
+    /// <summary>
+    /// Adds PrivateConstructor item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var privateConstructor = (PrivateConstructor) item;
+      privateConstructor.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

@@ -72,9 +72,9 @@ namespace Storage {
 
     #region Constructor
     //      -----------
-#pragma warning disable IDE0069 // Disposable fields should be disposed
+    #pragma warning disable IDE0069 // Disposable fields should be disposed
     FileStream? fileStream;
-#pragma warning restore IDE0069 // Disposable fields should be disposed
+    #pragma warning restore IDE0069 // Disposable fields should be disposed
     readonly bool isFileStreamOwner;
     readonly byte[] byteArray;
     int readIndex;
@@ -641,17 +641,15 @@ namespace Storage {
 
         } else if (readChar=='\\') {
           readByte = byteArray[readIndex++];
-          switch (readByte) {
-          case (byte)'t': tempChars[tempCharsIndex++] = CsvConfig.Delimiter; break;
-          case (byte)'r': tempChars[tempCharsIndex++] = '\r'; break;
-          case (byte)'n': tempChars[tempCharsIndex++] = '\n'; break;
-          case (byte)'\\': tempChars[tempCharsIndex++] = '\\'; break;
-          default:
-            throw new Exception($"CsvReader.ReadString() '{FileName}': Illegal control character combination '\\{readByte}' " +
-              $"found. Valid combinations are '\\{CsvConfig.Delimiter}', '\\r' and '\\n'.: " + Environment.NewLine + 
-              GetPresentContent());
-          }
-
+          tempChars[tempCharsIndex++] =readByte switch {
+            (byte)'t' => CsvConfig.Delimiter,
+            (byte)'r' => '\r',
+            (byte)'n' => '\n',
+            (byte)'\\' => '\\',
+            _ => throw new Exception($"CsvReader.ReadString() '{FileName}': Illegal control character combination '\\{readByte}' " +
+                   $"found. Valid combinations are '\\{CsvConfig.Delimiter}', '\\r' and '\\n'.: " + Environment.NewLine +
+                   GetPresentContent()),
+          };
         } else if (readChar<0x80) {
           tempChars[tempCharsIndex++] = readChar;
 

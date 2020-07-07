@@ -13,14 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Parent of children who use lookup, i.e. parent has no children collection,  where the child's 
-    /// parent property is nullable.
+    /// parent property is nullable. areInstancesDeletable must be false.
     /// </summary>
-  public partial class Lookup_ParentNullable: IStorage<Lookup_ParentNullable> {
+  public partial class Lookup_ParentNullable: IStorageItemGeneric<Lookup_ParentNullable> {
 
     #region Properties
     //      ----------
@@ -29,19 +29,21 @@ namespace StorageModel  {
     /// Unique identifier for Lookup_ParentNullable. Gets set once Lookup_ParentNullable gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(Lookup_ParentNullable lookup_ParentNullable, int key) { lookup_ParentNullable.Key = key; }
+    internal static void SetKey(IStorageItem lookup_ParentNullable, int key) {
+      ((Lookup_ParentNullable)lookup_ParentNullable).Key = key;
+    }
 
 
     /// <summary>
     /// Stores only dates but no times.
     ///  </summary>
-    public DateTime Date { get; }
+    public DateTime Date { get; private set; }
 
 
     /// <summary>
     /// Stores decimal with 2 digits after comma.
     ///  </summary>
-    public decimal SomeValue { get; }
+    public decimal SomeValue { get; private set; }
 
 
     /// <summary>
@@ -61,11 +63,9 @@ namespace StorageModel  {
     //      ------
 
     /// <summary>
-    /// This event will never be raised, but is needed to comply with IStorage.
+    /// Content of Lookup_ParentNullable has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-#pragma warning disable 67
-    public event Action<Lookup_ParentNullable>? HasChanged;
-#pragma warning restore 67
+    public event Action</*old*/Lookup_ParentNullable, /*new*/Lookup_ParentNullable>? HasChanged;
     #endregion
 
 
@@ -89,22 +89,36 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public Lookup_ParentNullable(Lookup_ParentNullable original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Date = original.Date;
+      SomeValue = original.SomeValue;
+      onCloned(this);
+    }
+    partial void onCloned(Lookup_ParentNullable clone);
+
+
+    /// <summary>
     /// Constructor for Lookup_ParentNullable read from CSV file
     /// </summary>
-    private Lookup_ParentNullable(int key, CsvReader csvReader, DC context) {
+    private Lookup_ParentNullable(int key, CsvReader csvReader){
       Key = key;
       Date = csvReader.ReadDate();
       SomeValue = csvReader.ReadDecimal();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New Lookup_ParentNullable read from CSV file
     /// </summary>
-    internal static Lookup_ParentNullable Create(int key, CsvReader csvReader, DC context) {
-      return new Lookup_ParentNullable(key, csvReader, context);
+    internal static Lookup_ParentNullable Create(int key, CsvReader csvReader) {
+      return new Lookup_ParentNullable(key, csvReader);
     }
     #endregion
 
@@ -148,16 +162,87 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removes Lookup_ParentNullable from DC.Data.Lookup_ParentNullables.
+    /// Updates Lookup_ParentNullable with the provided values
+    /// </summary>
+    public void Update(DateTime date, decimal someValue) {
+      var clone = new Lookup_ParentNullable(this);
+      var isCancelled = false;
+      onUpdating(date, someValue, ref isCancelled);
+      if (isCancelled) return;
+
+      var isChangeDetected = false;
+      var dateRounded = date.Floor(Rounding.Days);
+      if (Date!=dateRounded) {
+        Date = dateRounded;
+        isChangeDetected = true;
+      }
+      var someValueRounded = someValue.Round(2);
+      if (SomeValue!=someValueRounded) {
+        SomeValue = someValueRounded;
+        isChangeDetected = true;
+      }
+      if (isChangeDetected) {
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.Lookup_ParentNullables.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
+      }
+    }
+    partial void onUpdating(DateTime date, decimal someValue, ref bool isCancelled);
+    partial void onUpdated(Lookup_ParentNullable old);
+
+
+    /// <summary>
+    /// Updates this Lookup_ParentNullable with values from CSV file
+    /// </summary>
+    internal static void Update(Lookup_ParentNullable lookup_ParentNullable, CsvReader csvReader){
+      lookup_ParentNullable.Date = csvReader.ReadDate();
+      lookup_ParentNullable.SomeValue = csvReader.ReadDecimal();
+      lookup_ParentNullable.onCsvUpdate();
+    }
+    partial void onCsvUpdate();
+
+
+    /// <summary>
+    /// Removing Lookup_ParentNullable from DC.Data.Lookup_ParentNullables is not supported.
     /// </summary>
     public void Remove() {
-      if (Key<0) {
-        throw new Exception($"Lookup_ParentNullable.Remove(): Lookup_ParentNullable 'Class Lookup_ParentNullable' is not stored in DC.Data, key is {Key}.");
-      }
-      onRemove();
-      DC.Data.Lookup_ParentNullables.Remove(Key);
+      throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
-    partial void onRemove();
+
+
+    /// <summary>
+    /// Removes Lookup_ParentNullable from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var lookup_ParentNullable = (Lookup_ParentNullable) item;
+      lookup_ParentNullable.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the Lookup_ParentNullable item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var lookup_ParentNullableOld = (Lookup_ParentNullable) oldItem;
+      var lookup_ParentNullableNew = (Lookup_ParentNullable) newItem;
+      lookup_ParentNullableNew.Date = lookup_ParentNullableOld.Date;
+      lookup_ParentNullableNew.SomeValue = lookup_ParentNullableOld.SomeValue;
+      lookup_ParentNullableNew.onRollbackItemUpdated(lookup_ParentNullableOld);
+    }
+    partial void onRollbackItemUpdated(Lookup_ParentNullable oldLookup_ParentNullable);
+
+
+    /// <summary>
+    /// Adds Lookup_ParentNullable item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var lookup_ParentNullable = (Lookup_ParentNullable) item;
+      lookup_ParentNullable.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

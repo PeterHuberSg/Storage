@@ -13,15 +13,15 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+    /// Example of a "CreateOnly" Parent, i.e. this parent's properties will not change and this parent will never get
     /// deleted, but it is still possible to add and remove children. The parent property in the child 
     /// is nullable.
     /// </summary>
-  public partial class CreateOnlyParentChangeableChild_ParentNullable: IStorage<CreateOnlyParentChangeableChild_ParentNullable> {
+  public partial class CreateOnlyParentChangeableChild_ParentNullable: IStorageItemGeneric<CreateOnlyParentChangeableChild_ParentNullable> {
 
     #region Properties
     //      ----------
@@ -30,7 +30,9 @@ namespace StorageModel  {
     /// Unique identifier for CreateOnlyParentChangeableChild_ParentNullable. Gets set once CreateOnlyParentChangeableChild_ParentNullable gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(CreateOnlyParentChangeableChild_ParentNullable createOnlyParentChangeableChild_ParentNullable, int key) { createOnlyParentChangeableChild_ParentNullable.Key = key; }
+    internal static void SetKey(IStorageItem createOnlyParentChangeableChild_ParentNullable, int key) {
+      ((CreateOnlyParentChangeableChild_ParentNullable)createOnlyParentChangeableChild_ParentNullable).Key = key;
+    }
 
 
     /// <summary>
@@ -66,7 +68,7 @@ namespace StorageModel  {
     /// This event will never be raised, but is needed to comply with IStorage.
     /// </summary>
 #pragma warning disable 67
-    public event Action<CreateOnlyParentChangeableChild_ParentNullable>? HasChanged;
+    public event Action</*old*/CreateOnlyParentChangeableChild_ParentNullable, /*new*/CreateOnlyParentChangeableChild_ParentNullable>? HasChanged;
 #pragma warning restore 67
     #endregion
 
@@ -91,22 +93,35 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public CreateOnlyParentChangeableChild_ParentNullable(CreateOnlyParentChangeableChild_ParentNullable original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      onCloned(this);
+    }
+    partial void onCloned(CreateOnlyParentChangeableChild_ParentNullable clone);
+
+
+    /// <summary>
     /// Constructor for CreateOnlyParentChangeableChild_ParentNullable read from CSV file
     /// </summary>
-    private CreateOnlyParentChangeableChild_ParentNullable(int key, CsvReader csvReader, DC context) {
+    private CreateOnlyParentChangeableChild_ParentNullable(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       createOnlyParentChangeableChild_Children = new List<CreateOnlyParentChangeableChild_Child>();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New CreateOnlyParentChangeableChild_ParentNullable read from CSV file
     /// </summary>
-    internal static CreateOnlyParentChangeableChild_ParentNullable Create(int key, CsvReader csvReader, DC context) {
-      return new CreateOnlyParentChangeableChild_ParentNullable(key, csvReader, context);
+    internal static CreateOnlyParentChangeableChild_ParentNullable Create(int key, CsvReader csvReader) {
+      return new CreateOnlyParentChangeableChild_ParentNullable(key, csvReader);
     }
     #endregion
 
@@ -152,6 +167,9 @@ namespace StorageModel  {
     /// Add createOnlyParentChangeableChild_Child to CreateOnlyParentChangeableChild_Children.
     /// </summary>
     internal void AddToCreateOnlyParentChangeableChild_Children(CreateOnlyParentChangeableChild_Child createOnlyParentChangeableChild_Child) {
+#if DEBUG
+      if (createOnlyParentChangeableChild_Child==CreateOnlyParentChangeableChild_Child.NoCreateOnlyParentChangeableChild_Child) throw new Exception();
+#endif
       createOnlyParentChangeableChild_Children.Add(createOnlyParentChangeableChild_Child);
       onAddedToCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_Child);
     }
@@ -195,6 +213,42 @@ namespace StorageModel  {
         createOnlyParentChangeableChild_Child.RemoveParentNullable(createOnlyParentChangeableChild_ParentNullable);
       }
     }
+
+
+    /// <summary>
+    /// Removes CreateOnlyParentChangeableChild_ParentNullable from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var createOnlyParentChangeableChild_ParentNullable = (CreateOnlyParentChangeableChild_ParentNullable) item;
+      createOnlyParentChangeableChild_ParentNullable.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the CreateOnlyParentChangeableChild_ParentNullable item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var createOnlyParentChangeableChild_ParentNullableOld = (CreateOnlyParentChangeableChild_ParentNullable) oldItem;
+      var createOnlyParentChangeableChild_ParentNullableNew = (CreateOnlyParentChangeableChild_ParentNullable) newItem;
+      if (createOnlyParentChangeableChild_ParentNullableNew.Text!=createOnlyParentChangeableChild_ParentNullableOld.Text) {
+        throw new Exception($"CreateOnlyParentChangeableChild_ParentNullable.Update(): Property Text '{createOnlyParentChangeableChild_ParentNullableNew.Text}' is " +
+          $"readonly, Text '{createOnlyParentChangeableChild_ParentNullableOld.Text}' read from the CSV file should be the same." + Environment.NewLine + 
+          createOnlyParentChangeableChild_ParentNullableNew.ToString());
+      }
+      createOnlyParentChangeableChild_ParentNullableNew.onRollbackItemUpdated(createOnlyParentChangeableChild_ParentNullableOld);
+    }
+    partial void onRollbackItemUpdated(CreateOnlyParentChangeableChild_ParentNullable oldCreateOnlyParentChangeableChild_ParentNullable);
+
+
+    /// <summary>
+    /// Adds CreateOnlyParentChangeableChild_ParentNullable item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var createOnlyParentChangeableChild_ParentNullable = (CreateOnlyParentChangeableChild_ParentNullable) item;
+      createOnlyParentChangeableChild_ParentNullable.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

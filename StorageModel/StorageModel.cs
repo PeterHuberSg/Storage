@@ -56,7 +56,7 @@ namespace YourNameSpace {
   }
 }
 */
-// It defines the model project and generated code projects and then calls the StorageClassGenerator.
+// It defines the model project and the generated code projects and then calls the StorageClassGenerator.
 // Run the console application each time you have made a change to the model
 
 // Add a .CS file following the structure of the file you read presently. A simple model could look like this:
@@ -94,6 +94,11 @@ namespace YourNameSpace {
     /// Some Text comment
     /// </summary>
     public string Text;
+
+    /// <summary>
+    /// Some Parent comment
+    /// </summary>
+    public Parent Parent;
   }
 }*/
 
@@ -116,9 +121,9 @@ using System;
 using System.Collections.Generic;
 using Storage;
 
-
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
-namespace StorageModel {
+namespace StorageDataContext {
+  //The name of this namespace will be used as namespace of the generated classes.
 
   #region Class using all supported data types 
   //      ------------------------------------
@@ -385,14 +390,6 @@ namespace StorageModel {
     /// </summary>
     [StorageProperty(isParentOneChild: true)]
     public ParentOneChild_Child? Child;
-
-
-    ///// <summary>
-    ///// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
-    ///// created before the child.
-    ///// </summary>
-    //[StorageProperty(isParentOneChild: true)]
-    //public ParentOneChild_ReadonlyChild? ReadonlyChild;
   }
 
 
@@ -413,14 +410,6 @@ namespace StorageModel {
     /// </summary>
     [StorageProperty(isParentOneChild: true)]
     public ParentOneChild_Child? Child;
-
-
-    ///// <summary>
-    ///// Links to conditional readonly child. Parent might or might not have a child, since the parent always gets
-    ///// created before the child.
-    ///// </summary>
-    //[StorageProperty(isParentOneChild: true)]
-    //public ParentOneChild_ReadonlyChild? ReadonlyChild;
   }
 
 
@@ -448,37 +437,11 @@ namespace StorageModel {
     /// </summary>
     public ParentOneChild_ParentNullable? ParentNullable;
   }
-
-
-  ///// <summary>
-  ///// Readonly Child class with one parent property which is not nullable and one property to a different parent 
-  ///// which is nullable
-  ///// </summary>
-  //[StorageClass(pluralName: "ParentOneChild_ReadonlyChildren")]
-  //public class ParentOneChild_ReadonlyChild {
-
-  //  /// <summary>
-  //  /// Some Text comment
-  //  /// </summary>
-  //  public string Text;
-
-
-  //  /// <summary>
-  //  /// Links to parent
-  //  /// </summary>
-  //  public ParentOneChild_Parent Parent;
-
-
-  //  /// <summary>
-  //  /// Links to parent conditionally
-  //  /// </summary>
-  //  public ParentOneChild_ParentNullable? ParentNullable;
-  //}
   #endregion
 
 
-  #region Class where the value of one property are used to build a dictionary for that class
-  //      -----------------------------------------------------------------------------------
+  #region Class where the value of one property is used to build a dictionary for that class
+  //      ----------------------------------------------------------------------------------
 
   // Often, a class has one property which can be used to identify one particular instance. 
   // StorageProperty(needsDictionary: true) adds a Dictionary to the data context, which gets updated whenever
@@ -513,15 +476,17 @@ namespace StorageModel {
   #region LookupParent -> LookupChild, parent has no collection for children
   //      ------------------------------------------------------------------
 
-  //an example for lookup, only the child linking to parent but the parent having no child collection
-  //this can be useful for example if parent holds exchange rates for every day. The child links to
-  //one particular exchange rate, but the exchange rate does not know which child links to it. In this
-  //scenario, the parent can never be deleted.
+  //An example for lookup, only the child linking to parent but the parent having no child collection.
+  //This can be useful for example if parent holds exchange rates for every day. The child links to
+  //one particular exchange rate, but the exchange rate does not know which child links to it. If a parent
+  //is used as a lookup, that class is not allowed to support deletion. Because when the parent gets
+  //deleted, it does not know which children get involved.
 
   /// <summary>
-  /// Parent of children who use lookup, i.e. parent has no children collection
+  /// Parent of children who use lookup, i.e. parent has no children collection. areInstancesDeletable
+  /// must be false.
   /// </summary>
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false)]
+  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: false)]
   public class Lookup_Parent {
     public Date Date;
     public Decimal2 SomeValue;
@@ -530,9 +495,9 @@ namespace StorageModel {
 
   /// <summary>
   /// Parent of children who use lookup, i.e. parent has no children collection,  where the child's 
-  /// parent property is nullable.
+  /// parent property is nullable. areInstancesDeletable must be false.
   /// </summary>
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: true)]
+  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: false)]
   public class Lookup_ParentNullable {
     public Date Date;
     public Decimal2 SomeValue;
@@ -540,13 +505,27 @@ namespace StorageModel {
 
 
   /// <summary>
-  /// Some comment for Lookup_Child
+  /// Example of a child with a none nullable and a nullable lookup parent. The child maintains links
+  /// to its parents, but the parents don't have children collections.
   /// </summary>
-  [StorageClass(areInstancesUpdatable: false, areInstancesDeletable: false, pluralName: "Lookup_Children")]
+  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: true, pluralName: "Lookup_Children")]
   public class Lookup_Child {
-    public int Number;
-    [StorageProperty(isLookupOnly: true)] //parent LookupParent does not have a collection for LookupChild
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
+    /// lookup. This property requires a parent.
+    /// </summary>
+    [StorageProperty(isLookupOnly: true)] 
     public Lookup_Parent LookupParent;
+
+    /// <summary>
+    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
+    /// lookup. This property does not require a parent.
+    /// </summary>
     [StorageProperty(isLookupOnly: true)] //parent LookupParentNullable does not have a collection for LookupChild
     public Lookup_ParentNullable? LookupParentNullable;
   }
@@ -561,7 +540,7 @@ namespace StorageModel {
   //leave the child with a link to that deleted parent.
   //The child.Parent property can be nullable (conditional parent) or not nullable (parent required)
   //[StorageClass(isGenerateReaderWriter: true)] creates ClassXyzReader and ClassXyzWriter, which allow to read and write 
-  //the CSV file without using a data context nor StorageDictionary. This is useful for administrative tasks, like deleting
+  //the CSV file without using a data context nor DataStore. This is useful for administrative tasks, like deleting
   //of data which is not deletable within the data context.
 
   /// <summary>
@@ -941,7 +920,7 @@ namespace StorageModel {
   //Example where parent is not updatable and not deletable. Child can be updated and/or deleted. 
 
   /// <summary>
-  /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// Example of a "CreateOnly" Parent, i.e. this parent's properties will not change and this parent will never get
   /// deleted, but it is still possible to add and remove children.
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false)]
@@ -960,7 +939,7 @@ namespace StorageModel {
 
 
   /// <summary>
-  /// Example of a "CreateOnly" Parent, i.e. the parent's properties will not change and the parent will never get
+  /// Example of a "CreateOnly" Parent, i.e. this parent's properties will not change and this parent will never get
   /// deleted, but it is still possible to add and remove children. The parent property in the child 
   /// is nullable.
   /// </summary>
@@ -980,9 +959,8 @@ namespace StorageModel {
 
 
   /// <summary>
-  /// Example of an updatable and deletable Child, i.e. the child's properties will not change and once it is added to its parent
-  /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
-  /// either.
+  /// Example of an updatable and deletable Child, i.e. the child's properties can change.Therefore it 
+  /// can be removed from parent and assigned to another parent.
   /// </summary>
   [StorageClass(pluralName: "CreateOnlyParentChangeableChild_Children")]
   public class CreateOnlyParentChangeableChild_Child {

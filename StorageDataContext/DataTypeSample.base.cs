@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Class having every possible data type used for a property
     /// </summary>
-  public partial class DataTypeSample: IStorage<DataTypeSample> {
+  public partial class DataTypeSample: IStorageItemGeneric<DataTypeSample> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for DataTypeSample. Gets set once DataTypeSample gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(DataTypeSample dataTypeSample, int key) { dataTypeSample.Key = key; }
+    internal static void SetKey(IStorageItem dataTypeSample, int key) {
+      ((DataTypeSample)dataTypeSample).Key = key;
+    }
 
 
     /// <summary>
@@ -240,7 +242,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of DataTypeSample has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<DataTypeSample>? HasChanged;
+    public event Action</*old*/DataTypeSample, /*new*/DataTypeSample>? HasChanged;
     #endregion
 
 
@@ -328,9 +330,53 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public DataTypeSample(DataTypeSample original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      ADate = original.ADate;
+      ANullableDate = original.ANullableDate;
+      ATime = original.ATime;
+      ANullableTime = original.ANullableTime;
+      ADateMinutes = original.ADateMinutes;
+      ANullableDateMinutes = original.ANullableDateMinutes;
+      ADateSeconds = original.ADateSeconds;
+      ANullableDateSeconds = original.ANullableDateSeconds;
+      ADateTime = original.ADateTime;
+      ANullableDateTime = original.ANullableDateTime;
+      ATimeSpan = original.ATimeSpan;
+      ANullableTimeSpan = original.ANullableTimeSpan;
+      ADecimal = original.ADecimal;
+      ANullableDecimal = original.ANullableDecimal;
+      ADecimal2 = original.ADecimal2;
+      ANullableDecimal2 = original.ANullableDecimal2;
+      ADecimal4 = original.ADecimal4;
+      ANullableDecimal4 = original.ANullableDecimal4;
+      ADecimal5 = original.ADecimal5;
+      ANullableDecimal5 = original.ANullableDecimal5;
+      ABool = original.ABool;
+      ANullableBool = original.ANullableBool;
+      AInt = original.AInt;
+      ANullableInt = original.ANullableInt;
+      ALong = original.ALong;
+      ANullableLong = original.ANullableLong;
+      AChar = original.AChar;
+      ANullableChar = original.ANullableChar;
+      AString = original.AString;
+      ANullableString = original.ANullableString;
+      AEnum = original.AEnum;
+      ANullableEnum = original.ANullableEnum;
+      onCloned(this);
+    }
+    partial void onCloned(DataTypeSample clone);
+
+
+    /// <summary>
     /// Constructor for DataTypeSample read from CSV file
     /// </summary>
-    private DataTypeSample(int key, CsvReader csvReader, DC context) {
+    private DataTypeSample(int key, CsvReader csvReader){
       Key = key;
       ADate = csvReader.ReadDate();
       ANullableDate = csvReader.ReadDateNull();
@@ -363,17 +409,17 @@ namespace StorageModel  {
       AString = csvReader.ReadString();
       ANullableString = csvReader.ReadStringNull();
       AEnum = (SampleStateEnum)csvReader.ReadInt();
-      ANullableEnum = (SampleStateEnum)csvReader.ReadIntNull();
-      onCsvConstruct(context);
+      ANullableEnum = (SampleStateEnum?)csvReader.ReadIntNull();
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New DataTypeSample read from CSV file
     /// </summary>
-    internal static DataTypeSample Create(int key, CsvReader csvReader, DC context) {
-      return new DataTypeSample(key, csvReader, context);
+    internal static DataTypeSample Create(int key, CsvReader csvReader) {
+      return new DataTypeSample(key, csvReader);
     }
     #endregion
 
@@ -441,7 +487,7 @@ namespace StorageModel  {
       csvWriter.Write(dataTypeSample.AString);
       csvWriter.Write(dataTypeSample.ANullableString);
       csvWriter.Write((int)dataTypeSample.AEnum);
-      csvWriter.Write((int)dataTypeSample.ANullableEnum);
+      csvWriter.Write((int?)dataTypeSample.ANullableEnum);
     }
     partial void onCsvWrite();
 
@@ -483,6 +529,7 @@ namespace StorageModel  {
       SampleStateEnum aEnum, 
       SampleStateEnum? aNullableEnum)
     {
+      var clone = new DataTypeSample(this);
       var isCancelled = false;
       onUpdating(
         aDate, 
@@ -664,8 +711,11 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.DataTypeSamples.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(
@@ -702,13 +752,13 @@ namespace StorageModel  {
       SampleStateEnum aEnum, 
       SampleStateEnum? aNullableEnum, 
       ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(DataTypeSample old);
 
 
     /// <summary>
     /// Updates this DataTypeSample with values from CSV file
     /// </summary>
-    internal static void Update(DataTypeSample dataTypeSample, CsvReader csvReader, DC _) {
+    internal static void Update(DataTypeSample dataTypeSample, CsvReader csvReader){
       dataTypeSample.ADate = csvReader.ReadDate();
       dataTypeSample.ANullableDate = csvReader.ReadDateNull();
       dataTypeSample.ATime = csvReader.ReadTime();
@@ -740,7 +790,7 @@ namespace StorageModel  {
       dataTypeSample.AString = csvReader.ReadString();
       dataTypeSample.ANullableString = csvReader.ReadStringNull();
       dataTypeSample.AEnum = (SampleStateEnum)csvReader.ReadInt();
-      dataTypeSample.ANullableEnum = (SampleStateEnum)csvReader.ReadIntNull();
+      dataTypeSample.ANullableEnum = (SampleStateEnum?)csvReader.ReadIntNull();
       dataTypeSample.onCsvUpdate();
     }
     partial void onCsvUpdate();
@@ -757,6 +807,69 @@ namespace StorageModel  {
       DC.Data.DataTypeSamples.Remove(Key);
     }
     partial void onRemove();
+
+
+    /// <summary>
+    /// Removes DataTypeSample from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var dataTypeSample = (DataTypeSample) item;
+      dataTypeSample.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the DataTypeSample item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var dataTypeSampleOld = (DataTypeSample) oldItem;
+      var dataTypeSampleNew = (DataTypeSample) newItem;
+      dataTypeSampleNew.ADate = dataTypeSampleOld.ADate;
+      dataTypeSampleNew.ANullableDate = dataTypeSampleOld.ANullableDate;
+      dataTypeSampleNew.ATime = dataTypeSampleOld.ATime;
+      dataTypeSampleNew.ANullableTime = dataTypeSampleOld.ANullableTime;
+      dataTypeSampleNew.ADateMinutes = dataTypeSampleOld.ADateMinutes;
+      dataTypeSampleNew.ANullableDateMinutes = dataTypeSampleOld.ANullableDateMinutes;
+      dataTypeSampleNew.ADateSeconds = dataTypeSampleOld.ADateSeconds;
+      dataTypeSampleNew.ANullableDateSeconds = dataTypeSampleOld.ANullableDateSeconds;
+      dataTypeSampleNew.ADateTime = dataTypeSampleOld.ADateTime;
+      dataTypeSampleNew.ANullableDateTime = dataTypeSampleOld.ANullableDateTime;
+      dataTypeSampleNew.ATimeSpan = dataTypeSampleOld.ATimeSpan;
+      dataTypeSampleNew.ANullableTimeSpan = dataTypeSampleOld.ANullableTimeSpan;
+      dataTypeSampleNew.ADecimal = dataTypeSampleOld.ADecimal;
+      dataTypeSampleNew.ANullableDecimal = dataTypeSampleOld.ANullableDecimal;
+      dataTypeSampleNew.ADecimal2 = dataTypeSampleOld.ADecimal2;
+      dataTypeSampleNew.ANullableDecimal2 = dataTypeSampleOld.ANullableDecimal2;
+      dataTypeSampleNew.ADecimal4 = dataTypeSampleOld.ADecimal4;
+      dataTypeSampleNew.ANullableDecimal4 = dataTypeSampleOld.ANullableDecimal4;
+      dataTypeSampleNew.ADecimal5 = dataTypeSampleOld.ADecimal5;
+      dataTypeSampleNew.ANullableDecimal5 = dataTypeSampleOld.ANullableDecimal5;
+      dataTypeSampleNew.ABool = dataTypeSampleOld.ABool;
+      dataTypeSampleNew.ANullableBool = dataTypeSampleOld.ANullableBool;
+      dataTypeSampleNew.AInt = dataTypeSampleOld.AInt;
+      dataTypeSampleNew.ANullableInt = dataTypeSampleOld.ANullableInt;
+      dataTypeSampleNew.ALong = dataTypeSampleOld.ALong;
+      dataTypeSampleNew.ANullableLong = dataTypeSampleOld.ANullableLong;
+      dataTypeSampleNew.AChar = dataTypeSampleOld.AChar;
+      dataTypeSampleNew.ANullableChar = dataTypeSampleOld.ANullableChar;
+      dataTypeSampleNew.AString = dataTypeSampleOld.AString;
+      dataTypeSampleNew.ANullableString = dataTypeSampleOld.ANullableString;
+      dataTypeSampleNew.AEnum = dataTypeSampleOld.AEnum;
+      dataTypeSampleNew.ANullableEnum = dataTypeSampleOld.ANullableEnum;
+      dataTypeSampleNew.onRollbackItemUpdated(dataTypeSampleOld);
+    }
+    partial void onRollbackItemUpdated(DataTypeSample oldDataTypeSample);
+
+
+    /// <summary>
+    /// Adds DataTypeSample item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var dataTypeSample = (DataTypeSample) item;
+      dataTypeSample.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

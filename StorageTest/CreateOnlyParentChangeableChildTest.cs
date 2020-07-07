@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
-using StorageModel;
+using StorageDataContext;
 
 
 namespace StorageTest {
@@ -33,38 +33,51 @@ namespace StorageTest {
         assertDL();
 
         //stored immediately
+        DC.Data.StartTransaction();
         var now = DateTime.Now.Date;
-        var parent1Key = addCreateOnlyParent2("1", isStoring: true).Key;
-        var parent1NullableKey = addCreateOnlyParent2Nullable("1N", isStoring: true).Key;
+        var parent1Key = addParent("1", isStoring: true).Key;
+        var parent1NullableKey = addParentNullable("1N", isStoring: true).Key;
 
-        var child1Key = addChangeableChild(parent1Key, null, "11", "11U", isStoring: true).Key;
+        var child1Key = addChild(parent1Key, null, "11", "11U", isStoring: true).Key;
 
-        var parent2Key = addCreateOnlyParent2("2", isStoring: true).Key;
-        var parent2NullableKey = addCreateOnlyParent2Nullable("2N", isStoring: true).Key;
-        var child2Key = addChangeableChild(parent2Key, parent2NullableKey, "21", "21U", isStoring: true).Key;
-        var child3Key = addChangeableChild(parent2Key, parent2NullableKey, "22", "22U", isStoring: true).Key;
+        var parent2Key = addParent("2", isStoring: true).Key;
+        var parent2NullableKey = addParentNullable("2N", isStoring: true).Key;
+        var child2Key = addChild(parent2Key, parent2NullableKey, "21", "21U", isStoring: true).Key;
+        var child3Key = addChild(parent2Key, parent2NullableKey, "22", "22U", isStoring: true).Key;
+        DC.Data.CommitTransaction();
 
         //not stored
-        var parent3 = addCreateOnlyParent2("3", isStoring: false);
-        var parent3Nullable = addCreateOnlyParent2("3N", isStoring: false);
-
-        var child4 = addChangeableChild(parent3, null, "31", "31U", isStoring: false);
-
-        var parent4 = addCreateOnlyParent2("4", isStoring: false);
-        var parent4Nullable = addCreateOnlyParent2Nullable("4N", isStoring: false);
-        var child5 = addChangeableChild(parent4, parent4Nullable, "41", "41U", isStoring: false);
-        var child6 = addChangeableChild(parent4, parent4Nullable, "42", "42U", isStoring: false);
-
+        var parent3 = addParent("3", isStoring: false);
+        var parent3Nullable = addParent("3N", isStoring: false);
+        var child4 = addChild(parent3, null, "31", "31U", isStoring: false);
+        DC.Data.StartTransaction();
+        parent3.Store();
+        parent3Nullable.Store();
+        child4.Store();
+        DC.Data.RollbackTransaction();
+        DC.Data.StartTransaction();
         store(parent3);
         store(parent3Nullable);
         store(child4);
+        DC.Data.CommitTransaction();
         assertData();
 
-
+        var parent4 = addParent("4", isStoring: false);
+        var parent4Nullable = addParentNullable("4N", isStoring: false);
+        var child5 = addChild(parent4, parent4Nullable, "41", "41U", isStoring: false);
+        var child6 = addChild(parent4, parent4Nullable, "42", "42U", isStoring: false);
+        DC.Data.StartTransaction();
+        parent4.Store();
+        parent4Nullable.Store();
+        child5.Store();
+        child6.Store();
+        DC.Data.RollbackTransaction();
+        DC.Data.StartTransaction();
         store(parent4);
         store(parent4Nullable);
         store(child5);
         store(child6);
+        DC.Data.CommitTransaction();
         assertData();
 
         updateChild(child1Key, parent2Key, parent2NullableKey, now, "12");
@@ -81,7 +94,8 @@ namespace StorageTest {
 
 
     private void reportException(Exception obj) {
-      Console.WriteLine(obj);
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
       Assert.Fail();
     }
 
@@ -109,7 +123,7 @@ namespace StorageTest {
     }
 
 
-    private CreateOnlyParentChangeableChild_Parent addCreateOnlyParent2(string text, bool isStoring) {
+    private CreateOnlyParentChangeableChild_Parent addParent(string text, bool isStoring) {
       var newParent = new CreateOnlyParentChangeableChild_Parent(text, isStoring);
       if (isStoring) {
         expectedParents.Add(newParent.Key, newParent.ToString());
@@ -125,7 +139,7 @@ namespace StorageTest {
     }
 
 
-    private CreateOnlyParentChangeableChild_ParentNullable addCreateOnlyParent2Nullable(string text, bool isStoring) {
+    private CreateOnlyParentChangeableChild_ParentNullable addParentNullable(string text, bool isStoring) {
       var newParentNullable = new CreateOnlyParentChangeableChild_ParentNullable(text, isStoring);
       if (isStoring) {
         expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
@@ -141,7 +155,7 @@ namespace StorageTest {
     }
 
 
-    private CreateOnlyParentChangeableChild_Child addChangeableChild(int parentKey, int? parentNullableKey, 
+    private CreateOnlyParentChangeableChild_Child addChild(int parentKey, int? parentNullableKey, 
       string readonlyText, string updatableText, bool isStoring) 
     {
       var parent = DC.Data.CreateOnlyParentChangeableChild_Parents[parentKey];
@@ -162,7 +176,7 @@ namespace StorageTest {
     }
 
 
-    private CreateOnlyParentChangeableChild_Child addChangeableChild(CreateOnlyParentChangeableChild_Parent parent, 
+    private CreateOnlyParentChangeableChild_Child addChild(CreateOnlyParentChangeableChild_Parent parent, 
       CreateOnlyParentChangeableChild_ParentNullable? parentNullable, string readonlyText, string updatableText, 
       bool isStoring) 
     {
@@ -193,22 +207,36 @@ namespace StorageTest {
     private void updateChild(int childKey, int parentKey, int? parentNullableKey, DateTime date, string text) {
       var child = DC.Data.CreateOnlyParentChangeableChild_Children[childKey];
       var newParent = DC.Data.CreateOnlyParentChangeableChild_Parents[parentKey];
-      var oldParent = child.Parent;
       CreateOnlyParentChangeableChild_ParentNullable? newParentNullable = null;
       if (parentNullableKey!=null) {
         newParentNullable = DC.Data.CreateOnlyParentChangeableChild_ParentNullables[parentNullableKey.Value];
       }
-      var oldParentNullable = child.ParentNullable;
+      DC.Data.StartTransaction();
       child.Update(text, newParent, newParentNullable);
+      DC.Data.RollbackTransaction();
+      assertData();
 
+      child = DC.Data.CreateOnlyParentChangeableChild_Children[childKey];
+      newParent = DC.Data.CreateOnlyParentChangeableChild_Parents[parentKey];
+      var oldParent = child.Parent;
+      newParentNullable = null;
+      if (parentNullableKey!=null) {
+        newParentNullable = DC.Data.CreateOnlyParentChangeableChild_ParentNullables[parentNullableKey.Value];
+      }
+      var oldParentNullable = child.ParentNullable;
+      DC.Data.StartTransaction();
+      child.Update(text, newParent, newParentNullable);
+      DC.Data.CommitTransaction();
       expectedChildren[child.Key] = child.ToString();
-      update(newParent, newParentNullable);
-      update(oldParent, oldParentNullable);
+      updateExpected(newParent, newParentNullable);
+      updateExpected(oldParent, oldParentNullable);
       assertData();
     }
 
 
-    private void update(CreateOnlyParentChangeableChild_Parent newParent, CreateOnlyParentChangeableChild_ParentNullable? newParentNullable) {
+    private void updateExpected(CreateOnlyParentChangeableChild_Parent newParent, 
+      CreateOnlyParentChangeableChild_ParentNullable? newParentNullable) 
+    {
       expectedParents[newParent.Key] = newParent.ToString();
       foreach (var child in newParent.CreateOnlyParentChangeableChild_Children) {
         expectedChildren[child.Key] = child.ToString();

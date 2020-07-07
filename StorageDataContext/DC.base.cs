@@ -13,14 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
   /// <summary>
   /// A part of DC is static, which gives easy access to all stored data (=context) through DC.Data. But most functionality is in the
   /// instantiatable part of DC. Since it is instantiatable, is possible to use different contexts over the lifetime of a program. This 
   /// is helpful for unit testing. Use DC.Init() to create a new context and dispose it with DisposeData() before creating a new one.
   /// </summary>
-  public partial class DC: IDisposable {
+  public partial class DC: DataContextBase {
 
     #region static Part
     //      -----------
@@ -61,137 +61,137 @@ namespace StorageModel  {
     /// <summary>
     /// Directory of all ChildrenDictionary_Children
     /// </summary>
-    public StorageDictionary<ChildrenDictionary_Child, DC> ChildrenDictionary_Children { get; private set; }
+    public DataStore<ChildrenDictionary_Child> ChildrenDictionary_Children { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenDictionary_Parents
     /// </summary>
-    public StorageDictionary<ChildrenDictionary_Parent, DC> ChildrenDictionary_Parents { get; private set; }
+    public DataStore<ChildrenDictionary_Parent> ChildrenDictionary_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenDictionary_ParentNullables
     /// </summary>
-    public StorageDictionary<ChildrenDictionary_ParentNullable, DC> ChildrenDictionary_ParentNullables { get; private set; }
+    public DataStore<ChildrenDictionary_ParentNullable> ChildrenDictionary_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenList_Children
     /// </summary>
-    public StorageDictionary<ChildrenList_Child, DC> ChildrenList_Children { get; private set; }
+    public DataStore<ChildrenList_Child> ChildrenList_Children { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenList_CreateOnlyChildren
     /// </summary>
-    public StorageDictionary<ChildrenList_CreateOnlyChild, DC> ChildrenList_CreateOnlyChildren { get; private set; }
+    public DataStore<ChildrenList_CreateOnlyChild> ChildrenList_CreateOnlyChildren { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenList_CreateOnlyParents
     /// </summary>
-    public StorageDictionary<ChildrenList_CreateOnlyParent, DC> ChildrenList_CreateOnlyParents { get; private set; }
+    public DataStore<ChildrenList_CreateOnlyParent> ChildrenList_CreateOnlyParents { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenList_CreateOnlyParentNullables
     /// </summary>
-    public StorageDictionary<ChildrenList_CreateOnlyParentNullable, DC> ChildrenList_CreateOnlyParentNullables { get; private set; }
+    public DataStore<ChildrenList_CreateOnlyParentNullable> ChildrenList_CreateOnlyParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenList_Parents
     /// </summary>
-    public StorageDictionary<ChildrenList_Parent, DC> ChildrenList_Parents { get; private set; }
+    public DataStore<ChildrenList_Parent> ChildrenList_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenList_ParentNullables
     /// </summary>
-    public StorageDictionary<ChildrenList_ParentNullable, DC> ChildrenList_ParentNullables { get; private set; }
+    public DataStore<ChildrenList_ParentNullable> ChildrenList_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenSortedList_Children
     /// </summary>
-    public StorageDictionary<ChildrenSortedList_Child, DC> ChildrenSortedList_Children { get; private set; }
+    public DataStore<ChildrenSortedList_Child> ChildrenSortedList_Children { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenSortedList_Parents
     /// </summary>
-    public StorageDictionary<ChildrenSortedList_Parent, DC> ChildrenSortedList_Parents { get; private set; }
+    public DataStore<ChildrenSortedList_Parent> ChildrenSortedList_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all ChildrenSortedList_ParentNullables
     /// </summary>
-    public StorageDictionary<ChildrenSortedList_ParentNullable, DC> ChildrenSortedList_ParentNullables { get; private set; }
+    public DataStore<ChildrenSortedList_ParentNullable> ChildrenSortedList_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all CreateOnly_Children
     /// </summary>
-    public StorageDictionary<CreateOnly_Child, DC> CreateOnly_Children { get; private set; }
+    public DataStore<CreateOnly_Child> CreateOnly_Children { get; private set; }
 
     /// <summary>
     /// Directory of all CreateOnly_Parents
     /// </summary>
-    public StorageDictionary<CreateOnly_Parent, DC> CreateOnly_Parents { get; private set; }
+    public DataStore<CreateOnly_Parent> CreateOnly_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all CreateOnly_ParentNullables
     /// </summary>
-    public StorageDictionary<CreateOnly_ParentNullable, DC> CreateOnly_ParentNullables { get; private set; }
+    public DataStore<CreateOnly_ParentNullable> CreateOnly_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all CreateOnlyParentChangeableChild_Children
     /// </summary>
-    public StorageDictionary<CreateOnlyParentChangeableChild_Child, DC> CreateOnlyParentChangeableChild_Children { get; private set; }
+    public DataStore<CreateOnlyParentChangeableChild_Child> CreateOnlyParentChangeableChild_Children { get; private set; }
 
     /// <summary>
     /// Directory of all CreateOnlyParentChangeableChild_Parents
     /// </summary>
-    public StorageDictionary<CreateOnlyParentChangeableChild_Parent, DC> CreateOnlyParentChangeableChild_Parents { get; private set; }
+    public DataStore<CreateOnlyParentChangeableChild_Parent> CreateOnlyParentChangeableChild_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all CreateOnlyParentChangeableChild_ParentNullables
     /// </summary>
-    public StorageDictionary<CreateOnlyParentChangeableChild_ParentNullable, DC> CreateOnlyParentChangeableChild_ParentNullables { get; private set; }
+    public DataStore<CreateOnlyParentChangeableChild_ParentNullable> CreateOnlyParentChangeableChild_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all DataTypeSamples
     /// </summary>
-    public StorageDictionary<DataTypeSample, DC> DataTypeSamples { get; private set; }
+    public DataStore<DataTypeSample> DataTypeSamples { get; private set; }
 
     /// <summary>
     /// Directory of all Lookup_Children
     /// </summary>
-    public StorageDictionary<Lookup_Child, DC> Lookup_Children { get; private set; }
+    public DataStore<Lookup_Child> Lookup_Children { get; private set; }
 
     /// <summary>
     /// Directory of all Lookup_Parents
     /// </summary>
-    public StorageDictionary<Lookup_Parent, DC> Lookup_Parents { get; private set; }
+    public DataStore<Lookup_Parent> Lookup_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all Lookup_ParentNullables
     /// </summary>
-    public StorageDictionary<Lookup_ParentNullable, DC> Lookup_ParentNullables { get; private set; }
+    public DataStore<Lookup_ParentNullable> Lookup_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all ParentOneChild_Children
     /// </summary>
-    public StorageDictionary<ParentOneChild_Child, DC> ParentOneChild_Children { get; private set; }
+    public DataStore<ParentOneChild_Child> ParentOneChild_Children { get; private set; }
 
     /// <summary>
     /// Directory of all ParentOneChild_Parents
     /// </summary>
-    public StorageDictionary<ParentOneChild_Parent, DC> ParentOneChild_Parents { get; private set; }
+    public DataStore<ParentOneChild_Parent> ParentOneChild_Parents { get; private set; }
 
     /// <summary>
     /// Directory of all ParentOneChild_ParentNullables
     /// </summary>
-    public StorageDictionary<ParentOneChild_ParentNullable, DC> ParentOneChild_ParentNullables { get; private set; }
+    public DataStore<ParentOneChild_ParentNullable> ParentOneChild_ParentNullables { get; private set; }
 
     /// <summary>
     /// Directory of all PrivateConstructors
     /// </summary>
-    public StorageDictionary<PrivateConstructor, DC> PrivateConstructors { get; private set; }
+    public DataStore<PrivateConstructor> PrivateConstructors { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses
     /// </summary>
-    public StorageDictionary<PropertyNeedsDictionaryClass, DC> PropertyNeedsDictionaryClasses { get; private set; }
+    public DataStore<PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClasses { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by IdInt
@@ -206,17 +206,17 @@ namespace StorageModel  {
     /// <summary>
     /// Directory of all SampleX
     /// </summary>
-    public StorageDictionary<Sample, DC> SampleX { get; private set; }
+    public DataStore<Sample> SampleX { get; private set; }
 
     /// <summary>
     /// Directory of all SampleDetails
     /// </summary>
-    public StorageDictionary<SampleDetail, DC> SampleDetails { get; private set; }
+    public DataStore<SampleDetail> SampleDetails { get; private set; }
 
     /// <summary>
     /// Directory of all SampleMasters
     /// </summary>
-    public StorageDictionary<SampleMaster, DC> SampleMasters { get; private set; }
+    public DataStore<SampleMaster> SampleMasters { get; private set; }
     #endregion
 
 
@@ -230,15 +230,11 @@ namespace StorageModel  {
     //      ------------
 
     /// <summary>
-    /// Creates a new data context. If csvConfig is null, the data is only stored in RAM, but gets lost once 
-    /// program terminates. With csvConfig defined, existing data gets read at startup, changes immediately
-    /// when written and Dispose() ensures by flushing that all data is permanently stored.
+    /// Creates a new DataContext. If csvConfig is null, the data is only stored in RAM and gets lost once the 
+    /// program terminates. With csvConfig defined, existing data gets read at startup, changes get immediately
+    /// written and Dispose() ensures by flushing that all data is permanently stored.
     /// </summary>
-    public DC(CsvConfig? csvConfig) {
-      if (!IsDisposed) {
-        throw new Exception("Dispose old DC before creating a new one.");
-      }
-      isDisposed = 0;
+    public DC(CsvConfig? csvConfig): base(DataStoresCount: 30) {
       data = this;
       IsInitialised = false;
 
@@ -252,220 +248,372 @@ namespace StorageModel  {
 
       PropertyNeedsDictionaryClassesByIdInt = new Dictionary<int, PropertyNeedsDictionaryClass>();
       PropertyNeedsDictionaryClassesByIdString = new Dictionary<string, PropertyNeedsDictionaryClass>();
+      var storeKey = 0;
       if (csvConfig==null) {
-        DataTypeSamples = new StorageDictionary<DataTypeSample, DC>(
+        DataTypeSamples = new DataStore<DataTypeSample>(
           this,
+          storeKey,
           DataTypeSample.SetKey,
+          DataTypeSample.RollbackItemStore,
+          DataTypeSample.RollbackItemUpdate,
+          DataTypeSample.RollbackItemRemove,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = DataTypeSamples;
         onDataTypeSamplesFilled();
-        SampleMasters = new StorageDictionary<SampleMaster, DC>(
+        SampleMasters = new DataStore<SampleMaster>(
           this,
+          storeKey,
           SampleMaster.SetKey,
+          SampleMaster.RollbackItemStore,
+          SampleMaster.RollbackItemUpdate,
+          null,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = SampleMasters;
         onSampleMastersFilled();
-        SampleX = new StorageDictionary<Sample, DC>(
+        SampleX = new DataStore<Sample>(
           this,
+          storeKey,
           Sample.SetKey,
+          Sample.RollbackItemStore,
+          Sample.RollbackItemUpdate,
+          Sample.RollbackItemRemove,
           Sample.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = SampleX;
         onSampleXFilled();
-        SampleDetails = new StorageDictionary<SampleDetail, DC>(
+        SampleDetails = new DataStore<SampleDetail>(
           this,
+          storeKey,
           SampleDetail.SetKey,
+          SampleDetail.RollbackItemStore,
+          SampleDetail.RollbackItemUpdate,
+          SampleDetail.RollbackItemRemove,
           SampleDetail.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = SampleDetails;
         onSampleDetailsFilled();
-        ParentOneChild_Parents = new StorageDictionary<ParentOneChild_Parent, DC>(
+        ParentOneChild_Parents = new DataStore<ParentOneChild_Parent>(
           this,
+          storeKey,
           ParentOneChild_Parent.SetKey,
+          ParentOneChild_Parent.RollbackItemStore,
+          ParentOneChild_Parent.RollbackItemUpdate,
+          ParentOneChild_Parent.RollbackItemRemove,
           ParentOneChild_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ParentOneChild_Parents;
         onParentOneChild_ParentsFilled();
-        ParentOneChild_ParentNullables = new StorageDictionary<ParentOneChild_ParentNullable, DC>(
+        ParentOneChild_ParentNullables = new DataStore<ParentOneChild_ParentNullable>(
           this,
+          storeKey,
           ParentOneChild_ParentNullable.SetKey,
+          ParentOneChild_ParentNullable.RollbackItemStore,
+          ParentOneChild_ParentNullable.RollbackItemUpdate,
+          ParentOneChild_ParentNullable.RollbackItemRemove,
           ParentOneChild_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ParentOneChild_ParentNullables;
         onParentOneChild_ParentNullablesFilled();
-        ParentOneChild_Children = new StorageDictionary<ParentOneChild_Child, DC>(
+        ParentOneChild_Children = new DataStore<ParentOneChild_Child>(
           this,
+          storeKey,
           ParentOneChild_Child.SetKey,
+          ParentOneChild_Child.RollbackItemStore,
+          ParentOneChild_Child.RollbackItemUpdate,
+          ParentOneChild_Child.RollbackItemRemove,
           ParentOneChild_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ParentOneChild_Children;
         onParentOneChild_ChildrenFilled();
-        PropertyNeedsDictionaryClasses = new StorageDictionary<PropertyNeedsDictionaryClass, DC>(
+        PropertyNeedsDictionaryClasses = new DataStore<PropertyNeedsDictionaryClass>(
           this,
+          storeKey,
           PropertyNeedsDictionaryClass.SetKey,
+          PropertyNeedsDictionaryClass.RollbackItemStore,
+          PropertyNeedsDictionaryClass.RollbackItemUpdate,
+          PropertyNeedsDictionaryClass.RollbackItemRemove,
           PropertyNeedsDictionaryClass.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = PropertyNeedsDictionaryClasses;
         onPropertyNeedsDictionaryClassesFilled();
-        Lookup_Parents = new StorageDictionary<Lookup_Parent, DC>(
+        Lookup_Parents = new DataStore<Lookup_Parent>(
           this,
+          storeKey,
           Lookup_Parent.SetKey,
+          Lookup_Parent.RollbackItemStore,
+          Lookup_Parent.RollbackItemUpdate,
           null,
-          areInstancesUpdatable: false,
+          null,
+          areInstancesUpdatable: true,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = Lookup_Parents;
         onLookup_ParentsFilled();
-        Lookup_ParentNullables = new StorageDictionary<Lookup_ParentNullable, DC>(
+        Lookup_ParentNullables = new DataStore<Lookup_ParentNullable>(
           this,
+          storeKey,
           Lookup_ParentNullable.SetKey,
+          Lookup_ParentNullable.RollbackItemStore,
+          Lookup_ParentNullable.RollbackItemUpdate,
           null,
-          areInstancesUpdatable: false,
-          areInstancesDeletable: true);
-        onLookup_ParentNullablesFilled();
-        Lookup_Children = new StorageDictionary<Lookup_Child, DC>(
-          this,
-          Lookup_Child.SetKey,
           null,
-          areInstancesUpdatable: false,
+          areInstancesUpdatable: true,
           areInstancesDeletable: false);
-        onLookup_ChildrenFilled();
-        ChildrenList_Parents = new StorageDictionary<ChildrenList_Parent, DC>(
+        DataStores[storeKey++] = Lookup_ParentNullables;
+        onLookup_ParentNullablesFilled();
+        Lookup_Children = new DataStore<Lookup_Child>(
           this,
+          storeKey,
+          Lookup_Child.SetKey,
+          Lookup_Child.RollbackItemStore,
+          Lookup_Child.RollbackItemUpdate,
+          Lookup_Child.RollbackItemRemove,
+          Lookup_Child.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        DataStores[storeKey++] = Lookup_Children;
+        onLookup_ChildrenFilled();
+        ChildrenList_Parents = new DataStore<ChildrenList_Parent>(
+          this,
+          storeKey,
           ChildrenList_Parent.SetKey,
+          ChildrenList_Parent.RollbackItemStore,
+          ChildrenList_Parent.RollbackItemUpdate,
+          ChildrenList_Parent.RollbackItemRemove,
           ChildrenList_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenList_Parents;
         onChildrenList_ParentsFilled();
-        ChildrenList_ParentNullables = new StorageDictionary<ChildrenList_ParentNullable, DC>(
+        ChildrenList_ParentNullables = new DataStore<ChildrenList_ParentNullable>(
           this,
+          storeKey,
           ChildrenList_ParentNullable.SetKey,
+          ChildrenList_ParentNullable.RollbackItemStore,
+          ChildrenList_ParentNullable.RollbackItemUpdate,
+          ChildrenList_ParentNullable.RollbackItemRemove,
           ChildrenList_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenList_ParentNullables;
         onChildrenList_ParentNullablesFilled();
-        ChildrenList_CreateOnlyParents = new StorageDictionary<ChildrenList_CreateOnlyParent, DC>(
+        ChildrenList_CreateOnlyParents = new DataStore<ChildrenList_CreateOnlyParent>(
           this,
+          storeKey,
           ChildrenList_CreateOnlyParent.SetKey,
+          ChildrenList_CreateOnlyParent.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = ChildrenList_CreateOnlyParents;
         onChildrenList_CreateOnlyParentsFilled();
-        ChildrenList_CreateOnlyParentNullables = new StorageDictionary<ChildrenList_CreateOnlyParentNullable, DC>(
+        ChildrenList_CreateOnlyParentNullables = new DataStore<ChildrenList_CreateOnlyParentNullable>(
           this,
+          storeKey,
           ChildrenList_CreateOnlyParentNullable.SetKey,
+          ChildrenList_CreateOnlyParentNullable.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = ChildrenList_CreateOnlyParentNullables;
         onChildrenList_CreateOnlyParentNullablesFilled();
-        ChildrenList_Children = new StorageDictionary<ChildrenList_Child, DC>(
+        ChildrenList_Children = new DataStore<ChildrenList_Child>(
           this,
+          storeKey,
           ChildrenList_Child.SetKey,
+          ChildrenList_Child.RollbackItemStore,
+          ChildrenList_Child.RollbackItemUpdate,
+          ChildrenList_Child.RollbackItemRemove,
           ChildrenList_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenList_Children;
         onChildrenList_ChildrenFilled();
-        ChildrenList_CreateOnlyChildren = new StorageDictionary<ChildrenList_CreateOnlyChild, DC>(
+        ChildrenList_CreateOnlyChildren = new DataStore<ChildrenList_CreateOnlyChild>(
           this,
+          storeKey,
           ChildrenList_CreateOnlyChild.SetKey,
+          ChildrenList_CreateOnlyChild.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = ChildrenList_CreateOnlyChildren;
         onChildrenList_CreateOnlyChildrenFilled();
-        ChildrenDictionary_Parents = new StorageDictionary<ChildrenDictionary_Parent, DC>(
+        ChildrenDictionary_Parents = new DataStore<ChildrenDictionary_Parent>(
           this,
+          storeKey,
           ChildrenDictionary_Parent.SetKey,
+          ChildrenDictionary_Parent.RollbackItemStore,
+          ChildrenDictionary_Parent.RollbackItemUpdate,
+          ChildrenDictionary_Parent.RollbackItemRemove,
           ChildrenDictionary_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenDictionary_Parents;
         onChildrenDictionary_ParentsFilled();
-        ChildrenDictionary_ParentNullables = new StorageDictionary<ChildrenDictionary_ParentNullable, DC>(
+        ChildrenDictionary_ParentNullables = new DataStore<ChildrenDictionary_ParentNullable>(
           this,
+          storeKey,
           ChildrenDictionary_ParentNullable.SetKey,
+          ChildrenDictionary_ParentNullable.RollbackItemStore,
+          ChildrenDictionary_ParentNullable.RollbackItemUpdate,
+          ChildrenDictionary_ParentNullable.RollbackItemRemove,
           ChildrenDictionary_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenDictionary_ParentNullables;
         onChildrenDictionary_ParentNullablesFilled();
-        ChildrenDictionary_Children = new StorageDictionary<ChildrenDictionary_Child, DC>(
+        ChildrenDictionary_Children = new DataStore<ChildrenDictionary_Child>(
           this,
+          storeKey,
           ChildrenDictionary_Child.SetKey,
+          ChildrenDictionary_Child.RollbackItemStore,
+          ChildrenDictionary_Child.RollbackItemUpdate,
+          ChildrenDictionary_Child.RollbackItemRemove,
           ChildrenDictionary_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenDictionary_Children;
         onChildrenDictionary_ChildrenFilled();
-        ChildrenSortedList_Parents = new StorageDictionary<ChildrenSortedList_Parent, DC>(
+        ChildrenSortedList_Parents = new DataStore<ChildrenSortedList_Parent>(
           this,
+          storeKey,
           ChildrenSortedList_Parent.SetKey,
+          ChildrenSortedList_Parent.RollbackItemStore,
+          ChildrenSortedList_Parent.RollbackItemUpdate,
+          ChildrenSortedList_Parent.RollbackItemRemove,
           ChildrenSortedList_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenSortedList_Parents;
         onChildrenSortedList_ParentsFilled();
-        ChildrenSortedList_ParentNullables = new StorageDictionary<ChildrenSortedList_ParentNullable, DC>(
+        ChildrenSortedList_ParentNullables = new DataStore<ChildrenSortedList_ParentNullable>(
           this,
+          storeKey,
           ChildrenSortedList_ParentNullable.SetKey,
+          ChildrenSortedList_ParentNullable.RollbackItemStore,
+          ChildrenSortedList_ParentNullable.RollbackItemUpdate,
+          ChildrenSortedList_ParentNullable.RollbackItemRemove,
           ChildrenSortedList_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenSortedList_ParentNullables;
         onChildrenSortedList_ParentNullablesFilled();
-        ChildrenSortedList_Children = new StorageDictionary<ChildrenSortedList_Child, DC>(
+        ChildrenSortedList_Children = new DataStore<ChildrenSortedList_Child>(
           this,
+          storeKey,
           ChildrenSortedList_Child.SetKey,
+          ChildrenSortedList_Child.RollbackItemStore,
+          ChildrenSortedList_Child.RollbackItemUpdate,
+          ChildrenSortedList_Child.RollbackItemRemove,
           ChildrenSortedList_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenSortedList_Children;
         onChildrenSortedList_ChildrenFilled();
-        CreateOnly_Parents = new StorageDictionary<CreateOnly_Parent, DC>(
+        CreateOnly_Parents = new DataStore<CreateOnly_Parent>(
           this,
+          storeKey,
           CreateOnly_Parent.SetKey,
+          CreateOnly_Parent.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnly_Parents;
         onCreateOnly_ParentsFilled();
-        CreateOnly_ParentNullables = new StorageDictionary<CreateOnly_ParentNullable, DC>(
+        CreateOnly_ParentNullables = new DataStore<CreateOnly_ParentNullable>(
           this,
+          storeKey,
           CreateOnly_ParentNullable.SetKey,
+          CreateOnly_ParentNullable.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnly_ParentNullables;
         onCreateOnly_ParentNullablesFilled();
-        CreateOnly_Children = new StorageDictionary<CreateOnly_Child, DC>(
+        CreateOnly_Children = new DataStore<CreateOnly_Child>(
           this,
+          storeKey,
           CreateOnly_Child.SetKey,
+          CreateOnly_Child.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnly_Children;
         onCreateOnly_ChildrenFilled();
-        CreateOnlyParentChangeableChild_Parents = new StorageDictionary<CreateOnlyParentChangeableChild_Parent, DC>(
+        CreateOnlyParentChangeableChild_Parents = new DataStore<CreateOnlyParentChangeableChild_Parent>(
           this,
+          storeKey,
           CreateOnlyParentChangeableChild_Parent.SetKey,
+          CreateOnlyParentChangeableChild_Parent.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnlyParentChangeableChild_Parents;
         onCreateOnlyParentChangeableChild_ParentsFilled();
-        CreateOnlyParentChangeableChild_ParentNullables = new StorageDictionary<CreateOnlyParentChangeableChild_ParentNullable, DC>(
+        CreateOnlyParentChangeableChild_ParentNullables = new DataStore<CreateOnlyParentChangeableChild_ParentNullable>(
           this,
+          storeKey,
           CreateOnlyParentChangeableChild_ParentNullable.SetKey,
+          CreateOnlyParentChangeableChild_ParentNullable.RollbackItemStore,
+          null,
+          CreateOnlyParentChangeableChild_ParentNullable.RollbackItemRemove,
           CreateOnlyParentChangeableChild_ParentNullable.Disconnect,
           areInstancesUpdatable: false,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = CreateOnlyParentChangeableChild_ParentNullables;
         onCreateOnlyParentChangeableChild_ParentNullablesFilled();
-        CreateOnlyParentChangeableChild_Children = new StorageDictionary<CreateOnlyParentChangeableChild_Child, DC>(
+        CreateOnlyParentChangeableChild_Children = new DataStore<CreateOnlyParentChangeableChild_Child>(
           this,
+          storeKey,
           CreateOnlyParentChangeableChild_Child.SetKey,
+          CreateOnlyParentChangeableChild_Child.RollbackItemStore,
+          CreateOnlyParentChangeableChild_Child.RollbackItemUpdate,
+          CreateOnlyParentChangeableChild_Child.RollbackItemRemove,
           CreateOnlyParentChangeableChild_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = CreateOnlyParentChangeableChild_Children;
         onCreateOnlyParentChangeableChild_ChildrenFilled();
-        PrivateConstructors = new StorageDictionary<PrivateConstructor, DC>(
+        PrivateConstructors = new DataStore<PrivateConstructor>(
           this,
+          storeKey,
           PrivateConstructor.SetKey,
+          PrivateConstructor.RollbackItemStore,
+          PrivateConstructor.RollbackItemUpdate,
+          PrivateConstructor.RollbackItemRemove,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = PrivateConstructors;
         onPrivateConstructorsFilled();
       } else {
-        DataTypeSamples = new StorageDictionaryCSV<DataTypeSample, DC>(
+        DataTypeSamples = new DataStoreCSV<DataTypeSample>(
           this,
+          storeKey,
           csvConfig!,
           DataTypeSample.EstimatedLineLength,
           DataTypeSample.Headers,
@@ -474,12 +622,17 @@ namespace StorageModel  {
           null,
           DataTypeSample.Update,
           DataTypeSample.Write,
+          DataTypeSample.RollbackItemStore,
+          DataTypeSample.RollbackItemUpdate,
+          DataTypeSample.RollbackItemRemove,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = DataTypeSamples;
         onDataTypeSamplesFilled();
-        SampleMasters = new StorageDictionaryCSV<SampleMaster, DC>(
+        SampleMasters = new DataStoreCSV<SampleMaster>(
           this,
+          storeKey,
           csvConfig!,
           SampleMaster.EstimatedLineLength,
           SampleMaster.Headers,
@@ -488,12 +641,17 @@ namespace StorageModel  {
           null,
           SampleMaster.Update,
           SampleMaster.Write,
+          SampleMaster.RollbackItemStore,
+          SampleMaster.RollbackItemUpdate,
+          null,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = SampleMasters;
         onSampleMastersFilled();
-        SampleX = new StorageDictionaryCSV<Sample, DC>(
+        SampleX = new DataStoreCSV<Sample>(
           this,
+          storeKey,
           csvConfig!,
           Sample.EstimatedLineLength,
           Sample.Headers,
@@ -502,12 +660,17 @@ namespace StorageModel  {
           Sample.Verify,
           Sample.Update,
           Sample.Write,
+          Sample.RollbackItemStore,
+          Sample.RollbackItemUpdate,
+          Sample.RollbackItemRemove,
           Sample.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = SampleX;
         onSampleXFilled();
-        SampleDetails = new StorageDictionaryCSV<SampleDetail, DC>(
+        SampleDetails = new DataStoreCSV<SampleDetail>(
           this,
+          storeKey,
           csvConfig!,
           SampleDetail.EstimatedLineLength,
           SampleDetail.Headers,
@@ -516,12 +679,17 @@ namespace StorageModel  {
           SampleDetail.Verify,
           SampleDetail.Update,
           SampleDetail.Write,
+          SampleDetail.RollbackItemStore,
+          SampleDetail.RollbackItemUpdate,
+          SampleDetail.RollbackItemRemove,
           SampleDetail.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = SampleDetails;
         onSampleDetailsFilled();
-        ParentOneChild_Parents = new StorageDictionaryCSV<ParentOneChild_Parent, DC>(
+        ParentOneChild_Parents = new DataStoreCSV<ParentOneChild_Parent>(
           this,
+          storeKey,
           csvConfig!,
           ParentOneChild_Parent.EstimatedLineLength,
           ParentOneChild_Parent.Headers,
@@ -530,12 +698,17 @@ namespace StorageModel  {
           null,
           ParentOneChild_Parent.Update,
           ParentOneChild_Parent.Write,
+          ParentOneChild_Parent.RollbackItemStore,
+          ParentOneChild_Parent.RollbackItemUpdate,
+          ParentOneChild_Parent.RollbackItemRemove,
           ParentOneChild_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ParentOneChild_Parents;
         onParentOneChild_ParentsFilled();
-        ParentOneChild_ParentNullables = new StorageDictionaryCSV<ParentOneChild_ParentNullable, DC>(
+        ParentOneChild_ParentNullables = new DataStoreCSV<ParentOneChild_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           ParentOneChild_ParentNullable.EstimatedLineLength,
           ParentOneChild_ParentNullable.Headers,
@@ -544,12 +717,17 @@ namespace StorageModel  {
           null,
           ParentOneChild_ParentNullable.Update,
           ParentOneChild_ParentNullable.Write,
+          ParentOneChild_ParentNullable.RollbackItemStore,
+          ParentOneChild_ParentNullable.RollbackItemUpdate,
+          ParentOneChild_ParentNullable.RollbackItemRemove,
           ParentOneChild_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ParentOneChild_ParentNullables;
         onParentOneChild_ParentNullablesFilled();
-        ParentOneChild_Children = new StorageDictionaryCSV<ParentOneChild_Child, DC>(
+        ParentOneChild_Children = new DataStoreCSV<ParentOneChild_Child>(
           this,
+          storeKey,
           csvConfig!,
           ParentOneChild_Child.EstimatedLineLength,
           ParentOneChild_Child.Headers,
@@ -558,12 +736,17 @@ namespace StorageModel  {
           ParentOneChild_Child.Verify,
           ParentOneChild_Child.Update,
           ParentOneChild_Child.Write,
+          ParentOneChild_Child.RollbackItemStore,
+          ParentOneChild_Child.RollbackItemUpdate,
+          ParentOneChild_Child.RollbackItemRemove,
           ParentOneChild_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ParentOneChild_Children;
         onParentOneChild_ChildrenFilled();
-        PropertyNeedsDictionaryClasses = new StorageDictionaryCSV<PropertyNeedsDictionaryClass, DC>(
+        PropertyNeedsDictionaryClasses = new DataStoreCSV<PropertyNeedsDictionaryClass>(
           this,
+          storeKey,
           csvConfig!,
           PropertyNeedsDictionaryClass.EstimatedLineLength,
           PropertyNeedsDictionaryClass.Headers,
@@ -572,54 +755,74 @@ namespace StorageModel  {
           null,
           PropertyNeedsDictionaryClass.Update,
           PropertyNeedsDictionaryClass.Write,
+          PropertyNeedsDictionaryClass.RollbackItemStore,
+          PropertyNeedsDictionaryClass.RollbackItemUpdate,
+          PropertyNeedsDictionaryClass.RollbackItemRemove,
           PropertyNeedsDictionaryClass.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = PropertyNeedsDictionaryClasses;
         onPropertyNeedsDictionaryClassesFilled();
-        Lookup_Parents = new StorageDictionaryCSV<Lookup_Parent, DC>(
+        Lookup_Parents = new DataStoreCSV<Lookup_Parent>(
           this,
+          storeKey,
           csvConfig!,
           Lookup_Parent.EstimatedLineLength,
           Lookup_Parent.Headers,
           Lookup_Parent.SetKey,
           Lookup_Parent.Create,
           null,
-          null,
+          Lookup_Parent.Update,
           Lookup_Parent.Write,
+          Lookup_Parent.RollbackItemStore,
+          Lookup_Parent.RollbackItemUpdate,
           null,
-          areInstancesUpdatable: false,
+          null,
+          areInstancesUpdatable: true,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = Lookup_Parents;
         onLookup_ParentsFilled();
-        Lookup_ParentNullables = new StorageDictionaryCSV<Lookup_ParentNullable, DC>(
+        Lookup_ParentNullables = new DataStoreCSV<Lookup_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           Lookup_ParentNullable.EstimatedLineLength,
           Lookup_ParentNullable.Headers,
           Lookup_ParentNullable.SetKey,
           Lookup_ParentNullable.Create,
           null,
-          null,
+          Lookup_ParentNullable.Update,
           Lookup_ParentNullable.Write,
+          Lookup_ParentNullable.RollbackItemStore,
+          Lookup_ParentNullable.RollbackItemUpdate,
           null,
-          areInstancesUpdatable: false,
-          areInstancesDeletable: true);
+          null,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: false);
+        DataStores[storeKey++] = Lookup_ParentNullables;
         onLookup_ParentNullablesFilled();
-        Lookup_Children = new StorageDictionaryCSV<Lookup_Child, DC>(
+        Lookup_Children = new DataStoreCSV<Lookup_Child>(
           this,
+          storeKey,
           csvConfig!,
           Lookup_Child.EstimatedLineLength,
           Lookup_Child.Headers,
           Lookup_Child.SetKey,
           Lookup_Child.Create,
           Lookup_Child.Verify,
-          null,
+          Lookup_Child.Update,
           Lookup_Child.Write,
-          null,
-          areInstancesUpdatable: false,
-          areInstancesDeletable: false);
+          Lookup_Child.RollbackItemStore,
+          Lookup_Child.RollbackItemUpdate,
+          Lookup_Child.RollbackItemRemove,
+          Lookup_Child.Disconnect,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        DataStores[storeKey++] = Lookup_Children;
         onLookup_ChildrenFilled();
-        ChildrenList_Parents = new StorageDictionaryCSV<ChildrenList_Parent, DC>(
+        ChildrenList_Parents = new DataStoreCSV<ChildrenList_Parent>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenList_Parent.EstimatedLineLength,
           ChildrenList_Parent.Headers,
@@ -628,12 +831,17 @@ namespace StorageModel  {
           null,
           ChildrenList_Parent.Update,
           ChildrenList_Parent.Write,
+          ChildrenList_Parent.RollbackItemStore,
+          ChildrenList_Parent.RollbackItemUpdate,
+          ChildrenList_Parent.RollbackItemRemove,
           ChildrenList_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenList_Parents;
         onChildrenList_ParentsFilled();
-        ChildrenList_ParentNullables = new StorageDictionaryCSV<ChildrenList_ParentNullable, DC>(
+        ChildrenList_ParentNullables = new DataStoreCSV<ChildrenList_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenList_ParentNullable.EstimatedLineLength,
           ChildrenList_ParentNullable.Headers,
@@ -642,12 +850,17 @@ namespace StorageModel  {
           null,
           ChildrenList_ParentNullable.Update,
           ChildrenList_ParentNullable.Write,
+          ChildrenList_ParentNullable.RollbackItemStore,
+          ChildrenList_ParentNullable.RollbackItemUpdate,
+          ChildrenList_ParentNullable.RollbackItemRemove,
           ChildrenList_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenList_ParentNullables;
         onChildrenList_ParentNullablesFilled();
-        ChildrenList_CreateOnlyParents = new StorageDictionaryCSV<ChildrenList_CreateOnlyParent, DC>(
+        ChildrenList_CreateOnlyParents = new DataStoreCSV<ChildrenList_CreateOnlyParent>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenList_CreateOnlyParent.EstimatedLineLength,
           ChildrenList_CreateOnlyParent.Headers,
@@ -656,12 +869,17 @@ namespace StorageModel  {
           null,
           null,
           ChildrenList_CreateOnlyParent.Write,
+          ChildrenList_CreateOnlyParent.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = ChildrenList_CreateOnlyParents;
         onChildrenList_CreateOnlyParentsFilled();
-        ChildrenList_CreateOnlyParentNullables = new StorageDictionaryCSV<ChildrenList_CreateOnlyParentNullable, DC>(
+        ChildrenList_CreateOnlyParentNullables = new DataStoreCSV<ChildrenList_CreateOnlyParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenList_CreateOnlyParentNullable.EstimatedLineLength,
           ChildrenList_CreateOnlyParentNullable.Headers,
@@ -670,12 +888,17 @@ namespace StorageModel  {
           null,
           null,
           ChildrenList_CreateOnlyParentNullable.Write,
+          ChildrenList_CreateOnlyParentNullable.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = ChildrenList_CreateOnlyParentNullables;
         onChildrenList_CreateOnlyParentNullablesFilled();
-        ChildrenList_Children = new StorageDictionaryCSV<ChildrenList_Child, DC>(
+        ChildrenList_Children = new DataStoreCSV<ChildrenList_Child>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenList_Child.EstimatedLineLength,
           ChildrenList_Child.Headers,
@@ -684,12 +907,17 @@ namespace StorageModel  {
           ChildrenList_Child.Verify,
           ChildrenList_Child.Update,
           ChildrenList_Child.Write,
+          ChildrenList_Child.RollbackItemStore,
+          ChildrenList_Child.RollbackItemUpdate,
+          ChildrenList_Child.RollbackItemRemove,
           ChildrenList_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenList_Children;
         onChildrenList_ChildrenFilled();
-        ChildrenList_CreateOnlyChildren = new StorageDictionaryCSV<ChildrenList_CreateOnlyChild, DC>(
+        ChildrenList_CreateOnlyChildren = new DataStoreCSV<ChildrenList_CreateOnlyChild>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenList_CreateOnlyChild.EstimatedLineLength,
           ChildrenList_CreateOnlyChild.Headers,
@@ -698,12 +926,17 @@ namespace StorageModel  {
           ChildrenList_CreateOnlyChild.Verify,
           null,
           ChildrenList_CreateOnlyChild.Write,
+          ChildrenList_CreateOnlyChild.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = ChildrenList_CreateOnlyChildren;
         onChildrenList_CreateOnlyChildrenFilled();
-        ChildrenDictionary_Parents = new StorageDictionaryCSV<ChildrenDictionary_Parent, DC>(
+        ChildrenDictionary_Parents = new DataStoreCSV<ChildrenDictionary_Parent>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenDictionary_Parent.EstimatedLineLength,
           ChildrenDictionary_Parent.Headers,
@@ -712,12 +945,17 @@ namespace StorageModel  {
           null,
           ChildrenDictionary_Parent.Update,
           ChildrenDictionary_Parent.Write,
+          ChildrenDictionary_Parent.RollbackItemStore,
+          ChildrenDictionary_Parent.RollbackItemUpdate,
+          ChildrenDictionary_Parent.RollbackItemRemove,
           ChildrenDictionary_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenDictionary_Parents;
         onChildrenDictionary_ParentsFilled();
-        ChildrenDictionary_ParentNullables = new StorageDictionaryCSV<ChildrenDictionary_ParentNullable, DC>(
+        ChildrenDictionary_ParentNullables = new DataStoreCSV<ChildrenDictionary_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenDictionary_ParentNullable.EstimatedLineLength,
           ChildrenDictionary_ParentNullable.Headers,
@@ -726,12 +964,17 @@ namespace StorageModel  {
           null,
           ChildrenDictionary_ParentNullable.Update,
           ChildrenDictionary_ParentNullable.Write,
+          ChildrenDictionary_ParentNullable.RollbackItemStore,
+          ChildrenDictionary_ParentNullable.RollbackItemUpdate,
+          ChildrenDictionary_ParentNullable.RollbackItemRemove,
           ChildrenDictionary_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenDictionary_ParentNullables;
         onChildrenDictionary_ParentNullablesFilled();
-        ChildrenDictionary_Children = new StorageDictionaryCSV<ChildrenDictionary_Child, DC>(
+        ChildrenDictionary_Children = new DataStoreCSV<ChildrenDictionary_Child>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenDictionary_Child.EstimatedLineLength,
           ChildrenDictionary_Child.Headers,
@@ -740,12 +983,17 @@ namespace StorageModel  {
           ChildrenDictionary_Child.Verify,
           ChildrenDictionary_Child.Update,
           ChildrenDictionary_Child.Write,
+          ChildrenDictionary_Child.RollbackItemStore,
+          ChildrenDictionary_Child.RollbackItemUpdate,
+          ChildrenDictionary_Child.RollbackItemRemove,
           ChildrenDictionary_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenDictionary_Children;
         onChildrenDictionary_ChildrenFilled();
-        ChildrenSortedList_Parents = new StorageDictionaryCSV<ChildrenSortedList_Parent, DC>(
+        ChildrenSortedList_Parents = new DataStoreCSV<ChildrenSortedList_Parent>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenSortedList_Parent.EstimatedLineLength,
           ChildrenSortedList_Parent.Headers,
@@ -754,12 +1002,17 @@ namespace StorageModel  {
           null,
           ChildrenSortedList_Parent.Update,
           ChildrenSortedList_Parent.Write,
+          ChildrenSortedList_Parent.RollbackItemStore,
+          ChildrenSortedList_Parent.RollbackItemUpdate,
+          ChildrenSortedList_Parent.RollbackItemRemove,
           ChildrenSortedList_Parent.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenSortedList_Parents;
         onChildrenSortedList_ParentsFilled();
-        ChildrenSortedList_ParentNullables = new StorageDictionaryCSV<ChildrenSortedList_ParentNullable, DC>(
+        ChildrenSortedList_ParentNullables = new DataStoreCSV<ChildrenSortedList_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenSortedList_ParentNullable.EstimatedLineLength,
           ChildrenSortedList_ParentNullable.Headers,
@@ -768,12 +1021,17 @@ namespace StorageModel  {
           null,
           ChildrenSortedList_ParentNullable.Update,
           ChildrenSortedList_ParentNullable.Write,
+          ChildrenSortedList_ParentNullable.RollbackItemStore,
+          ChildrenSortedList_ParentNullable.RollbackItemUpdate,
+          ChildrenSortedList_ParentNullable.RollbackItemRemove,
           ChildrenSortedList_ParentNullable.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenSortedList_ParentNullables;
         onChildrenSortedList_ParentNullablesFilled();
-        ChildrenSortedList_Children = new StorageDictionaryCSV<ChildrenSortedList_Child, DC>(
+        ChildrenSortedList_Children = new DataStoreCSV<ChildrenSortedList_Child>(
           this,
+          storeKey,
           csvConfig!,
           ChildrenSortedList_Child.EstimatedLineLength,
           ChildrenSortedList_Child.Headers,
@@ -782,12 +1040,17 @@ namespace StorageModel  {
           ChildrenSortedList_Child.Verify,
           ChildrenSortedList_Child.Update,
           ChildrenSortedList_Child.Write,
+          ChildrenSortedList_Child.RollbackItemStore,
+          ChildrenSortedList_Child.RollbackItemUpdate,
+          ChildrenSortedList_Child.RollbackItemRemove,
           ChildrenSortedList_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = ChildrenSortedList_Children;
         onChildrenSortedList_ChildrenFilled();
-        CreateOnly_Parents = new StorageDictionaryCSV<CreateOnly_Parent, DC>(
+        CreateOnly_Parents = new DataStoreCSV<CreateOnly_Parent>(
           this,
+          storeKey,
           csvConfig!,
           CreateOnly_Parent.EstimatedLineLength,
           CreateOnly_Parent.Headers,
@@ -796,12 +1059,17 @@ namespace StorageModel  {
           null,
           null,
           CreateOnly_Parent.Write,
+          CreateOnly_Parent.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnly_Parents;
         onCreateOnly_ParentsFilled();
-        CreateOnly_ParentNullables = new StorageDictionaryCSV<CreateOnly_ParentNullable, DC>(
+        CreateOnly_ParentNullables = new DataStoreCSV<CreateOnly_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           CreateOnly_ParentNullable.EstimatedLineLength,
           CreateOnly_ParentNullable.Headers,
@@ -810,12 +1078,17 @@ namespace StorageModel  {
           null,
           null,
           CreateOnly_ParentNullable.Write,
+          CreateOnly_ParentNullable.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnly_ParentNullables;
         onCreateOnly_ParentNullablesFilled();
-        CreateOnly_Children = new StorageDictionaryCSV<CreateOnly_Child, DC>(
+        CreateOnly_Children = new DataStoreCSV<CreateOnly_Child>(
           this,
+          storeKey,
           csvConfig!,
           CreateOnly_Child.EstimatedLineLength,
           CreateOnly_Child.Headers,
@@ -824,12 +1097,17 @@ namespace StorageModel  {
           CreateOnly_Child.Verify,
           null,
           CreateOnly_Child.Write,
+          CreateOnly_Child.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnly_Children;
         onCreateOnly_ChildrenFilled();
-        CreateOnlyParentChangeableChild_Parents = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_Parent, DC>(
+        CreateOnlyParentChangeableChild_Parents = new DataStoreCSV<CreateOnlyParentChangeableChild_Parent>(
           this,
+          storeKey,
           csvConfig!,
           CreateOnlyParentChangeableChild_Parent.EstimatedLineLength,
           CreateOnlyParentChangeableChild_Parent.Headers,
@@ -838,12 +1116,17 @@ namespace StorageModel  {
           null,
           null,
           CreateOnlyParentChangeableChild_Parent.Write,
+          CreateOnlyParentChangeableChild_Parent.RollbackItemStore,
+          null,
+          null,
           null,
           areInstancesUpdatable: false,
           areInstancesDeletable: false);
+        DataStores[storeKey++] = CreateOnlyParentChangeableChild_Parents;
         onCreateOnlyParentChangeableChild_ParentsFilled();
-        CreateOnlyParentChangeableChild_ParentNullables = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_ParentNullable, DC>(
+        CreateOnlyParentChangeableChild_ParentNullables = new DataStoreCSV<CreateOnlyParentChangeableChild_ParentNullable>(
           this,
+          storeKey,
           csvConfig!,
           CreateOnlyParentChangeableChild_ParentNullable.EstimatedLineLength,
           CreateOnlyParentChangeableChild_ParentNullable.Headers,
@@ -852,12 +1135,17 @@ namespace StorageModel  {
           null,
           null,
           CreateOnlyParentChangeableChild_ParentNullable.Write,
+          CreateOnlyParentChangeableChild_ParentNullable.RollbackItemStore,
+          null,
+          CreateOnlyParentChangeableChild_ParentNullable.RollbackItemRemove,
           CreateOnlyParentChangeableChild_ParentNullable.Disconnect,
           areInstancesUpdatable: false,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = CreateOnlyParentChangeableChild_ParentNullables;
         onCreateOnlyParentChangeableChild_ParentNullablesFilled();
-        CreateOnlyParentChangeableChild_Children = new StorageDictionaryCSV<CreateOnlyParentChangeableChild_Child, DC>(
+        CreateOnlyParentChangeableChild_Children = new DataStoreCSV<CreateOnlyParentChangeableChild_Child>(
           this,
+          storeKey,
           csvConfig!,
           CreateOnlyParentChangeableChild_Child.EstimatedLineLength,
           CreateOnlyParentChangeableChild_Child.Headers,
@@ -866,12 +1154,17 @@ namespace StorageModel  {
           CreateOnlyParentChangeableChild_Child.Verify,
           CreateOnlyParentChangeableChild_Child.Update,
           CreateOnlyParentChangeableChild_Child.Write,
+          CreateOnlyParentChangeableChild_Child.RollbackItemStore,
+          CreateOnlyParentChangeableChild_Child.RollbackItemUpdate,
+          CreateOnlyParentChangeableChild_Child.RollbackItemRemove,
           CreateOnlyParentChangeableChild_Child.Disconnect,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = CreateOnlyParentChangeableChild_Children;
         onCreateOnlyParentChangeableChild_ChildrenFilled();
-        PrivateConstructors = new StorageDictionaryCSV<PrivateConstructor, DC>(
+        PrivateConstructors = new DataStoreCSV<PrivateConstructor>(
           this,
+          storeKey,
           csvConfig!,
           PrivateConstructor.EstimatedLineLength,
           PrivateConstructor.Headers,
@@ -880,9 +1173,13 @@ namespace StorageModel  {
           null,
           PrivateConstructor.Update,
           PrivateConstructor.Write,
+          PrivateConstructor.RollbackItemStore,
+          PrivateConstructor.RollbackItemUpdate,
+          PrivateConstructor.RollbackItemRemove,
           null,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
+        DataStores[storeKey++] = PrivateConstructors;
         onPrivateConstructorsFilled();
       }
       onConstructed();
@@ -1054,64 +1351,80 @@ namespace StorageModel  {
     #region IDisposable Support
     //      -------------------
 
-    /// <summary>
-    /// Is DC.Data already disposed ?
-    /// </summary>
-    public bool IsDisposed {
-      get { return isDisposed==1; }
-    }
-    int isDisposed = 1;
-
-
-    protected virtual void Dispose(bool disposing) {
-      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously
-      if (wasDisposed==1) return; // already disposed
-
+    protected override void Dispose(bool disposing) {
       if (disposing) {
         onDispose();
         PrivateConstructors.Dispose();
+        PrivateConstructors = null!;
         CreateOnlyParentChangeableChild_Children.Dispose();
+        CreateOnlyParentChangeableChild_Children = null!;
         CreateOnlyParentChangeableChild_ParentNullables.Dispose();
+        CreateOnlyParentChangeableChild_ParentNullables = null!;
         CreateOnlyParentChangeableChild_Parents.Dispose();
+        CreateOnlyParentChangeableChild_Parents = null!;
         CreateOnly_Children.Dispose();
+        CreateOnly_Children = null!;
         CreateOnly_ParentNullables.Dispose();
+        CreateOnly_ParentNullables = null!;
         CreateOnly_Parents.Dispose();
+        CreateOnly_Parents = null!;
         ChildrenSortedList_Children.Dispose();
+        ChildrenSortedList_Children = null!;
         ChildrenSortedList_ParentNullables.Dispose();
+        ChildrenSortedList_ParentNullables = null!;
         ChildrenSortedList_Parents.Dispose();
+        ChildrenSortedList_Parents = null!;
         ChildrenDictionary_Children.Dispose();
+        ChildrenDictionary_Children = null!;
         ChildrenDictionary_ParentNullables.Dispose();
+        ChildrenDictionary_ParentNullables = null!;
         ChildrenDictionary_Parents.Dispose();
+        ChildrenDictionary_Parents = null!;
         ChildrenList_CreateOnlyChildren.Dispose();
+        ChildrenList_CreateOnlyChildren = null!;
         ChildrenList_Children.Dispose();
+        ChildrenList_Children = null!;
         ChildrenList_CreateOnlyParentNullables.Dispose();
+        ChildrenList_CreateOnlyParentNullables = null!;
         ChildrenList_CreateOnlyParents.Dispose();
+        ChildrenList_CreateOnlyParents = null!;
         ChildrenList_ParentNullables.Dispose();
+        ChildrenList_ParentNullables = null!;
         ChildrenList_Parents.Dispose();
+        ChildrenList_Parents = null!;
         Lookup_Children.Dispose();
+        Lookup_Children = null!;
         Lookup_ParentNullables.Dispose();
+        Lookup_ParentNullables = null!;
         Lookup_Parents.Dispose();
+        Lookup_Parents = null!;
         PropertyNeedsDictionaryClasses.Dispose();
+        PropertyNeedsDictionaryClasses = null!;
+        PropertyNeedsDictionaryClassesByIdInt = null!;
+        PropertyNeedsDictionaryClassesByIdString = null!;
         ParentOneChild_Children.Dispose();
+        ParentOneChild_Children = null!;
         ParentOneChild_ParentNullables.Dispose();
+        ParentOneChild_ParentNullables = null!;
         ParentOneChild_Parents.Dispose();
+        ParentOneChild_Parents = null!;
         SampleDetails.Dispose();
+        SampleDetails = null!;
         SampleX.Dispose();
+        SampleX = null!;
         SampleMasters.Dispose();
+        SampleMasters = null!;
         DataTypeSamples.Dispose();
+        DataTypeSamples = null!;
         data = null;
       }
+      base.Dispose(disposing);
     }
 
     /// <summary>}
     /// Called before storageDirectories get disposed.
     /// </summary>}
     partial void onDispose();
-
-
-    public void Dispose() {
-      Dispose(true);
-    }
     #endregion
 
 

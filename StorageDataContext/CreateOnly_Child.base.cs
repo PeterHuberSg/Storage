@@ -13,7 +13,7 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
@@ -21,7 +21,7 @@ namespace StorageModel  {
     /// creation, it cannot be removed from the parent, because the Parent property of the child cannot be changed
     /// either.
     /// </summary>
-  public partial class CreateOnly_Child: IStorage<CreateOnly_Child> {
+  public partial class CreateOnly_Child: IStorageItemGeneric<CreateOnly_Child> {
 
     #region Properties
     //      ----------
@@ -30,7 +30,9 @@ namespace StorageModel  {
     /// Unique identifier for CreateOnly_Child. Gets set once CreateOnly_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(CreateOnly_Child createOnly_Child, int key) { createOnly_Child.Key = key; }
+    internal static void SetKey(IStorageItem createOnly_Child, int key) {
+      ((CreateOnly_Child)createOnly_Child).Key = key;
+    }
 
 
     /// <summary>
@@ -71,7 +73,7 @@ namespace StorageModel  {
     /// This event will never be raised, but is needed to comply with IStorage.
     /// </summary>
 #pragma warning disable 67
-    public event Action<CreateOnly_Child>? HasChanged;
+    public event Action</*old*/CreateOnly_Child, /*new*/CreateOnly_Child>? HasChanged;
 #pragma warning restore 67
     #endregion
 
@@ -99,13 +101,28 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public CreateOnly_Child(CreateOnly_Child original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      CreateOnlyParent = original.CreateOnlyParent;
+      CreateOnlyParentNullable = original.CreateOnlyParentNullable;
+      onCloned(this);
+    }
+    partial void onCloned(CreateOnly_Child clone);
+
+
+    /// <summary>
     /// Constructor for CreateOnly_Child read from CSV file
     /// </summary>
-    private CreateOnly_Child(int key, CsvReader csvReader, DC context) {
+    private CreateOnly_Child(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       var createOnly_ParentKey = csvReader.ReadInt();
-      if (context.CreateOnly_Parents.TryGetValue(createOnly_ParentKey, out var createOnlyParent)) {
+      if (DC.Data.CreateOnly_Parents.TryGetValue(createOnly_ParentKey, out var createOnlyParent)) {
           CreateOnlyParent = createOnlyParent;
       } else {
         throw new Exception($"Read CreateOnly_Child from CSV file: Cannot find CreateOnlyParent with key {createOnly_ParentKey}." + Environment.NewLine + 
@@ -113,7 +130,7 @@ namespace StorageModel  {
       }
       var createOnlyParentNullableKey = csvReader.ReadIntNull();
       if (createOnlyParentNullableKey.HasValue) {
-        if (context.CreateOnly_ParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out var createOnlyParentNullable)) {
+        if (DC.Data.CreateOnly_ParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out var createOnlyParentNullable)) {
           CreateOnlyParentNullable = createOnlyParentNullable;
         } else {
           CreateOnlyParentNullable = CreateOnly_ParentNullable.NoCreateOnly_ParentNullable;
@@ -125,16 +142,16 @@ namespace StorageModel  {
       if (createOnlyParentNullableKey.HasValue && CreateOnlyParentNullable!=CreateOnly_ParentNullable.NoCreateOnly_ParentNullable) {
         CreateOnlyParentNullable!.AddToCreateOnly_Children(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New CreateOnly_Child read from CSV file
     /// </summary>
-    internal static CreateOnly_Child Create(int key, CsvReader csvReader, DC context) {
-      return new CreateOnly_Child(key, csvReader, context);
+    internal static CreateOnly_Child Create(int key, CsvReader csvReader) {
+      return new CreateOnly_Child(key, csvReader);
     }
 
 
@@ -211,6 +228,60 @@ namespace StorageModel  {
     public void Remove() {
       throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
+
+
+    /// <summary>
+    /// Removes CreateOnly_Child from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var createOnly_Child = (CreateOnly_Child) item;
+      if (createOnly_Child.CreateOnlyParent!=CreateOnly_Parent.NoCreateOnly_Parent) {
+        createOnly_Child.CreateOnlyParent.RemoveFromCreateOnly_Children(createOnly_Child);
+      }
+      if (createOnly_Child.CreateOnlyParentNullable!=null && createOnly_Child.CreateOnlyParentNullable!=CreateOnly_ParentNullable.NoCreateOnly_ParentNullable) {
+        createOnly_Child.CreateOnlyParentNullable.RemoveFromCreateOnly_Children(createOnly_Child);
+      }
+      createOnly_Child.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the CreateOnly_Child item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var createOnly_ChildOld = (CreateOnly_Child) oldItem;
+      var createOnly_ChildNew = (CreateOnly_Child) newItem;
+      if (createOnly_ChildNew.Text!=createOnly_ChildOld.Text) {
+        throw new Exception($"CreateOnly_Child.Update(): Property Text '{createOnly_ChildNew.Text}' is " +
+          $"readonly, Text '{createOnly_ChildOld.Text}' read from the CSV file should be the same." + Environment.NewLine + 
+          createOnly_ChildNew.ToString());
+      }
+      if (createOnly_ChildNew.CreateOnlyParent!=createOnly_ChildOld.CreateOnlyParent) {
+        throw new Exception($"CreateOnly_Child.Update(): Property CreateOnlyParent '{createOnly_ChildNew.CreateOnlyParent}' is " +
+          $"readonly, CreateOnlyParent '{createOnly_ChildOld.CreateOnlyParent}' read from the CSV file should be the same." + Environment.NewLine + 
+          createOnly_ChildNew.ToString());
+      }
+      if (createOnly_ChildNew.CreateOnlyParentNullable!=createOnly_ChildOld.CreateOnlyParentNullable) {
+        throw new Exception($"CreateOnly_Child.Update(): Property CreateOnlyParentNullable '{createOnly_ChildNew.CreateOnlyParentNullable}' is " +
+          $"readonly, CreateOnlyParentNullable '{createOnly_ChildOld.CreateOnlyParentNullable}' read from the CSV file should be the same." + Environment.NewLine + 
+          createOnly_ChildNew.ToString());
+      }
+      createOnly_ChildNew.onRollbackItemUpdated(createOnly_ChildOld);
+    }
+    partial void onRollbackItemUpdated(CreateOnly_Child oldCreateOnly_Child);
+
+
+    /// <summary>
+    /// Adds CreateOnly_Child item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var createOnly_Child = (CreateOnly_Child) item;
+      createOnly_Child.CreateOnlyParent.AddToCreateOnly_Children(createOnly_Child);
+      createOnly_Child.CreateOnlyParentNullable?.AddToCreateOnly_Children(createOnly_Child);
+      createOnly_Child.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

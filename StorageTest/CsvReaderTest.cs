@@ -287,7 +287,9 @@ namespace StorageTest {
 
 
     private void reportException(Exception obj) {
-      throw new NotImplementedException();
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
+      Assert.Fail();
     }
 
 

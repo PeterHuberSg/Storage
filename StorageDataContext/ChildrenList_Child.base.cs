@@ -14,13 +14,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// This deletable child has links to 4 different types of parents
     /// </summary>
-  public partial class ChildrenList_Child: IStorage<ChildrenList_Child> {
+  public partial class ChildrenList_Child: IStorageItemGeneric<ChildrenList_Child> {
 
     #region Properties
     //      ----------
@@ -29,7 +29,9 @@ namespace StorageModel  {
     /// Unique identifier for ChildrenList_Child. Gets set once ChildrenList_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ChildrenList_Child childrenList_Child, int key) { childrenList_Child.Key = key; }
+    internal static void SetKey(IStorageItem childrenList_Child, int key) {
+      ((ChildrenList_Child)childrenList_Child).Key = key;
+    }
 
 
     /// <summary>
@@ -88,7 +90,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ChildrenList_Child has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ChildrenList_Child>? HasChanged;
+    public event Action</*old*/ChildrenList_Child, /*new*/ChildrenList_Child>? HasChanged;
     #endregion
 
 
@@ -126,13 +128,30 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ChildrenList_Child(ChildrenList_Child original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      Parent = original.Parent;
+      ParentNullable = original.ParentNullable;
+      CreateOnlyParent = original.CreateOnlyParent;
+      CreateOnlyParentNullable = original.CreateOnlyParentNullable;
+      onCloned(this);
+    }
+    partial void onCloned(ChildrenList_Child clone);
+
+
+    /// <summary>
     /// Constructor for ChildrenList_Child read from CSV file
     /// </summary>
-    private ChildrenList_Child(int key, CsvReader csvReader, DC context) {
+    private ChildrenList_Child(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       var childrenList_ParentKey = csvReader.ReadInt();
-      if (context.ChildrenList_Parents.TryGetValue(childrenList_ParentKey, out var parent)) {
+      if (DC.Data.ChildrenList_Parents.TryGetValue(childrenList_ParentKey, out var parent)) {
           Parent = parent;
       } else {
         throw new Exception($"Read ChildrenList_Child from CSV file: Cannot find Parent with key {childrenList_ParentKey}." + Environment.NewLine + 
@@ -140,14 +159,14 @@ namespace StorageModel  {
       }
       var parentNullableKey = csvReader.ReadIntNull();
       if (parentNullableKey.HasValue) {
-        if (context.ChildrenList_ParentNullables.TryGetValue(parentNullableKey.Value, out var parentNullable)) {
+        if (DC.Data.ChildrenList_ParentNullables.TryGetValue(parentNullableKey.Value, out var parentNullable)) {
           ParentNullable = parentNullable;
         } else {
           ParentNullable = ChildrenList_ParentNullable.NoChildrenList_ParentNullable;
         }
       }
       var childrenList_CreateOnlyParentKey = csvReader.ReadInt();
-      if (context.ChildrenList_CreateOnlyParents.TryGetValue(childrenList_CreateOnlyParentKey, out var createOnlyParent)) {
+      if (DC.Data.ChildrenList_CreateOnlyParents.TryGetValue(childrenList_CreateOnlyParentKey, out var createOnlyParent)) {
           CreateOnlyParent = createOnlyParent;
       } else {
         throw new Exception($"Read ChildrenList_Child from CSV file: Cannot find CreateOnlyParent with key {childrenList_CreateOnlyParentKey}." + Environment.NewLine + 
@@ -155,7 +174,7 @@ namespace StorageModel  {
       }
       var createOnlyParentNullableKey = csvReader.ReadIntNull();
       if (createOnlyParentNullableKey.HasValue) {
-        if (context.ChildrenList_CreateOnlyParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out var createOnlyParentNullable)) {
+        if (DC.Data.ChildrenList_CreateOnlyParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out var createOnlyParentNullable)) {
           CreateOnlyParentNullable = createOnlyParentNullable;
         } else {
           CreateOnlyParentNullable = ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable;
@@ -173,16 +192,16 @@ namespace StorageModel  {
       if (createOnlyParentNullableKey.HasValue && CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
         CreateOnlyParentNullable!.AddToChildrenList_Children(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ChildrenList_Child read from CSV file
     /// </summary>
-    internal static ChildrenList_Child Create(int key, CsvReader csvReader, DC context) {
-      return new ChildrenList_Child(key, csvReader, context);
+    internal static ChildrenList_Child Create(int key, CsvReader csvReader) {
+      return new ChildrenList_Child(key, csvReader);
     }
 
 
@@ -285,6 +304,7 @@ namespace StorageModel  {
       ChildrenList_CreateOnlyParent createOnlyParent, 
       ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable)
     {
+      var clone = new ChildrenList_Child(this);
       var isCancelled = false;
       onUpdating(text, parent, parentNullable, createOnlyParent, createOnlyParentNullable, ref isCancelled);
       if (isCancelled) return;
@@ -375,8 +395,11 @@ namespace StorageModel  {
         }
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ChildrenList_Children.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(
@@ -386,15 +409,15 @@ namespace StorageModel  {
       ChildrenList_CreateOnlyParent createOnlyParent, 
       ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable, 
       ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ChildrenList_Child old);
 
 
     /// <summary>
     /// Updates this ChildrenList_Child with values from CSV file
     /// </summary>
-    internal static void Update(ChildrenList_Child childrenList_Child, CsvReader csvReader, DC context) {
+    internal static void Update(ChildrenList_Child childrenList_Child, CsvReader csvReader){
       childrenList_Child.Text = csvReader.ReadString();
-      if (!context.ChildrenList_Parents.TryGetValue(csvReader.ReadInt(), out var parent)) {
+      if (!DC.Data.ChildrenList_Parents.TryGetValue(csvReader.ReadInt(), out var parent)) {
         parent = ChildrenList_Parent.NoChildrenList_Parent;
       }
       if (childrenList_Child.Parent!=parent) {
@@ -409,7 +432,7 @@ namespace StorageModel  {
       if (parentNullableKey is null) {
         parentNullable = null;
       } else {
-        if (!context.ChildrenList_ParentNullables.TryGetValue(parentNullableKey.Value, out parentNullable)) {
+        if (!DC.Data.ChildrenList_ParentNullables.TryGetValue(parentNullableKey.Value, out parentNullable)) {
           parentNullable = ChildrenList_ParentNullable.NoChildrenList_ParentNullable;
         }
       }
@@ -434,7 +457,7 @@ namespace StorageModel  {
           childrenList_Child.ParentNullable.AddToChildrenList_Children(childrenList_Child);
         }
       }
-      if (!context.ChildrenList_CreateOnlyParents.TryGetValue(csvReader.ReadInt(), out var createOnlyParent)) {
+      if (!DC.Data.ChildrenList_CreateOnlyParents.TryGetValue(csvReader.ReadInt(), out var createOnlyParent)) {
         createOnlyParent = ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent;
       }
       if (childrenList_Child.CreateOnlyParent!=createOnlyParent) {
@@ -449,7 +472,7 @@ namespace StorageModel  {
       if (createOnlyParentNullableKey is null) {
         createOnlyParentNullable = null;
       } else {
-        if (!context.ChildrenList_CreateOnlyParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out createOnlyParentNullable)) {
+        if (!DC.Data.ChildrenList_CreateOnlyParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out createOnlyParentNullable)) {
           createOnlyParentNullable = ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable;
         }
       }
@@ -523,8 +546,10 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveParentNullable(ChildrenList_ParentNullable childrenList_ParentNullable) {
       if (childrenList_ParentNullable!=ParentNullable) throw new Exception();
+
+      var clone = new ChildrenList_Child(this);
       ParentNullable = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
 
 
@@ -533,9 +558,115 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveCreateOnlyParentNullable(ChildrenList_CreateOnlyParentNullable childrenList_CreateOnlyParentNullable) {
       if (childrenList_CreateOnlyParentNullable!=CreateOnlyParentNullable) throw new Exception();
+
+      var clone = new ChildrenList_Child(this);
       CreateOnlyParentNullable = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
+
+
+    /// <summary>
+    /// Removes ChildrenList_Child from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var childrenList_Child = (ChildrenList_Child) item;
+      if (childrenList_Child.Parent!=ChildrenList_Parent.NoChildrenList_Parent) {
+        childrenList_Child.Parent.RemoveFromChildrenList_Children(childrenList_Child);
+      }
+      if (childrenList_Child.ParentNullable!=null && childrenList_Child.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
+        childrenList_Child.ParentNullable.RemoveFromChildrenList_Children(childrenList_Child);
+      }
+      if (childrenList_Child.CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
+        childrenList_Child.CreateOnlyParent.RemoveFromChildrenList_Children(childrenList_Child);
+      }
+      if (childrenList_Child.CreateOnlyParentNullable!=null && childrenList_Child.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
+        childrenList_Child.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_Child);
+      }
+      childrenList_Child.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ChildrenList_Child item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var childrenList_ChildOld = (ChildrenList_Child) oldItem;
+      var childrenList_ChildNew = (ChildrenList_Child) newItem;
+      childrenList_ChildNew.Text = childrenList_ChildOld.Text;
+      if (childrenList_ChildNew.Parent!=childrenList_ChildOld.Parent) {
+        if (childrenList_ChildNew.Parent!=ChildrenList_Parent.NoChildrenList_Parent) {
+          childrenList_ChildNew.Parent.RemoveFromChildrenList_Children(childrenList_ChildNew);
+        }
+        childrenList_ChildNew.Parent = childrenList_ChildOld.Parent;
+        childrenList_ChildNew.Parent.AddToChildrenList_Children(childrenList_ChildNew);
+      }
+      if (childrenList_ChildNew.ParentNullable is null) {
+        if (childrenList_ChildOld.ParentNullable is null) {
+          //nothing to do
+        } else {
+          childrenList_ChildNew.ParentNullable = childrenList_ChildOld.ParentNullable;
+          childrenList_ChildNew.ParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+        }
+      } else {
+        if (childrenList_ChildOld.ParentNullable is null) {
+          if (childrenList_ChildNew.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
+            childrenList_ChildNew.ParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+          }
+          childrenList_ChildNew.ParentNullable = null;
+        } else {
+          if (childrenList_ChildNew.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
+            childrenList_ChildNew.ParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+          }
+          childrenList_ChildNew.ParentNullable = childrenList_ChildOld.ParentNullable;
+          childrenList_ChildNew.ParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+        }
+      }
+      if (childrenList_ChildNew.CreateOnlyParent!=childrenList_ChildOld.CreateOnlyParent) {
+        if (childrenList_ChildNew.CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
+          childrenList_ChildNew.CreateOnlyParent.RemoveFromChildrenList_Children(childrenList_ChildNew);
+        }
+        childrenList_ChildNew.CreateOnlyParent = childrenList_ChildOld.CreateOnlyParent;
+        childrenList_ChildNew.CreateOnlyParent.AddToChildrenList_Children(childrenList_ChildNew);
+      }
+      if (childrenList_ChildNew.CreateOnlyParentNullable is null) {
+        if (childrenList_ChildOld.CreateOnlyParentNullable is null) {
+          //nothing to do
+        } else {
+          childrenList_ChildNew.CreateOnlyParentNullable = childrenList_ChildOld.CreateOnlyParentNullable;
+          childrenList_ChildNew.CreateOnlyParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+        }
+      } else {
+        if (childrenList_ChildOld.CreateOnlyParentNullable is null) {
+          if (childrenList_ChildNew.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
+            childrenList_ChildNew.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+          }
+          childrenList_ChildNew.CreateOnlyParentNullable = null;
+        } else {
+          if (childrenList_ChildNew.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
+            childrenList_ChildNew.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+          }
+          childrenList_ChildNew.CreateOnlyParentNullable = childrenList_ChildOld.CreateOnlyParentNullable;
+          childrenList_ChildNew.CreateOnlyParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+        }
+      }
+      childrenList_ChildNew.onRollbackItemUpdated(childrenList_ChildOld);
+    }
+    partial void onRollbackItemUpdated(ChildrenList_Child oldChildrenList_Child);
+
+
+    /// <summary>
+    /// Adds ChildrenList_Child item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var childrenList_Child = (ChildrenList_Child) item;
+      childrenList_Child.Parent.AddToChildrenList_Children(childrenList_Child);
+      childrenList_Child.ParentNullable?.AddToChildrenList_Children(childrenList_Child);
+      childrenList_Child.CreateOnlyParent.AddToChildrenList_Children(childrenList_Child);
+      childrenList_Child.CreateOnlyParentNullable?.AddToChildrenList_Children(childrenList_Child);
+      childrenList_Child.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

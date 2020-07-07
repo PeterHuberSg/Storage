@@ -412,7 +412,9 @@ namespace StorageTest {
 
 
     private void reportException(Exception obj) {
-      throw new Exception();
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
+      Assert.Fail();
     }
 
 

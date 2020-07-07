@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Some comment for Sample
     /// </summary>
-  public partial class Sample: IStorage<Sample> {
+  public partial class Sample: IStorageItemGeneric<Sample> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for Sample. Gets set once Sample gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(Sample sample, int key) { sample.Key = key; }
+    internal static void SetKey(IStorageItem sample, int key) {
+      ((Sample)sample).Key = key;
+    }
 
 
     /// <summary>
@@ -180,7 +182,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of Sample has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<Sample>? HasChanged;
+    public event Action</*old*/Sample, /*new*/Sample>? HasChanged;
     #endregion
 
 
@@ -239,9 +241,37 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public Sample(Sample original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      Flag = original.Flag;
+      Number = original.Number;
+      Amount = original.Amount;
+      Amount4 = original.Amount4;
+      Amount5 = original.Amount5;
+      PreciseDecimal = original.PreciseDecimal;
+      SampleState = original.SampleState;
+      DateOnly = original.DateOnly;
+      TimeOnly = original.TimeOnly;
+      DateTimeTicks = original.DateTimeTicks;
+      DateTimeMinute = original.DateTimeMinute;
+      DateTimeSecond = original.DateTimeSecond;
+      OneMaster = original.OneMaster;
+      OtherMaster = original.OtherMaster;
+      Optional = original.Optional;
+      onCloned(this);
+    }
+    partial void onCloned(Sample clone);
+
+
+    /// <summary>
     /// Constructor for Sample read from CSV file
     /// </summary>
-    private Sample(int key, CsvReader csvReader, DC context) {
+    private Sample(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       Flag = csvReader.ReadBool();
@@ -258,7 +288,7 @@ namespace StorageModel  {
       DateTimeSecond = csvReader.ReadDateSeconds();
       var oneMasterKey = csvReader.ReadIntNull();
       if (oneMasterKey.HasValue) {
-        if (context.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
+        if (DC.Data.SampleMasters.TryGetValue(oneMasterKey.Value, out var oneMaster)) {
           OneMaster = oneMaster;
         } else {
           OneMaster = SampleMaster.NoSampleMaster;
@@ -266,7 +296,7 @@ namespace StorageModel  {
       }
       var otherMasterKey = csvReader.ReadIntNull();
       if (otherMasterKey.HasValue) {
-        if (context.SampleMasters.TryGetValue(otherMasterKey.Value, out var otherMaster)) {
+        if (DC.Data.SampleMasters.TryGetValue(otherMasterKey.Value, out var otherMaster)) {
           OtherMaster = otherMaster;
         } else {
           OtherMaster = SampleMaster.NoSampleMaster;
@@ -280,16 +310,16 @@ namespace StorageModel  {
       if (otherMasterKey.HasValue && OtherMaster!=SampleMaster.NoSampleMaster) {
         OtherMaster!.AddToSampleX(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New Sample read from CSV file
     /// </summary>
-    internal static Sample Create(int key, CsvReader csvReader, DC context) {
-      return new Sample(key, csvReader, context);
+    internal static Sample Create(int key, CsvReader csvReader) {
+      return new Sample(key, csvReader);
     }
 
 
@@ -398,6 +428,7 @@ namespace StorageModel  {
       SampleMaster? otherMaster, 
       string? optional)
     {
+      var clone = new Sample(this);
       var isCancelled = false;
       onUpdating(
         text, 
@@ -544,8 +575,11 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.SampleX.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(
@@ -566,13 +600,13 @@ namespace StorageModel  {
       SampleMaster? otherMaster, 
       string? optional, 
       ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(Sample old);
 
 
     /// <summary>
     /// Updates this Sample with values from CSV file
     /// </summary>
-    internal static void Update(Sample sample, CsvReader csvReader, DC context) {
+    internal static void Update(Sample sample, CsvReader csvReader){
       sample.Text = csvReader.ReadString();
       sample.Flag = csvReader.ReadBool();
       sample.Number = csvReader.ReadInt();
@@ -591,7 +625,7 @@ namespace StorageModel  {
       if (oneMasterKey is null) {
         oneMaster = null;
       } else {
-        if (!context.SampleMasters.TryGetValue(oneMasterKey.Value, out oneMaster)) {
+        if (!DC.Data.SampleMasters.TryGetValue(oneMasterKey.Value, out oneMaster)) {
           oneMaster = SampleMaster.NoSampleMaster;
         }
       }
@@ -621,7 +655,7 @@ namespace StorageModel  {
       if (otherMasterKey is null) {
         otherMaster = null;
       } else {
-        if (!context.SampleMasters.TryGetValue(otherMasterKey.Value, out otherMaster)) {
+        if (!DC.Data.SampleMasters.TryGetValue(otherMasterKey.Value, out otherMaster)) {
           otherMaster = SampleMaster.NoSampleMaster;
         }
       }
@@ -656,6 +690,9 @@ namespace StorageModel  {
     /// Add sampleDetail to SampleDetails.
     /// </summary>
     internal void AddToSampleDetails(SampleDetail sampleDetail) {
+#if DEBUG
+      if (sampleDetail==SampleDetail.NoSampleDetail) throw new Exception();
+#endif
       sampleDetails.Add(sampleDetail);
       onAddedToSampleDetails(sampleDetail);
     }
@@ -718,8 +755,10 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveOneMaster(SampleMaster sampleMaster) {
       if (sampleMaster!=OneMaster) throw new Exception();
+
+      var clone = new Sample(this);
       OneMaster = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
 
 
@@ -728,9 +767,106 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveOtherMaster(SampleMaster sampleMaster) {
       if (sampleMaster!=OtherMaster) throw new Exception();
+
+      var clone = new Sample(this);
       OtherMaster = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
+
+
+    /// <summary>
+    /// Removes Sample from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var sample = (Sample) item;
+      if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {
+        sample.OneMaster.RemoveFromSampleX(sample);
+      }
+      if (sample.OtherMaster!=null && sample.OtherMaster!=SampleMaster.NoSampleMaster) {
+        sample.OtherMaster.RemoveFromSampleX(sample);
+      }
+      sample.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the Sample item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var sampleOld = (Sample) oldItem;
+      var sampleNew = (Sample) newItem;
+      sampleNew.Text = sampleOld.Text;
+      sampleNew.Flag = sampleOld.Flag;
+      sampleNew.Number = sampleOld.Number;
+      sampleNew.Amount = sampleOld.Amount;
+      sampleNew.Amount4 = sampleOld.Amount4;
+      sampleNew.Amount5 = sampleOld.Amount5;
+      sampleNew.PreciseDecimal = sampleOld.PreciseDecimal;
+      sampleNew.SampleState = sampleOld.SampleState;
+      sampleNew.DateOnly = sampleOld.DateOnly;
+      sampleNew.TimeOnly = sampleOld.TimeOnly;
+      sampleNew.DateTimeTicks = sampleOld.DateTimeTicks;
+      sampleNew.DateTimeMinute = sampleOld.DateTimeMinute;
+      sampleNew.DateTimeSecond = sampleOld.DateTimeSecond;
+      if (sampleNew.OneMaster is null) {
+        if (sampleOld.OneMaster is null) {
+          //nothing to do
+        } else {
+          sampleNew.OneMaster = sampleOld.OneMaster;
+          sampleNew.OneMaster.AddToSampleX(sampleNew);
+        }
+      } else {
+        if (sampleOld.OneMaster is null) {
+          if (sampleNew.OneMaster!=SampleMaster.NoSampleMaster) {
+            sampleNew.OneMaster.RemoveFromSampleX(sampleNew);
+          }
+          sampleNew.OneMaster = null;
+        } else {
+          if (sampleNew.OneMaster!=SampleMaster.NoSampleMaster) {
+            sampleNew.OneMaster.RemoveFromSampleX(sampleNew);
+          }
+          sampleNew.OneMaster = sampleOld.OneMaster;
+          sampleNew.OneMaster.AddToSampleX(sampleNew);
+        }
+      }
+      if (sampleNew.OtherMaster is null) {
+        if (sampleOld.OtherMaster is null) {
+          //nothing to do
+        } else {
+          sampleNew.OtherMaster = sampleOld.OtherMaster;
+          sampleNew.OtherMaster.AddToSampleX(sampleNew);
+        }
+      } else {
+        if (sampleOld.OtherMaster is null) {
+          if (sampleNew.OtherMaster!=SampleMaster.NoSampleMaster) {
+            sampleNew.OtherMaster.RemoveFromSampleX(sampleNew);
+          }
+          sampleNew.OtherMaster = null;
+        } else {
+          if (sampleNew.OtherMaster!=SampleMaster.NoSampleMaster) {
+            sampleNew.OtherMaster.RemoveFromSampleX(sampleNew);
+          }
+          sampleNew.OtherMaster = sampleOld.OtherMaster;
+          sampleNew.OtherMaster.AddToSampleX(sampleNew);
+        }
+      }
+      sampleNew.Optional = sampleOld.Optional;
+      sampleNew.onRollbackItemUpdated(sampleOld);
+    }
+    partial void onRollbackItemUpdated(Sample oldSample);
+
+
+    /// <summary>
+    /// Adds Sample item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var sample = (Sample) item;
+      sample.OneMaster?.AddToSampleX(sample);
+      sample.OtherMaster?.AddToSampleX(sample);
+      sample.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

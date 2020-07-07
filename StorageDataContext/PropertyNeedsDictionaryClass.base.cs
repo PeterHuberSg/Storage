@@ -13,26 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
-    ///// <summary>
-    ///// Readonly Child class with one parent property which is not nullable and one property to a different parent 
-    ///// which is nullable
-    ///// </summary>
-    //  /// <summary>
-    //  /// Some Text comment
-    //  /// </summary>
-    //  /// <summary>
-    //  /// Links to parent
-    //  /// </summary>
-    //  /// <summary>
-    //  /// Links to parent conditionally
-    //  /// </summary>
     /// <summary>
     /// Some comment for PropertyNeedsDictionaryClass
     /// </summary>
-  public partial class PropertyNeedsDictionaryClass: IStorage<PropertyNeedsDictionaryClass> {
+  public partial class PropertyNeedsDictionaryClass: IStorageItemGeneric<PropertyNeedsDictionaryClass> {
 
     #region Properties
     //      ----------
@@ -41,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for PropertyNeedsDictionaryClass. Gets set once PropertyNeedsDictionaryClass gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(PropertyNeedsDictionaryClass propertyNeedsDictionaryClass, int key) { propertyNeedsDictionaryClass.Key = key; }
+    internal static void SetKey(IStorageItem propertyNeedsDictionaryClass, int key) {
+      ((PropertyNeedsDictionaryClass)propertyNeedsDictionaryClass).Key = key;
+    }
 
 
     /// <summary>
@@ -81,7 +70,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of PropertyNeedsDictionaryClass has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<PropertyNeedsDictionaryClass>? HasChanged;
+    public event Action</*old*/PropertyNeedsDictionaryClass, /*new*/PropertyNeedsDictionaryClass>? HasChanged;
     #endregion
 
 
@@ -106,9 +95,24 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public PropertyNeedsDictionaryClass(PropertyNeedsDictionaryClass original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      IdInt = original.IdInt;
+      IdString = original.IdString;
+      Text = original.Text;
+      onCloned(this);
+    }
+    partial void onCloned(PropertyNeedsDictionaryClass clone);
+
+
+    /// <summary>
     /// Constructor for PropertyNeedsDictionaryClass read from CSV file
     /// </summary>
-    private PropertyNeedsDictionaryClass(int key, CsvReader csvReader, DC context) {
+    private PropertyNeedsDictionaryClass(int key, CsvReader csvReader){
       Key = key;
       IdInt = csvReader.ReadInt();
       DC.Data.PropertyNeedsDictionaryClassesByIdInt.Add(IdInt, this);
@@ -117,16 +121,16 @@ namespace StorageModel  {
         DC.Data.PropertyNeedsDictionaryClassesByIdString.Add(IdString, this);
       }
       Text = csvReader.ReadString();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New PropertyNeedsDictionaryClass read from CSV file
     /// </summary>
-    internal static PropertyNeedsDictionaryClass Create(int key, CsvReader csvReader, DC context) {
-      return new PropertyNeedsDictionaryClass(key, csvReader, context);
+    internal static PropertyNeedsDictionaryClass Create(int key, CsvReader csvReader) {
+      return new PropertyNeedsDictionaryClass(key, csvReader);
     }
     #endregion
 
@@ -178,6 +182,7 @@ namespace StorageModel  {
     /// Updates PropertyNeedsDictionaryClass with the provided values
     /// </summary>
     public void Update(int idInt, string? idString, string text) {
+      var clone = new PropertyNeedsDictionaryClass(this);
       var isCancelled = false;
       onUpdating(idInt, idString, text, ref isCancelled);
       if (isCancelled) return;
@@ -204,18 +209,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.PropertyNeedsDictionaryClasses.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(int idInt, string? idString, string text, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(PropertyNeedsDictionaryClass old);
 
 
     /// <summary>
     /// Updates this PropertyNeedsDictionaryClass with values from CSV file
     /// </summary>
-    internal static void Update(PropertyNeedsDictionaryClass propertyNeedsDictionaryClass, CsvReader csvReader, DC _) {
+    internal static void Update(PropertyNeedsDictionaryClass propertyNeedsDictionaryClass, CsvReader csvReader){
       DC.Data.PropertyNeedsDictionaryClassesByIdInt.Remove(propertyNeedsDictionaryClass.IdInt);
       propertyNeedsDictionaryClass.IdInt = csvReader.ReadInt();
       DC.Data.PropertyNeedsDictionaryClassesByIdInt.Add(propertyNeedsDictionaryClass.IdInt, propertyNeedsDictionaryClass);
@@ -257,6 +265,56 @@ namespace StorageModel  {
         DC.Data.PropertyNeedsDictionaryClassesByIdString.Remove(propertyNeedsDictionaryClass.IdString);
       }
     }
+
+
+    /// <summary>
+    /// Removes PropertyNeedsDictionaryClass from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var propertyNeedsDictionaryClass = (PropertyNeedsDictionaryClass) item;
+      DC.Data.PropertyNeedsDictionaryClassesByIdInt.Remove(propertyNeedsDictionaryClass.IdInt);
+      if (propertyNeedsDictionaryClass.IdString!=null) {
+        DC.Data.PropertyNeedsDictionaryClassesByIdString.Remove(propertyNeedsDictionaryClass.IdString);
+      }
+      propertyNeedsDictionaryClass.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the PropertyNeedsDictionaryClass item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var propertyNeedsDictionaryClassOld = (PropertyNeedsDictionaryClass) oldItem;
+      var propertyNeedsDictionaryClassNew = (PropertyNeedsDictionaryClass) newItem;
+      DC.Data.PropertyNeedsDictionaryClassesByIdInt.Remove(propertyNeedsDictionaryClassNew.IdInt);
+      propertyNeedsDictionaryClassNew.IdInt = propertyNeedsDictionaryClassOld.IdInt;
+      DC.Data.PropertyNeedsDictionaryClassesByIdInt.Add(propertyNeedsDictionaryClassNew.IdInt, propertyNeedsDictionaryClassNew);
+      if (propertyNeedsDictionaryClassNew.IdString!=null) {
+        DC.Data.PropertyNeedsDictionaryClassesByIdString.Remove(propertyNeedsDictionaryClassNew.IdString);
+      }
+      propertyNeedsDictionaryClassNew.IdString = propertyNeedsDictionaryClassOld.IdString;
+      if (propertyNeedsDictionaryClassNew.IdString!=null) {
+        DC.Data.PropertyNeedsDictionaryClassesByIdString.Add(propertyNeedsDictionaryClassNew.IdString, propertyNeedsDictionaryClassNew);
+      }
+      propertyNeedsDictionaryClassNew.Text = propertyNeedsDictionaryClassOld.Text;
+      propertyNeedsDictionaryClassNew.onRollbackItemUpdated(propertyNeedsDictionaryClassOld);
+    }
+    partial void onRollbackItemUpdated(PropertyNeedsDictionaryClass oldPropertyNeedsDictionaryClass);
+
+
+    /// <summary>
+    /// Adds PropertyNeedsDictionaryClass item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var propertyNeedsDictionaryClass = (PropertyNeedsDictionaryClass) item;
+      DC.Data.PropertyNeedsDictionaryClassesByIdInt.Add(propertyNeedsDictionaryClass.IdInt, propertyNeedsDictionaryClass);
+      if (propertyNeedsDictionaryClass.IdString!=null) {
+        DC.Data.PropertyNeedsDictionaryClassesByIdString.Add(propertyNeedsDictionaryClass.IdString, propertyNeedsDictionaryClass);
+      }
+      propertyNeedsDictionaryClass.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Example for parent which can have at most 1 child and the parent property in the child is not nullable.
     /// </summary>
-  public partial class ParentOneChild_Parent: IStorage<ParentOneChild_Parent> {
+  public partial class ParentOneChild_Parent: IStorageItemGeneric<ParentOneChild_Parent> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for ParentOneChild_Parent. Gets set once ParentOneChild_Parent gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ParentOneChild_Parent parentOneChild_Parent, int key) { parentOneChild_Parent.Key = key; }
+    internal static void SetKey(IStorageItem parentOneChild_Parent, int key) {
+      ((ParentOneChild_Parent)parentOneChild_Parent).Key = key;
+    }
 
 
     /// <summary>
@@ -63,7 +65,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ParentOneChild_Parent has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ParentOneChild_Parent>? HasChanged;
+    public event Action</*old*/ParentOneChild_Parent, /*new*/ParentOneChild_Parent>? HasChanged;
     #endregion
 
 
@@ -86,21 +88,34 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ParentOneChild_Parent(ParentOneChild_Parent original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      onCloned(this);
+    }
+    partial void onCloned(ParentOneChild_Parent clone);
+
+
+    /// <summary>
     /// Constructor for ParentOneChild_Parent read from CSV file
     /// </summary>
-    private ParentOneChild_Parent(int key, CsvReader csvReader, DC context) {
+    private ParentOneChild_Parent(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ParentOneChild_Parent read from CSV file
     /// </summary>
-    internal static ParentOneChild_Parent Create(int key, CsvReader csvReader, DC context) {
-      return new ParentOneChild_Parent(key, csvReader, context);
+    internal static ParentOneChild_Parent Create(int key, CsvReader csvReader) {
+      return new ParentOneChild_Parent(key, csvReader);
     }
     #endregion
 
@@ -146,6 +161,7 @@ namespace StorageModel  {
     /// Updates ParentOneChild_Parent with the provided values
     /// </summary>
     public void Update(string text) {
+      var clone = new ParentOneChild_Parent(this);
       var isCancelled = false;
       onUpdating(text, ref isCancelled);
       if (isCancelled) return;
@@ -156,18 +172,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ParentOneChild_Parents.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ParentOneChild_Parent old);
 
 
     /// <summary>
     /// Updates this ParentOneChild_Parent with values from CSV file
     /// </summary>
-    internal static void Update(ParentOneChild_Parent parentOneChild_Parent, CsvReader csvReader, DC _) {
+    internal static void Update(ParentOneChild_Parent parentOneChild_Parent, CsvReader csvReader){
       parentOneChild_Parent.Text = csvReader.ReadString();
       parentOneChild_Parent.onCsvUpdate();
     }
@@ -178,6 +197,9 @@ namespace StorageModel  {
     /// Add parentOneChild_Child to Child.
     /// </summary>
     internal void AddToChild(ParentOneChild_Child parentOneChild_Child) {
+#if DEBUG
+      if (parentOneChild_Child==ParentOneChild_Child.NoParentOneChild_Child) throw new Exception();
+#endif
       if (Child!=null) {
         throw new Exception($"ParentOneChild_Parent.AddToChild(): '{Child}' is already assigned to Child, it is not possible to assign now '{parentOneChild_Child}'.");
       }
@@ -227,6 +249,38 @@ namespace StorageModel  {
         parentOneChild_Parent.Child = null;
       }
     }
+
+
+    /// <summary>
+    /// Removes ParentOneChild_Parent from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var parentOneChild_Parent = (ParentOneChild_Parent) item;
+      parentOneChild_Parent.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ParentOneChild_Parent item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var parentOneChild_ParentOld = (ParentOneChild_Parent) oldItem;
+      var parentOneChild_ParentNew = (ParentOneChild_Parent) newItem;
+      parentOneChild_ParentNew.Text = parentOneChild_ParentOld.Text;
+      parentOneChild_ParentNew.onRollbackItemUpdated(parentOneChild_ParentOld);
+    }
+    partial void onRollbackItemUpdated(ParentOneChild_Parent oldParentOneChild_Parent);
+
+
+    /// <summary>
+    /// Adds ParentOneChild_Parent item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var parentOneChild_Parent = (ParentOneChild_Parent) item;
+      parentOneChild_Parent.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

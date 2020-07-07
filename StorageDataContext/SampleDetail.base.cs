@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Some comment for SampleDetail
     /// </summary>
-  public partial class SampleDetail: IStorage<SampleDetail> {
+  public partial class SampleDetail: IStorageItemGeneric<SampleDetail> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for SampleDetail. Gets set once SampleDetail gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(SampleDetail sampleDetail, int key) { sampleDetail.Key = key; }
+    internal static void SetKey(IStorageItem sampleDetail, int key) {
+      ((SampleDetail)sampleDetail).Key = key;
+    }
 
 
     /// <summary>
@@ -62,7 +64,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of SampleDetail has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<SampleDetail>? HasChanged;
+    public event Action</*old*/SampleDetail, /*new*/SampleDetail>? HasChanged;
     #endregion
 
 
@@ -87,13 +89,27 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public SampleDetail(SampleDetail original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      Sample = original.Sample;
+      onCloned(this);
+    }
+    partial void onCloned(SampleDetail clone);
+
+
+    /// <summary>
     /// Constructor for SampleDetail read from CSV file
     /// </summary>
-    private SampleDetail(int key, CsvReader csvReader, DC context) {
+    private SampleDetail(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       var sampleKey = csvReader.ReadInt();
-      if (context.SampleX.TryGetValue(sampleKey, out var sample)) {
+      if (DC.Data.SampleX.TryGetValue(sampleKey, out var sample)) {
           Sample = sample;
       } else {
         throw new Exception($"Read SampleDetail from CSV file: Cannot find Sample with key {sampleKey}." + Environment.NewLine + 
@@ -102,16 +118,16 @@ namespace StorageModel  {
       if (Sample!=Sample.NoSample) {
         Sample.AddToSampleDetails(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New SampleDetail read from CSV file
     /// </summary>
-    internal static SampleDetail Create(int key, CsvReader csvReader, DC context) {
-      return new SampleDetail(key, csvReader, context);
+    internal static SampleDetail Create(int key, CsvReader csvReader) {
+      return new SampleDetail(key, csvReader);
     }
 
 
@@ -173,6 +189,7 @@ namespace StorageModel  {
     /// Updates SampleDetail with the provided values
     /// </summary>
     public void Update(string text, Sample sample) {
+      var clone = new SampleDetail(this);
       var isCancelled = false;
       onUpdating(text, sample, ref isCancelled);
       if (isCancelled) return;
@@ -193,20 +210,23 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.SampleDetails.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, Sample sample, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(SampleDetail old);
 
 
     /// <summary>
     /// Updates this SampleDetail with values from CSV file
     /// </summary>
-    internal static void Update(SampleDetail sampleDetail, CsvReader csvReader, DC context) {
+    internal static void Update(SampleDetail sampleDetail, CsvReader csvReader){
       sampleDetail.Text = csvReader.ReadString();
-      if (!context.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
+      if (!DC.Data.SampleX.TryGetValue(csvReader.ReadInt(), out var sample)) {
         sample = Sample.NoSample;
       }
       if (sampleDetail.Sample!=sample) {
@@ -243,6 +263,49 @@ namespace StorageModel  {
         sampleDetail.Sample.RemoveFromSampleDetails(sampleDetail);
       }
     }
+
+
+    /// <summary>
+    /// Removes SampleDetail from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var sampleDetail = (SampleDetail) item;
+      if (sampleDetail.Sample!=Sample.NoSample) {
+        sampleDetail.Sample.RemoveFromSampleDetails(sampleDetail);
+      }
+      sampleDetail.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the SampleDetail item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var sampleDetailOld = (SampleDetail) oldItem;
+      var sampleDetailNew = (SampleDetail) newItem;
+      sampleDetailNew.Text = sampleDetailOld.Text;
+      if (sampleDetailNew.Sample!=sampleDetailOld.Sample) {
+        if (sampleDetailNew.Sample!=Sample.NoSample) {
+          sampleDetailNew.Sample.RemoveFromSampleDetails(sampleDetailNew);
+        }
+        sampleDetailNew.Sample = sampleDetailOld.Sample;
+        sampleDetailNew.Sample.AddToSampleDetails(sampleDetailNew);
+      }
+      sampleDetailNew.onRollbackItemUpdated(sampleDetailOld);
+    }
+    partial void onRollbackItemUpdated(SampleDetail oldSampleDetail);
+
+
+    /// <summary>
+    /// Adds SampleDetail item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var sampleDetail = (SampleDetail) item;
+      sampleDetail.Sample.AddToSampleDetails(sampleDetail);
+      sampleDetail.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

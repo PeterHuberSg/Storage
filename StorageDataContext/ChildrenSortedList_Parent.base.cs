@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Example of a parent child relationship using a SortedList.
     /// </summary>
-  public partial class ChildrenSortedList_Parent: IStorage<ChildrenSortedList_Parent> {
+  public partial class ChildrenSortedList_Parent: IStorageItemGeneric<ChildrenSortedList_Parent> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for ChildrenSortedList_Parent. Gets set once ChildrenSortedList_Parent gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ChildrenSortedList_Parent childrenSortedList_Parent, int key) { childrenSortedList_Parent.Key = key; }
+    internal static void SetKey(IStorageItem childrenSortedList_Parent, int key) {
+      ((ChildrenSortedList_Parent)childrenSortedList_Parent).Key = key;
+    }
 
 
     /// <summary>
@@ -70,7 +72,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ChildrenSortedList_Parent has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ChildrenSortedList_Parent>? HasChanged;
+    public event Action</*old*/ChildrenSortedList_Parent, /*new*/ChildrenSortedList_Parent>? HasChanged;
     #endregion
 
 
@@ -95,23 +97,37 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ChildrenSortedList_Parent(ChildrenSortedList_Parent original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      TextReadOnly = original.TextReadOnly;
+      TextUpdateable = original.TextUpdateable;
+      onCloned(this);
+    }
+    partial void onCloned(ChildrenSortedList_Parent clone);
+
+
+    /// <summary>
     /// Constructor for ChildrenSortedList_Parent read from CSV file
     /// </summary>
-    private ChildrenSortedList_Parent(int key, CsvReader csvReader, DC context) {
+    private ChildrenSortedList_Parent(int key, CsvReader csvReader){
       Key = key;
       TextReadOnly = csvReader.ReadString();
       TextUpdateable = csvReader.ReadString();
       childrenSortedList_Children = new SortedList<DateTime, ChildrenSortedList_Child>();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ChildrenSortedList_Parent read from CSV file
     /// </summary>
-    internal static ChildrenSortedList_Parent Create(int key, CsvReader csvReader, DC context) {
-      return new ChildrenSortedList_Parent(key, csvReader, context);
+    internal static ChildrenSortedList_Parent Create(int key, CsvReader csvReader) {
+      return new ChildrenSortedList_Parent(key, csvReader);
     }
     #endregion
 
@@ -158,6 +174,7 @@ namespace StorageModel  {
     /// Updates ChildrenSortedList_Parent with the provided values
     /// </summary>
     public void Update(string textUpdateable) {
+      var clone = new ChildrenSortedList_Parent(this);
       var isCancelled = false;
       onUpdating(textUpdateable, ref isCancelled);
       if (isCancelled) return;
@@ -168,18 +185,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ChildrenSortedList_Parents.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string textUpdateable, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ChildrenSortedList_Parent old);
 
 
     /// <summary>
     /// Updates this ChildrenSortedList_Parent with values from CSV file
     /// </summary>
-    internal static void Update(ChildrenSortedList_Parent childrenSortedList_Parent, CsvReader csvReader, DC _) {
+    internal static void Update(ChildrenSortedList_Parent childrenSortedList_Parent, CsvReader csvReader){
       var textReadOnly = csvReader.ReadString();
       if (childrenSortedList_Parent.TextReadOnly!=textReadOnly) {
         throw new Exception($"ChildrenSortedList_Parent.Update(): Property TextReadOnly '{childrenSortedList_Parent.TextReadOnly}' is " +
@@ -196,6 +216,9 @@ namespace StorageModel  {
     /// Add childrenSortedList_Child to ChildrenSortedList_Children.
     /// </summary>
     internal void AddToChildrenSortedList_Children(ChildrenSortedList_Child childrenSortedList_Child) {
+#if DEBUG
+      if (childrenSortedList_Child==ChildrenSortedList_Child.NoChildrenSortedList_Child) throw new Exception();
+#endif
       childrenSortedList_Children.Add(childrenSortedList_Child.DateKey, childrenSortedList_Child);
       onAddedToChildrenSortedList_Children(childrenSortedList_Child);
     }
@@ -242,6 +265,43 @@ namespace StorageModel  {
          }
       }
     }
+
+
+    /// <summary>
+    /// Removes ChildrenSortedList_Parent from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var childrenSortedList_Parent = (ChildrenSortedList_Parent) item;
+      childrenSortedList_Parent.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ChildrenSortedList_Parent item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var childrenSortedList_ParentOld = (ChildrenSortedList_Parent) oldItem;
+      var childrenSortedList_ParentNew = (ChildrenSortedList_Parent) newItem;
+      if (childrenSortedList_ParentNew.TextReadOnly!=childrenSortedList_ParentOld.TextReadOnly) {
+        throw new Exception($"ChildrenSortedList_Parent.Update(): Property TextReadOnly '{childrenSortedList_ParentNew.TextReadOnly}' is " +
+          $"readonly, TextReadOnly '{childrenSortedList_ParentOld.TextReadOnly}' read from the CSV file should be the same." + Environment.NewLine + 
+          childrenSortedList_ParentNew.ToString());
+      }
+      childrenSortedList_ParentNew.TextUpdateable = childrenSortedList_ParentOld.TextUpdateable;
+      childrenSortedList_ParentNew.onRollbackItemUpdated(childrenSortedList_ParentOld);
+    }
+    partial void onRollbackItemUpdated(ChildrenSortedList_Parent oldChildrenSortedList_Parent);
+
+
+    /// <summary>
+    /// Adds ChildrenSortedList_Parent item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var childrenSortedList_Parent = (ChildrenSortedList_Parent) item;
+      childrenSortedList_Parent.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

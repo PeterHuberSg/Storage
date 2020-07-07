@@ -13,13 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Parent of children who use lookup, i.e. parent has no children collection
+    /// Parent of children who use lookup, i.e. parent has no children collection. areInstancesDeletable
+    /// must be false.
     /// </summary>
-  public partial class Lookup_Parent: IStorage<Lookup_Parent> {
+  public partial class Lookup_Parent: IStorageItemGeneric<Lookup_Parent> {
 
     #region Properties
     //      ----------
@@ -28,25 +29,27 @@ namespace StorageModel  {
     /// Unique identifier for Lookup_Parent. Gets set once Lookup_Parent gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(Lookup_Parent lookup_Parent, int key) { lookup_Parent.Key = key; }
+    internal static void SetKey(IStorageItem lookup_Parent, int key) {
+      ((Lookup_Parent)lookup_Parent).Key = key;
+    }
 
 
     /// <summary>
     /// Stores only dates but no times.
     ///  </summary>
-    public DateTime Date { get; }
+    public DateTime Date { get; private set; }
 
 
     /// <summary>
     /// Stores decimal with 2 digits after comma.
     ///  </summary>
-    public decimal SomeValue { get; }
+    public decimal SomeValue { get; private set; }
 
 
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Date", "SomeValue"};
+    internal static readonly string[] Headers = {"Key", "Date", "SomeValue"};
 
 
     /// <summary>
@@ -60,11 +63,9 @@ namespace StorageModel  {
     //      ------
 
     /// <summary>
-    /// This event will never be raised, but is needed to comply with IStorage.
+    /// Content of Lookup_Parent has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-#pragma warning disable 67
-    public event Action<Lookup_Parent>? HasChanged;
-#pragma warning restore 67
+    public event Action</*old*/Lookup_Parent, /*new*/Lookup_Parent>? HasChanged;
     #endregion
 
 
@@ -88,22 +89,36 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public Lookup_Parent(Lookup_Parent original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Date = original.Date;
+      SomeValue = original.SomeValue;
+      onCloned(this);
+    }
+    partial void onCloned(Lookup_Parent clone);
+
+
+    /// <summary>
     /// Constructor for Lookup_Parent read from CSV file
     /// </summary>
-    private Lookup_Parent(int key, CsvReader csvReader, DC context) {
+    private Lookup_Parent(int key, CsvReader csvReader){
       Key = key;
       Date = csvReader.ReadDate();
       SomeValue = csvReader.ReadDecimal();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New Lookup_Parent read from CSV file
     /// </summary>
-    internal static Lookup_Parent Create(int key, CsvReader csvReader, DC context) {
-      return new Lookup_Parent(key, csvReader, context);
+    internal static Lookup_Parent Create(int key, CsvReader csvReader) {
+      return new Lookup_Parent(key, csvReader);
     }
     #endregion
 
@@ -147,11 +162,87 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Updates Lookup_Parent with the provided values
+    /// </summary>
+    public void Update(DateTime date, decimal someValue) {
+      var clone = new Lookup_Parent(this);
+      var isCancelled = false;
+      onUpdating(date, someValue, ref isCancelled);
+      if (isCancelled) return;
+
+      var isChangeDetected = false;
+      var dateRounded = date.Floor(Rounding.Days);
+      if (Date!=dateRounded) {
+        Date = dateRounded;
+        isChangeDetected = true;
+      }
+      var someValueRounded = someValue.Round(2);
+      if (SomeValue!=someValueRounded) {
+        SomeValue = someValueRounded;
+        isChangeDetected = true;
+      }
+      if (isChangeDetected) {
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.Lookup_Parents.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
+      }
+    }
+    partial void onUpdating(DateTime date, decimal someValue, ref bool isCancelled);
+    partial void onUpdated(Lookup_Parent old);
+
+
+    /// <summary>
+    /// Updates this Lookup_Parent with values from CSV file
+    /// </summary>
+    internal static void Update(Lookup_Parent lookup_Parent, CsvReader csvReader){
+      lookup_Parent.Date = csvReader.ReadDate();
+      lookup_Parent.SomeValue = csvReader.ReadDecimal();
+      lookup_Parent.onCsvUpdate();
+    }
+    partial void onCsvUpdate();
+
+
+    /// <summary>
     /// Removing Lookup_Parent from DC.Data.Lookup_Parents is not supported.
     /// </summary>
     public void Remove() {
       throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
+
+
+    /// <summary>
+    /// Removes Lookup_Parent from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var lookup_Parent = (Lookup_Parent) item;
+      lookup_Parent.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the Lookup_Parent item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var lookup_ParentOld = (Lookup_Parent) oldItem;
+      var lookup_ParentNew = (Lookup_Parent) newItem;
+      lookup_ParentNew.Date = lookup_ParentOld.Date;
+      lookup_ParentNew.SomeValue = lookup_ParentOld.SomeValue;
+      lookup_ParentNew.onRollbackItemUpdated(lookup_ParentOld);
+    }
+    partial void onRollbackItemUpdated(Lookup_Parent oldLookup_Parent);
+
+
+    /// <summary>
+    /// Adds Lookup_Parent item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var lookup_Parent = (Lookup_Parent) item;
+      lookup_Parent.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

@@ -13,14 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// DictionaryChild has a member providing the key value needed to add DictionaryChild to  
     /// ParentWithDictionary and ParentWithDictionaryNullable
     /// </summary>
-  public partial class ChildrenDictionary_Child: IStorage<ChildrenDictionary_Child> {
+  public partial class ChildrenDictionary_Child: IStorageItemGeneric<ChildrenDictionary_Child> {
 
     #region Properties
     //      ----------
@@ -29,7 +29,9 @@ namespace StorageModel  {
     /// Unique identifier for ChildrenDictionary_Child. Gets set once ChildrenDictionary_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ChildrenDictionary_Child childrenDictionary_Child, int key) { childrenDictionary_Child.Key = key; }
+    internal static void SetKey(IStorageItem childrenDictionary_Child, int key) {
+      ((ChildrenDictionary_Child)childrenDictionary_Child).Key = key;
+    }
 
 
     /// <summary>
@@ -77,7 +79,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ChildrenDictionary_Child has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ChildrenDictionary_Child>? HasChanged;
+    public event Action</*old*/ChildrenDictionary_Child, /*new*/ChildrenDictionary_Child>? HasChanged;
     #endregion
 
 
@@ -111,14 +113,30 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ChildrenDictionary_Child(ChildrenDictionary_Child original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      DateKey = original.DateKey;
+      Text = original.Text;
+      ParentWithDictionary = original.ParentWithDictionary;
+      ParentWithDictionaryNullable = original.ParentWithDictionaryNullable;
+      onCloned(this);
+    }
+    partial void onCloned(ChildrenDictionary_Child clone);
+
+
+    /// <summary>
     /// Constructor for ChildrenDictionary_Child read from CSV file
     /// </summary>
-    private ChildrenDictionary_Child(int key, CsvReader csvReader, DC context) {
+    private ChildrenDictionary_Child(int key, CsvReader csvReader){
       Key = key;
       DateKey = csvReader.ReadDate();
       Text = csvReader.ReadString();
       var childrenDictionary_ParentKey = csvReader.ReadInt();
-      if (context.ChildrenDictionary_Parents.TryGetValue(childrenDictionary_ParentKey, out var parentWithDictionary)) {
+      if (DC.Data.ChildrenDictionary_Parents.TryGetValue(childrenDictionary_ParentKey, out var parentWithDictionary)) {
           ParentWithDictionary = parentWithDictionary;
       } else {
         throw new Exception($"Read ChildrenDictionary_Child from CSV file: Cannot find ParentWithDictionary with key {childrenDictionary_ParentKey}." + Environment.NewLine + 
@@ -126,7 +144,7 @@ namespace StorageModel  {
       }
       var parentWithDictionaryNullableKey = csvReader.ReadIntNull();
       if (parentWithDictionaryNullableKey.HasValue) {
-        if (context.ChildrenDictionary_ParentNullables.TryGetValue(parentWithDictionaryNullableKey.Value, out var parentWithDictionaryNullable)) {
+        if (DC.Data.ChildrenDictionary_ParentNullables.TryGetValue(parentWithDictionaryNullableKey.Value, out var parentWithDictionaryNullable)) {
           ParentWithDictionaryNullable = parentWithDictionaryNullable;
         } else {
           ParentWithDictionaryNullable = ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable;
@@ -138,16 +156,16 @@ namespace StorageModel  {
       if (parentWithDictionaryNullableKey.HasValue && ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
         ParentWithDictionaryNullable!.AddToChildrenDictionary_Children(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ChildrenDictionary_Child read from CSV file
     /// </summary>
-    internal static ChildrenDictionary_Child Create(int key, CsvReader csvReader, DC context) {
-      return new ChildrenDictionary_Child(key, csvReader, context);
+    internal static ChildrenDictionary_Child Create(int key, CsvReader csvReader) {
+      return new ChildrenDictionary_Child(key, csvReader);
     }
 
 
@@ -223,6 +241,7 @@ namespace StorageModel  {
     /// Updates ChildrenDictionary_Child with the provided values
     /// </summary>
     public void Update(DateTime dateKey, string text, ChildrenDictionary_Parent parentWithDictionary, ChildrenDictionary_ParentNullable? parentWithDictionaryNullable) {
+      var clone = new ChildrenDictionary_Child(this);
       var isCancelled = false;
       onUpdating(dateKey, text, parentWithDictionary, parentWithDictionaryNullable, ref isCancelled);
       if (isCancelled) return;
@@ -278,8 +297,11 @@ namespace StorageModel  {
         }
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ChildrenDictionary_Children.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(
@@ -288,16 +310,16 @@ namespace StorageModel  {
       ChildrenDictionary_Parent parentWithDictionary, 
       ChildrenDictionary_ParentNullable? parentWithDictionaryNullable, 
       ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ChildrenDictionary_Child old);
 
 
     /// <summary>
     /// Updates this ChildrenDictionary_Child with values from CSV file
     /// </summary>
-    internal static void Update(ChildrenDictionary_Child childrenDictionary_Child, CsvReader csvReader, DC context) {
+    internal static void Update(ChildrenDictionary_Child childrenDictionary_Child, CsvReader csvReader){
       childrenDictionary_Child.DateKey = csvReader.ReadDate();
       childrenDictionary_Child.Text = csvReader.ReadString();
-      if (!context.ChildrenDictionary_Parents.TryGetValue(csvReader.ReadInt(), out var parentWithDictionary)) {
+      if (!DC.Data.ChildrenDictionary_Parents.TryGetValue(csvReader.ReadInt(), out var parentWithDictionary)) {
         parentWithDictionary = ChildrenDictionary_Parent.NoChildrenDictionary_Parent;
       }
       if (childrenDictionary_Child.ParentWithDictionary!=parentWithDictionary) {
@@ -312,7 +334,7 @@ namespace StorageModel  {
       if (parentWithDictionaryNullableKey is null) {
         parentWithDictionaryNullable = null;
       } else {
-        if (!context.ChildrenDictionary_ParentNullables.TryGetValue(parentWithDictionaryNullableKey.Value, out parentWithDictionaryNullable)) {
+        if (!DC.Data.ChildrenDictionary_ParentNullables.TryGetValue(parentWithDictionaryNullableKey.Value, out parentWithDictionaryNullable)) {
           parentWithDictionaryNullable = ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable;
         }
       }
@@ -376,9 +398,80 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveParentWithDictionaryNullable(ChildrenDictionary_ParentNullable childrenDictionary_ParentNullable) {
       if (childrenDictionary_ParentNullable!=ParentWithDictionaryNullable) throw new Exception();
+
+      var clone = new ChildrenDictionary_Child(this);
       ParentWithDictionaryNullable = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
+
+
+    /// <summary>
+    /// Removes ChildrenDictionary_Child from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var childrenDictionary_Child = (ChildrenDictionary_Child) item;
+      if (childrenDictionary_Child.ParentWithDictionary!=ChildrenDictionary_Parent.NoChildrenDictionary_Parent) {
+        childrenDictionary_Child.ParentWithDictionary.RemoveFromChildrenDictionary_Children(childrenDictionary_Child);
+      }
+      if (childrenDictionary_Child.ParentWithDictionaryNullable!=null && childrenDictionary_Child.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
+        childrenDictionary_Child.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_Child);
+      }
+      childrenDictionary_Child.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ChildrenDictionary_Child item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var childrenDictionary_ChildOld = (ChildrenDictionary_Child) oldItem;
+      var childrenDictionary_ChildNew = (ChildrenDictionary_Child) newItem;
+      childrenDictionary_ChildNew.DateKey = childrenDictionary_ChildOld.DateKey;
+      childrenDictionary_ChildNew.Text = childrenDictionary_ChildOld.Text;
+      if (childrenDictionary_ChildNew.ParentWithDictionary!=childrenDictionary_ChildOld.ParentWithDictionary) {
+        if (childrenDictionary_ChildNew.ParentWithDictionary!=ChildrenDictionary_Parent.NoChildrenDictionary_Parent) {
+          childrenDictionary_ChildNew.ParentWithDictionary.RemoveFromChildrenDictionary_Children(childrenDictionary_ChildNew);
+        }
+        childrenDictionary_ChildNew.ParentWithDictionary = childrenDictionary_ChildOld.ParentWithDictionary;
+        childrenDictionary_ChildNew.ParentWithDictionary.AddToChildrenDictionary_Children(childrenDictionary_ChildNew);
+      }
+      if (childrenDictionary_ChildNew.ParentWithDictionaryNullable is null) {
+        if (childrenDictionary_ChildOld.ParentWithDictionaryNullable is null) {
+          //nothing to do
+        } else {
+          childrenDictionary_ChildNew.ParentWithDictionaryNullable = childrenDictionary_ChildOld.ParentWithDictionaryNullable;
+          childrenDictionary_ChildNew.ParentWithDictionaryNullable.AddToChildrenDictionary_Children(childrenDictionary_ChildNew);
+        }
+      } else {
+        if (childrenDictionary_ChildOld.ParentWithDictionaryNullable is null) {
+          if (childrenDictionary_ChildNew.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
+            childrenDictionary_ChildNew.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_ChildNew);
+          }
+          childrenDictionary_ChildNew.ParentWithDictionaryNullable = null;
+        } else {
+          if (childrenDictionary_ChildNew.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
+            childrenDictionary_ChildNew.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_ChildNew);
+          }
+          childrenDictionary_ChildNew.ParentWithDictionaryNullable = childrenDictionary_ChildOld.ParentWithDictionaryNullable;
+          childrenDictionary_ChildNew.ParentWithDictionaryNullable.AddToChildrenDictionary_Children(childrenDictionary_ChildNew);
+        }
+      }
+      childrenDictionary_ChildNew.onRollbackItemUpdated(childrenDictionary_ChildOld);
+    }
+    partial void onRollbackItemUpdated(ChildrenDictionary_Child oldChildrenDictionary_Child);
+
+
+    /// <summary>
+    /// Adds ChildrenDictionary_Child item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var childrenDictionary_Child = (ChildrenDictionary_Child) item;
+      childrenDictionary_Child.ParentWithDictionary.AddToChildrenDictionary_Children(childrenDictionary_Child);
+      childrenDictionary_Child.ParentWithDictionaryNullable?.AddToChildrenDictionary_Children(childrenDictionary_Child);
+      childrenDictionary_Child.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

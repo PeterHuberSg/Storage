@@ -256,228 +256,262 @@ namespace Storage {
     }
 
 
-    internal void WriteClassFile(StreamWriter streamWriter, string nameSpace, string context, bool isFullyCommented) {
+    internal void WriteClassFile(StreamWriter sw, string nameSpace, bool isFullyCommented) {
       var cs /*CommentString*/= isFullyCommented ? "//" : "";
-      streamWriter.WriteLine("using System;");
-      streamWriter.WriteLine("using System.Collections.Generic;");
-      streamWriter.WriteLine("using Storage;");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine($"namespace {nameSpace} {{");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("using System;");
+      sw.WriteLine("using System.Collections.Generic;");
+      sw.WriteLine("using Storage;");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine($"namespace {nameSpace} {{");
+      sw.WriteLine();
+      sw.WriteLine();
       if (ClassComment!=null) {
         var linesArray = ClassComment.Split(Environment.NewLine);
         foreach (var line in linesArray) {
           if (!string.IsNullOrWhiteSpace(line)) {
-            streamWriter.WriteLine($"  {line}");
+            sw.WriteLine($"  {line}");
           }
         }
       }
-      streamWriter.WriteLine($"  public partial class {ClassName}: IStorage<{ClassName}> {{");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #region Properties");
-      streamWriter.WriteLine("    //      ----------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #region Events");
-      streamWriter.WriteLine("    //      ------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #region Constructors");
-      streamWriter.WriteLine("    //      ------------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called once the constructor has filled all the properties");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onConstruct() {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onCsvConstruct({context} context) {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    #region Methods");
-      streamWriter.WriteLine("    //      -------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called before storing gets executed");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onStoring(ref bool isCancelled) {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called after storing is executed");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onStored() {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Called before the data gets written to a CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onCsvWrite() {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      if (this.AreInstancesUpdatable) {
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.Write($"    {cs}partial void onUpdating(");
-        if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Implementation, cs)) {
+      sw.WriteLine($"  public partial class {ClassName}: IStorageItemGeneric<{ClassName}> {{");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    #region Properties");
+      sw.WriteLine("    //      ----------");
+      sw.WriteLine();
+      sw.WriteLine("    #endregion");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    #region Events");
+      sw.WriteLine("    //      ------");
+      sw.WriteLine();
+      sw.WriteLine("    #endregion");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    #region Constructors");
+      sw.WriteLine("    //      ------------");
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called once the constructor has filled all the properties");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onConstruct() {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called once the cloning constructor has filled all the properties. Clones have no children data.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onCloned({ClassName} clone) {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called once the CSV-constructor who reads the data from a CSV file has filled all the properties");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onCsvConstruct() {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    #endregion");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    #region Methods");
+      sw.WriteLine("    //      -------");
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called before storing gets executed");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onStoring(ref bool isCancelled) {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called after storing is executed");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onStored() {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called before the data gets written to a CSV file");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onCsvWrite() {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      if (AreInstancesUpdatable) {
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
+        sw.WriteLine("    /// </summary>");
+        sw.Write($"    {cs}partial void onUpdating(");
+        if (!writeOnUpdateParameters(sw, updateTypeEnum.Implementation, cs)) {
           throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +
             " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
         }
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    {cs}partial void onUpdated() {{");
-        streamWriter.WriteLine($"    {cs}}}");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Called after an update is read from a CSV file");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    {cs}partial void onCsvUpdate() {{");
-        streamWriter.WriteLine($"    {cs}}}");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Called after all properties are updated, but before the HasChanged event gets raised");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    {cs}partial void onUpdated({ClassName} old) {{");
+        sw.WriteLine($"    {cs}}}");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Called after an update is read from a CSV file");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    {cs}partial void onCsvUpdate() {{");
+        sw.WriteLine($"    {cs}}}");
+        sw.WriteLine();
+        sw.WriteLine();
       }
       if (AreInstancesDeletable) {
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Called before removal gets executed");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    {cs}partial void onRemove() {{");
-        streamWriter.WriteLine($"    {cs}}}");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Called before removal gets executed");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    {cs}partial void onRemove() {{");
+        sw.WriteLine($"    {cs}}}");
+        sw.WriteLine();
+        sw.WriteLine();
+      }
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Called after item.Store() transaction is rolled back");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onRollbackItemStored() {{");
+      sw.WriteLine($"    {cs}}}");
+      if (AreInstancesUpdatable) {
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Called after item.Update() transaction is rolled back");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    {cs}partial void onRollbackItemUpdated({ClassName} old{ClassName}) {{");
+        sw.WriteLine($"    {cs}}}");
+      }
+      if (AreInstancesDeletable) {
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Called after item.Remove() transaction is rolled back");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    {cs}partial void onRollbackItemRemoved() {{");
+        sw.WriteLine($"    {cs}}}");
       }
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
-          streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
-          streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    {cs}partial void onAddedTo{mi.ChildMemberInfo!.ParentMethodName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
-          streamWriter.WriteLine($"    {cs}}}");
-          streamWriter.WriteLine();
-          streamWriter.WriteLine();
+          sw.WriteLine("    /// <summary>");
+          sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
+          sw.WriteLine("    /// </summary>");
+          sw.WriteLine($"    {cs}partial void onAddedTo{mi.ChildMemberInfo!.ParentMethodName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+          sw.WriteLine($"    {cs}}}");
+          sw.WriteLine();
+          sw.WriteLine();
           if (!mi.IsChildReadOnly) {
-            streamWriter.WriteLine("    /// <summary>");
-            streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
-            streamWriter.WriteLine("    /// </summary>");
-            streamWriter.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildMemberInfo!.ParentMethodName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
-            streamWriter.WriteLine($"    {cs}}}");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine();
+            sw.WriteLine("    /// <summary>");
+            sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
+            sw.WriteLine("    /// </summary>");
+            sw.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildMemberInfo!.ParentMethodName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+            sw.WriteLine($"    {cs}}}");
+            sw.WriteLine();
+            sw.WriteLine();
           }
         } else  if (mi.MemberType>MemberTypeEnum.ParentOneChild) { //List, Dictionary or SortedList
-          streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
-          streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    {cs}partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
-          streamWriter.WriteLine($"    {cs}}}");
-          streamWriter.WriteLine();
-          streamWriter.WriteLine();
+          sw.WriteLine("    /// <summary>");
+          sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
+          sw.WriteLine("    /// </summary>");
+          sw.WriteLine($"    {cs}partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+          sw.WriteLine($"    {cs}}}");
+          sw.WriteLine();
+          sw.WriteLine();
           if (!mi.IsChildReadOnly) {
-            streamWriter.WriteLine("    /// <summary>");
-            streamWriter.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
-            streamWriter.WriteLine("    /// </summary>");
-            streamWriter.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
-            streamWriter.WriteLine($"    {cs}}}");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine();
+            sw.WriteLine("    /// <summary>");
+            sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
+            sw.WriteLine("    /// </summary>");
+            sw.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+            sw.WriteLine($"    {cs}}}");
+            sw.WriteLine();
+            sw.WriteLine();
           }
         }
       }
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Updates returnString with additional info for a short description.");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onToShortString(ref string returnString) {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Updates returnString with additional info for a short description.");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    {cs}partial void onToString(ref string returnString) {{");
-      streamWriter.WriteLine($"    {cs}}}");
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine("  }");
-      streamWriter.WriteLine("}");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Updates returnString with additional info for a short description.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onToShortString(ref string returnString) {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Updates returnString with additional info for a short description.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    {cs}partial void onToString(ref string returnString) {{");
+      sw.WriteLine($"    {cs}}}");
+      sw.WriteLine("    #endregion");
+      sw.WriteLine("  }");
+      sw.WriteLine("}");
     }
 
 
-    public void WriteBaseClassFile(StreamWriter streamWriter, string nameSpace, string context) {
-      streamWriter.WriteLine("//------------------------------------------------------------------------------");
-      streamWriter.WriteLine("// <auto-generated>");
-      streamWriter.WriteLine("//     This code was generated by StorageClassGenerator");
-      streamWriter.WriteLine("//");
-      streamWriter.WriteLine("//     Do not change code in this file, it will get lost when the file gets ");
-      streamWriter.WriteLine($"//     auto generated again. Write your code into {ClassName}.cs.");
-      streamWriter.WriteLine("// </auto-generated>");
-      streamWriter.WriteLine("//------------------------------------------------------------------------------");
-      streamWriter.WriteLine("#nullable enable");
-      streamWriter.WriteLine("using System;");
-      streamWriter.WriteLine("using System.Collections.Generic;");
+    public void WriteBaseClassFile(StreamWriter sw, string nameSpace, string context) {
+      sw.WriteLine("//------------------------------------------------------------------------------");
+      sw.WriteLine("// <auto-generated>");
+      sw.WriteLine("//     This code was generated by StorageClassGenerator");
+      sw.WriteLine("//");
+      sw.WriteLine("//     Do not change code in this file, it will get lost when the file gets ");
+      sw.WriteLine($"//     auto generated again. Write your code into {ClassName}.cs.");
+      sw.WriteLine("// </auto-generated>");
+      sw.WriteLine("//------------------------------------------------------------------------------");
+      sw.WriteLine("#nullable enable");
+      sw.WriteLine("using System;");
+      sw.WriteLine("using System.Collections.Generic;");
       if (IsGenerateReaderWriter) {
-        streamWriter.WriteLine("using System.Diagnostics.CodeAnalysis;");
+        sw.WriteLine("using System.Diagnostics.CodeAnalysis;");
       }
-      streamWriter.WriteLine("using System.Threading;");
-      streamWriter.WriteLine("using Storage;");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine($"namespace {nameSpace} {{");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("using System.Threading;");
+      sw.WriteLine("using Storage;");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine($"namespace {nameSpace} {{");
+      sw.WriteLine();
+      sw.WriteLine();
       if (ClassComment!=null) {
         var linesArray = ClassComment.Split(Environment.NewLine);
         foreach (var line in linesArray) {
           if (!string.IsNullOrWhiteSpace(line)) {
-            streamWriter.WriteLine($"  {line}");
+            sw.WriteLine($"  {line}");
           }
         }
       }
-      streamWriter.WriteLine($"  public partial class {ClassName}: IStorage<{ClassName}> {{");
-      streamWriter.WriteLine();
+      sw.WriteLine($"  public partial class {ClassName}: IStorageItemGeneric<{ClassName}> {{");
+      sw.WriteLine();
       #region Properties
       //      ----------
 
-      streamWriter.WriteLine("    #region Properties");
-      streamWriter.WriteLine("    //      ----------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Unique identifier for {ClassName}. Gets set once {ClassName} gets added to {context}.Data.");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    public int Key { get; private set; }");
-      streamWriter.WriteLine($"    internal static void SetKey({ClassName} {LowerClassName}, int key) {{ {LowerClassName}.Key = key; }}");
-
+      sw.WriteLine("    #region Properties");
+      sw.WriteLine("    //      ----------");
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Unique identifier for {ClassName}. Gets set once {ClassName} gets added to {context}.Data.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    public int Key { get; private set; }");
+      //sw.WriteLine($"    internal static void SetKey(IStorageItem {LowerClassName}, int key) {{ {LowerClassName}.Key = key; }}");
+      sw.WriteLine($"    internal static void SetKey(IStorageItem {LowerClassName}, int key) {{");
+      sw.WriteLine($"      (({ClassName}){LowerClassName}).Key = key;");
+      sw.WriteLine("    }");
       foreach (var mi in Members.Values) {
-        mi.WriteProperty(streamWriter);
+        mi.WriteProperty(sw);
       }
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine();
 
       #region Headers
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Headers written to first line in CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write("    internal static readonly string[] Headers = {");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Headers written to first line in CSV file");
+      sw.WriteLine("    /// </summary>");
+      sw.Write("    internal static readonly string[] Headers = {");
       var lines = new List<string>();
       if (AreInstancesDeletable || AreInstancesUpdatable) {
         lines.Add("\"Key\"");
@@ -490,84 +524,84 @@ namespace Storage {
       for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++) {
         var line = lines[lineIndex];
         if (lines.Count>5) {
-          streamWriter.WriteLine();
-          streamWriter.Write("      ");
+          sw.WriteLine();
+          sw.Write("      ");
         }
-        streamWriter.Write(line);
+        sw.Write(line);
         if (lineIndex+1<lines.Count) {
-          streamWriter.Write(", ");
+          sw.Write(", ");
         }
       }
       if (lines.Count>5) {
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    };");
+        sw.WriteLine();
+        sw.WriteLine("    };");
       } else {
-        streamWriter.WriteLine("};");
+        sw.WriteLine("};");
       }
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
       #region static NoClass singleton
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// None existing " + ClassName);
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write($"    internal static {ClassName} No{ClassName} = new {ClassName}(");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// None existing " + ClassName);
+      sw.WriteLine("    /// </summary>");
+      sw.Write($"    internal static {ClassName} No{ClassName} = new {ClassName}(");
       foreach (var mi in Members.Values) {
         if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type, link to parent
           if (mi.MemberType==MemberTypeEnum.Enum) {
             if (mi.IsNullable) {
-              streamWriter.Write("null, ");
+              sw.Write("null, ");
             } else {
-              streamWriter.Write(0 + ", ");
+              sw.Write(0 + ", ");
             }
           } else {
-            streamWriter.Write(mi.NoValue + ", ");
+            sw.Write(mi.NoValue + ", ");
           }
         }
       }
-      streamWriter.WriteLine("isStoring: false);");
+      sw.WriteLine("isStoring: false);");
       #endregion
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("    #endregion");
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
       #region Events
       //      ------
 
-      streamWriter.WriteLine("    #region Events");
-      streamWriter.WriteLine("    //      ------");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
+      sw.WriteLine("    #region Events");
+      sw.WriteLine("    //      ------");
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
       if (AreInstancesUpdatable) {
-        streamWriter.WriteLine($"    /// Content of {ClassName} has changed. Gets only raised for changes occurring after loading {context}.Data with previously stored data.");
+        sw.WriteLine($"    /// Content of {ClassName} has changed. Gets only raised for changes occurring after loading {context}.Data with previously stored data.");
       } else {
-        streamWriter.WriteLine($"    /// This event will never be raised, but is needed to comply with IStorage.");
+        sw.WriteLine($"    /// This event will never be raised, but is needed to comply with IStorage.");
       }
-      streamWriter.WriteLine("    /// </summary>");
+      sw.WriteLine("    /// </summary>");
       if (!AreInstancesUpdatable) {
-        streamWriter.WriteLine("#pragma warning disable 67");
+        sw.WriteLine("#pragma warning disable 67");
       }
-      streamWriter.WriteLine($"    public event Action<{ClassName}>? HasChanged;");
+      sw.WriteLine($"    public event Action</*old*/{ClassName}, /*new*/{ClassName}>? HasChanged;");
       if (!AreInstancesUpdatable) {
-        streamWriter.WriteLine("#pragma warning restore 67");
+        sw.WriteLine("#pragma warning restore 67");
       }
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("    #endregion");
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
-      #region Constructors
-      //      ------------
+      sw.WriteLine("    #region Constructors");
+      sw.WriteLine("    //      ------------");
+      sw.WriteLine();
 
-      streamWriter.WriteLine("    #region Constructors");
-      streamWriter.WriteLine("    //      ------------");
-      streamWriter.WriteLine();
+      #region Constructor
+      //      -----------
 
       #region Public constructor
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// {ClassName} Constructor. If isStoring is true, adds {ClassName} to {context}.Data.{PluralName}");
+      sw.WriteLine("    /// <summary>");
+      sw.Write($"    /// {ClassName} Constructor. If isStoring is true, adds {ClassName} to {context}.Data.{PluralName}");
       lines.Clear();
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.LinkToParent) {
@@ -582,113 +616,145 @@ namespace Storage {
         for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
           var line = lines[linesIndex];
           if (linesIndex+1==lines.Count) {
-            streamWriter.WriteLine();
-            streamWriter.Write("    /// and " + line);
+            sw.WriteLine();
+            sw.Write("    /// and " + line);
           } else {
-            streamWriter.WriteLine(", ");
-            streamWriter.Write("    /// " + line);
+            sw.WriteLine(", ");
+            sw.Write("    /// " + line);
           }
         }
       }
-      streamWriter.WriteLine(".");
-      streamWriter.WriteLine("    /// </summary>");
+      sw.WriteLine(".");
+      sw.WriteLine("    /// </summary>");
       if (IsConstructorPrivate) {
-        streamWriter.Write($"    private {ClassName}(");
+        sw.Write($"    private {ClassName}(");
       } else {
-        streamWriter.Write($"    public {ClassName}(");
+        sw.Write($"    public {ClassName}(");
       }
-      writeParameters(streamWriter, isConstructor: true);
-      streamWriter.WriteLine("      Key = StorageExtensions.NoKey;");
+      writeParameters(sw, isConstructor: true);
+      sw.WriteLine("      Key = StorageExtensions.NoKey;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
           //nothing to do
         } else if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
           if (mi.ChildCount>1) {
-            streamWriter.WriteLine($"      {mi.LowerMemberName} = new HashSet<{mi.ChildTypeName}>();");
+            sw.WriteLine($"      {mi.LowerMemberName} = new HashSet<{mi.ChildTypeName}>();");
           } else {
-            streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
+            sw.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
           }
         } else if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenDictionary || 
           mi.MemberType==MemberTypeEnum.ParentMultipleChildrenSortedList) 
         {
-          streamWriter.WriteLine($"      {mi.LowerMemberName} = new {mi.TypeString}();");
+          sw.WriteLine($"      {mi.LowerMemberName} = new {mi.TypeString}();");
         } else {
-          streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName}{mi.Rounding};");
+          sw.WriteLine($"      {mi.MemberName} = {mi.LowerMemberName}{mi.Rounding};");
         }
       }
-      streamWriter.WriteLine("      onConstruct();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("      if (isStoring) {");
-      streamWriter.WriteLine("        Store();");
-      streamWriter.WriteLine("      }");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onConstruct();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("      onConstruct();");
+      sw.WriteLine();
+      sw.WriteLine("      if (isStoring) {");
+      sw.WriteLine("        Store();");
+      sw.WriteLine("      }");
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onConstruct();");
+      sw.WriteLine();
+      sw.WriteLine();
+      #endregion
+
+      #region Cloning constructor
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Cloning constructor. It will copy all data from original except any collection (children).");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    #pragma warning disable CS8618 // Children collections are uninitialized.");
+      sw.WriteLine($"    public {ClassName}({ClassName} original) {{");
+      sw.WriteLine("    #pragma warning restore CS8618 //");
+      sw.WriteLine("      Key = StorageExtensions.NoKey;");
+      foreach (var mi in Members.Values) {
+        if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
+          //nothing to do
+        } else if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
+          //nothing to do
+        } else if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenDictionary ||
+          mi.MemberType==MemberTypeEnum.ParentMultipleChildrenSortedList) 
+        {
+          //nothing to do
+        } else {
+          sw.WriteLine($"      {mi.MemberName} = original.{mi.MemberName};");
+        }
+      }
+      sw.WriteLine("      onCloned(this);");
+      sw.WriteLine("    }");
+      sw.WriteLine($"    partial void onCloned({ClassName} clone);");
+      sw.WriteLine();
+      sw.WriteLine();
+      /*+
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Copies all data except any collection (children) to a new {ClassName} instance.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    public {ClassName} Clone() {{");
+      sw.WriteLine($"      return new {ClassName}(this);");
+      sw.WriteLine("    }");
+      sw.WriteLine();
+      sw.WriteLine();
+      +*/
       #endregion
 
       #region private CSV constructor
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Constructor for {ClassName} read from CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.Write($"    private {ClassName}(int key, CsvReader csvReader, {context} ");
-      //if (ParentsAll.Count>0) {
-      //  streamWriter.Write("context");
-      //} else {
-      //  streamWriter.Write("_");
-      //}
-      streamWriter.Write("context");// context always needed for onCsvConstruct
-      streamWriter.WriteLine(") {");
-      streamWriter.WriteLine("      Key = key;");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Constructor for {ClassName} read from CSV file");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    private {ClassName}(int key, CsvReader csvReader){{");
+      sw.WriteLine("      Key = key;");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
           //nothing to do
         } else if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
           if (mi.ChildCount>1) {
-            streamWriter.WriteLine($"      {mi.LowerMemberName} = new HashSet<{mi.ChildTypeName}>();");
+            sw.WriteLine($"      {mi.LowerMemberName} = new HashSet<{mi.ChildTypeName}>();");
           } else {
-            streamWriter.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
+            sw.WriteLine($"      {mi.LowerMemberName} = new List<{mi.ChildTypeName}>();");
           }
         } else if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenDictionary ||
           mi.MemberType==MemberTypeEnum.ParentMultipleChildrenSortedList) 
         {
-          streamWriter.WriteLine($"      {mi.LowerMemberName} = new {mi.TypeString}();");
+          sw.WriteLine($"      {mi.LowerMemberName} = new {mi.TypeString}();");
         } else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
           if (mi.IsNullable) {
-            streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
-            streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key.HasValue) {{");
-            streamWriter.WriteLine($"        if (context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, " +
+            sw.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
+            sw.WriteLine($"      if ({mi.LowerMemberName}Key.HasValue) {{");
+            sw.WriteLine($"        if ({context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, " +
               $"out var {mi.LowerMemberName})) {{");
-            streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine("        } else {");
-            streamWriter.WriteLine($"          {mi.MemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
-            streamWriter.WriteLine("        }");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
+            sw.WriteLine("        } else {");
+            sw.WriteLine($"          {mi.MemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+            sw.WriteLine("        }");
+            sw.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      var {mi.ParentClassInfo!.LowerClassName}Key = csvReader.ReadInt();");
-            streamWriter.WriteLine($"      if (context.{mi.ParentClassInfo!.PluralName}." +
+            sw.WriteLine($"      var {mi.ParentClassInfo!.LowerClassName}Key = csvReader.ReadInt();");
+            sw.WriteLine($"      if ({context}.Data.{mi.ParentClassInfo!.PluralName}." +
               $"TryGetValue({mi.ParentClassInfo!.LowerClassName}Key, out var {mi.LowerMemberName})) {{");
-            streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
-            streamWriter.WriteLine($"      }} else {{");
-            streamWriter.WriteLine($"        throw new Exception($\"Read {mi.ClassInfo.ClassName} from CSV file: Cannot find " +
+            sw.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
+            sw.WriteLine($"      }} else {{");
+            sw.WriteLine($"        throw new Exception($\"Read {mi.ClassInfo.ClassName} from CSV file: Cannot find " +
               $"{mi.MemberName} with key {{{mi.ParentClassInfo!.LowerClassName}Key}}.\" + Environment.NewLine + ");
-            streamWriter.WriteLine($"          csvReader.PresentContent);");
-            streamWriter.WriteLine($"      }}");
+            sw.WriteLine($"          csvReader.PresentContent);");
+            sw.WriteLine($"      }}");
           }
         } else {
           //simple data type
           if (mi.MemberType==MemberTypeEnum.Enum) {
-          streamWriter.WriteLine($"      {mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+            //sw.WriteLine($"      {mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+            sw.WriteLine($"      {mi.MemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
           } else {
-            streamWriter.WriteLine($"      {mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+            sw.WriteLine($"      {mi.MemberName} = csvReader.{mi.CsvReaderRead};");
           }
           if (mi.NeedsDictionary) {
             if (mi.IsNullable) {
-              streamWriter.WriteLine($"      if ({mi.MemberName}!=null) {{");
-              streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
-              streamWriter.WriteLine($"      }}");
+              sw.WriteLine($"      if ({mi.MemberName}!=null) {{");
+              sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+              sw.WriteLine($"      }}");
             } else {
-              streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+              sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
             }
           }
         }
@@ -698,30 +764,30 @@ namespace Storage {
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.LinkToParent && !mi.IsLookupOnly) {
           if (mi.IsNullable) {
-            streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key.HasValue && {mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-            streamWriter.WriteLine($"        {mi.MemberName}!.AddTo{mi.ParentMethodName}(this);");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine($"      if ({mi.LowerMemberName}Key.HasValue && {mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+            sw.WriteLine($"        {mi.MemberName}!.AddTo{mi.ParentMethodName}(this);");
+            sw.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-            streamWriter.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine($"      if ({mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+            sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+            sw.WriteLine("      }");
           }
         }
       }
-      streamWriter.WriteLine("      onCsvConstruct(context);");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine($"    partial void onCsvConstruct({context} context);");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("      onCsvConstruct();");
+      sw.WriteLine("    }");
+      sw.WriteLine($"    partial void onCsvConstruct();");
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
       #region Create()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// New {ClassName} read from CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    internal static {ClassName} Create(int key, CsvReader csvReader, {context} context) {{");
-      streamWriter.WriteLine($"      return new {ClassName}(key, csvReader, context);");
-      streamWriter.WriteLine("    }");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// New {ClassName} read from CSV file");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    internal static {ClassName} Create(int key, CsvReader csvReader) {{");
+      sw.WriteLine($"      return new {ClassName}(key, csvReader);");
+      sw.WriteLine("    }");
       #endregion
 
       #region Verify()
@@ -734,37 +800,37 @@ namespace Storage {
         }
       }
       if (commentLines.Count>0) {
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
         foreach (var commentLine in commentLines) {
-          streamWriter.WriteLine(commentLine);
+          sw.WriteLine(commentLine);
         }
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    internal static bool Verify({ClassName} {LowerClassName}) {{");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    internal static bool Verify({ClassName} {LowerClassName}) {{");
         foreach (var codeLine in codeLines) {
-          streamWriter.WriteLine(codeLine);
+          sw.WriteLine(codeLine);
         }
-        streamWriter.WriteLine($"      return true;");
-        streamWriter.WriteLine("    }");
+        sw.WriteLine($"      return true;");
+        sw.WriteLine("    }");
 
       }
       #endregion
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("    #endregion");
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
       #region Methods
       //      -------
 
-      streamWriter.WriteLine("    #region Methods");
-      streamWriter.WriteLine("    //      -------");
-      streamWriter.WriteLine();
+      sw.WriteLine("    #region Methods");
+      sw.WriteLine("    //      -------");
+      sw.WriteLine();
 
       #region Store()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.Write($"    /// Adds {ClassName} to {context}.Data.{PluralName}");
+      sw.WriteLine("    /// <summary>");
+      sw.Write($"    /// Adds {ClassName} to {context}.Data.{PluralName}");
       var parts = new List<string>();
       //foreach (var parent in ParentsWithList) {
       foreach (var parent in ParentsAll) {
@@ -773,368 +839,367 @@ namespace Storage {
       if (parts.Count>0) {
         for (int partIndex = 0; partIndex < parts.Count; partIndex++) {
           if (partIndex+1<parts.Count) {
-            streamWriter.Write(", ");
+            sw.Write(", ");
           } else {
-            streamWriter.Write(" and ");
+            sw.Write(" and ");
           }
-          streamWriter.Write(parts[partIndex]);
+          sw.Write(parts[partIndex]);
         }
       }
-      streamWriter.WriteLine(". ");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    public void Store() {");
-      streamWriter.WriteLine("      if (Key>=0) {");
-      streamWriter.WriteLine($"        throw new Exception($\"{ClassName} cannot be stored again in {context}.Data, " +
+      sw.WriteLine(". ");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    public void Store() {");
+      sw.WriteLine("      if (Key>=0) {");
+      sw.WriteLine($"        throw new Exception($\"{ClassName} cannot be stored again in {context}.Data, " +
         $"key is {{Key}} greater equal 0.\" + Environment.NewLine + ToString());");
-      streamWriter.WriteLine("      }");
+      sw.WriteLine("      }");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.LinkToParent && !mi.IsLookupOnly) {
           if (mi.IsNullable) {
-            streamWriter.WriteLine($"      if ({mi.MemberName}!=null && {mi.MemberName}.Key<0) {{");
-            streamWriter.WriteLine($"        throw new Exception($\"{ClassName} cannot be stored in {context}.Data, " +
+            sw.WriteLine($"      if ({mi.MemberName}!=null && {mi.MemberName}.Key<0) {{");
+            sw.WriteLine($"        throw new Exception($\"{ClassName} cannot be stored in {context}.Data, " +
               $"{mi.MemberName} is not stored yet.\" + Environment.NewLine + ToString());");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      if ({mi.MemberName}.Key<0) {{");
-            streamWriter.WriteLine($"        throw new Exception($\"{ClassName} cannot be stored in {context}.Data, " +
+            sw.WriteLine($"      if ({mi.MemberName}.Key<0) {{");
+            sw.WriteLine($"        throw new Exception($\"{ClassName} cannot be stored in {context}.Data, " +
               $"{mi.MemberName} is missing or not stored yet.\" + Environment.NewLine + ToString());");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine("      }");
           }
         }
       }
-      streamWriter.WriteLine("      var isCancelled = false;");
-      streamWriter.WriteLine("      onStoring(ref isCancelled);");
-      streamWriter.WriteLine("      if (isCancelled) return;");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
+      sw.WriteLine("      var isCancelled = false;");
+      sw.WriteLine("      onStoring(ref isCancelled);");
+      sw.WriteLine("      if (isCancelled) return;");
+      sw.WriteLine();
+      sw.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.LinkToParent) {
           if (!mi.IsLookupOnly) {
             if (mi.IsNullable) {
-              //streamWriter.WriteLine($"      if ({mi.Name}!=null) {{");
-              streamWriter.WriteLine($"      {mi.MemberName}?.AddTo{mi.ParentMethodName}(this);");
-              //streamWriter.WriteLine("      }");
+              sw.WriteLine($"      {mi.MemberName}?.AddTo{mi.ParentMethodName}(this);");
             } else {
-              streamWriter.WriteLine($"      {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+              sw.WriteLine($"      {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
             }
           }
         } else if (mi.MemberType<MemberTypeEnum.LinkToParent) {
           //simple data type
           if (mi.NeedsDictionary) {
             if (mi.IsNullable) {
-              streamWriter.WriteLine($"      if ({mi.MemberName}!=null) {{");
-              streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
-              streamWriter.WriteLine($"      }}");
+              sw.WriteLine($"      if ({mi.MemberName}!=null) {{");
+              sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+              sw.WriteLine($"      }}");
             } else {
-              streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+              sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
             }
           }
         }
       }
-      streamWriter.WriteLine("      onStored();");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onStoring(ref bool isCancelled);");
-      streamWriter.WriteLine("    partial void onStored();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Estimated number of UTF8 characters needed to write {ClassName} to CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    public const int EstimatedLineLength = {EstimatedMaxByteSize};");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("      onStored();");
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onStoring(ref bool isCancelled);");
+      sw.WriteLine("    partial void onStored();");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Estimated number of UTF8 characters needed to write {ClassName} to CSV file");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    public const int EstimatedLineLength = {EstimatedMaxByteSize};");
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
       #region Write()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine($"    /// Write {ClassName} to CSV file");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine($"    internal static void Write({ClassName} {LowerClassName}, CsvWriter csvWriter) {{");
-      streamWriter.WriteLine($"      {LowerClassName}.onCsvWrite();");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Write {ClassName} to CSV file");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine($"    internal static void Write({ClassName} {LowerClassName}, CsvWriter csvWriter) {{");
+      sw.WriteLine($"      {LowerClassName}.onCsvWrite();");
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.LinkToParent) {
           if (mi.IsNullable) {
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
-            streamWriter.WriteLine("        csvWriter.WriteNull();");
-            streamWriter.WriteLine("      } else {");
-            streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write" +
+            sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
+            sw.WriteLine("        csvWriter.WriteNull();");
+            sw.WriteLine("      } else {");
+            sw.WriteLine($"        if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write" +
               $" {LowerClassName} '{{{LowerClassName}}}' to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine($"        csvWriter.Write({LowerClassName}.{mi.MemberName}.Key.ToString());");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine();
+            sw.WriteLine($"        csvWriter.Write({LowerClassName}.{mi.MemberName}.Key.ToString());");
+            sw.WriteLine("      }");
           } else {
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write {LowerClassName} '{{{LowerClassName}}}'" +
+            sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}.Key<0) throw new Exception($\"Cannot write {LowerClassName} '{{{LowerClassName}}}'" +
               $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine($"      csvWriter.Write({LowerClassName}.{mi.MemberName}.Key.ToString());");
+            sw.WriteLine();
+            sw.WriteLine($"      csvWriter.Write({LowerClassName}.{mi.MemberName}.Key.ToString());");
           }
         } else if (mi.MemberType==MemberTypeEnum.Enum) {
-          streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){LowerClassName}.{mi.MemberName});");
+          if (mi.IsNullable) {
+            sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int?){LowerClassName}.{mi.MemberName});");
+          } else {
+            sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){LowerClassName}.{mi.MemberName});");
+          }
         } else if (mi.MemberType<MemberTypeEnum.Enum) {//simple data type
-          streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({LowerClassName}.{mi.MemberName});");
+          sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({LowerClassName}.{mi.MemberName});");
         }
       }
       //Todo: ClassInfo: change methods like onCsvWrite to onCsvWriting and onCsvWriten, add them also to methods like internal void RemoveParentNullable
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onCsvWrite();");
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onCsvWrite();");
+      sw.WriteLine();
+      sw.WriteLine();
       #endregion
 
       if (AreInstancesUpdatable) {
 
         #region Public Update()
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Updates {ClassName} with the provided values");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.Write("    public void Update(");
-        if (!writeParameters(streamWriter, isConstructor: false)) {
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Updates {ClassName} with the provided values");
+        sw.WriteLine("    /// </summary>");
+        sw.Write("    public void Update(");
+        if (!writeParameters(sw, isConstructor: false)) {
           throw new GeneratorException($"Method '{ClassName}.Update()': has no parameters. Are all properties readonly ?" +
             " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
         }
+        sw.WriteLine($"      var clone = new {ClassName}(this);");
         //call onUpdating()
-        streamWriter.WriteLine("      var isCancelled = false;");
-        streamWriter.Write("      onUpdating(");
-        if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Call)) {
+        sw.WriteLine("      var isCancelled = false;");
+        sw.Write("      onUpdating(");
+        if (!writeOnUpdateParameters(sw, updateTypeEnum.Call)) {
           throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +
             " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
         }
-        streamWriter.WriteLine("      if (isCancelled) return;");
-        streamWriter.WriteLine();
+        sw.WriteLine("      if (isCancelled) return;");
+        sw.WriteLine();
         //update code and detect change
-        streamWriter.WriteLine("      var isChangeDetected = false;");
+        sw.WriteLine("      var isChangeDetected = false;");
         foreach (var mi in Members.Values) {
           if (mi.MemberType<=MemberTypeEnum.LinkToParent && //simple data type
             !mi.IsReadOnly) 
           {
             if (mi.MemberType==MemberTypeEnum.LinkToParent) {
               if (mi.IsNullable) {
-                streamWriter.WriteLine($"      if ({mi.MemberName} is null) {{");
-                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-                streamWriter.WriteLine("          //nothing to do");
-                streamWriter.WriteLine("        } else {");
-                streamWriter.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"      if ({mi.MemberName} is null) {{");
+                sw.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                sw.WriteLine("          //nothing to do");
+                sw.WriteLine("        } else {");
+                sw.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"          if (Key>=0) {{");
-                  streamWriter.WriteLine($"            {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
-                  streamWriter.WriteLine($"          }}");
+                  sw.WriteLine($"          if (Key>=0) {{");
+                  sw.WriteLine($"            {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+                  sw.WriteLine($"          }}");
                 }
-                streamWriter.WriteLine("          isChangeDetected = true;");
-                streamWriter.WriteLine("        }");
-                streamWriter.WriteLine("      } else {");
-                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                sw.WriteLine("          isChangeDetected = true;");
+                sw.WriteLine("        }");
+                sw.WriteLine("      } else {");
+                sw.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"          if (Key>=0) {{");
-                  streamWriter.WriteLine($"            {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
-                  streamWriter.WriteLine($"          }}");
+                  sw.WriteLine($"          if (Key>=0) {{");
+                  sw.WriteLine($"            {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
+                  sw.WriteLine($"          }}");
                 }
-                streamWriter.WriteLine($"          {mi.MemberName} = null;");
-                streamWriter.WriteLine("          isChangeDetected = true;");
-                streamWriter.WriteLine("        } else {");
-                streamWriter.WriteLine($"          if ({mi.MemberName}!={mi.LowerMemberName}) {{");
+                sw.WriteLine($"          {mi.MemberName} = null;");
+                sw.WriteLine("          isChangeDetected = true;");
+                sw.WriteLine("        } else {");
+                sw.WriteLine($"          if ({mi.MemberName}!={mi.LowerMemberName}) {{");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"            if (Key>=0) {{");
-                  streamWriter.WriteLine($"              {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
-                  streamWriter.WriteLine($"            }}");
+                  sw.WriteLine($"            if (Key>=0) {{");
+                  sw.WriteLine($"              {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
+                  sw.WriteLine($"            }}");
                 }
-                streamWriter.WriteLine($"            {mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"            {mi.MemberName} = {mi.LowerMemberName};");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"            if (Key>=0) {{");
-                  streamWriter.WriteLine($"              {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
-                  streamWriter.WriteLine($"            }}");
+                  sw.WriteLine($"            if (Key>=0) {{");
+                  sw.WriteLine($"              {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+                  sw.WriteLine($"            }}");
                 }
-                streamWriter.WriteLine("            isChangeDetected = true;");
-                streamWriter.WriteLine("          }");
-                streamWriter.WriteLine("        }");
-                streamWriter.WriteLine("      }");
+                sw.WriteLine("            isChangeDetected = true;");
+                sw.WriteLine("          }");
+                sw.WriteLine("        }");
+                sw.WriteLine("      }");
               } else {
-                streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
+                sw.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"        if (Key>=0) {{");
-                  streamWriter.WriteLine($"          {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
-                  streamWriter.WriteLine($"        }}");
+                  sw.WriteLine($"        if (Key>=0) {{");
+                  sw.WriteLine($"          {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
+                  sw.WriteLine($"        }}");
                 }
-                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"        if (Key>=0) {{");
-                  streamWriter.WriteLine($"          {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
-                  streamWriter.WriteLine($"        }}");
+                  sw.WriteLine($"        if (Key>=0) {{");
+                  sw.WriteLine($"          {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+                  sw.WriteLine($"        }}");
                 }
-                streamWriter.WriteLine("        isChangeDetected = true;");
-                streamWriter.WriteLine("      }");
+                sw.WriteLine("        isChangeDetected = true;");
+                sw.WriteLine("      }");
               }
             } else {
               if (mi.Rounding!=null) {
-                streamWriter.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
-                streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
+                sw.WriteLine($"      var {mi.LowerMemberName}Rounded = {mi.LowerMemberName}{mi.Rounding};");
+                sw.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}Rounded) {{");
                 if (mi.NeedsDictionary) {
                   if (mi.IsNullable) {
-                    streamWriter.WriteLine($"        if ({mi.MemberName}!=null) {{");
-                    streamWriter.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
-                    streamWriter.WriteLine($"        }}");
+                    sw.WriteLine($"        if ({mi.MemberName}!=null) {{");
+                    sw.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                    sw.WriteLine($"        }}");
                   } else {
-                    streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                    sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
                   }
                 }
-                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
+                sw.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName}Rounded;");
               } else {
-                streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
+                sw.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
                 if (mi.NeedsDictionary) {
                   if (mi.IsNullable) {
-                    streamWriter.WriteLine($"        if ({mi.MemberName}!=null) {{");
-                    streamWriter.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
-                    streamWriter.WriteLine($"        }}");
+                    sw.WriteLine($"        if ({mi.MemberName}!=null) {{");
+                    sw.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                    sw.WriteLine($"        }}");
                   } else {
-                    streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
+                    sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({mi.MemberName});");
                   }
                 }
-                streamWriter.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
               }
               if (mi.NeedsDictionary) {
                 if (mi.IsNullable) {
-                  streamWriter.WriteLine($"        if ({mi.MemberName}!=null) {{");
-                  streamWriter.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
-                  streamWriter.WriteLine($"        }}");
+                  sw.WriteLine($"        if ({mi.MemberName}!=null) {{");
+                  sw.WriteLine($"          {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+                  sw.WriteLine($"        }}");
                 } else {
-                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
+                  sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({mi.MemberName}, this);");
                 }
               }
-              streamWriter.WriteLine("        isChangeDetected = true;");
-              streamWriter.WriteLine("      }");
+              sw.WriteLine("        isChangeDetected = true;");
+              sw.WriteLine("      }");
             }
           }
         }
         //call updated()
-        streamWriter.WriteLine("      if (isChangeDetected) {");
-        streamWriter.WriteLine("        onUpdated();");
-        streamWriter.WriteLine("        HasChanged?.Invoke(this);");
-        streamWriter.WriteLine("      }");
-        streamWriter.WriteLine("    }");
-        streamWriter.Write("    partial void onUpdating(");
-        if (!writeOnUpdateParameters(streamWriter, updateTypeEnum.Definition)) {
+        sw.WriteLine("      if (isChangeDetected) {");
+        sw.WriteLine("        onUpdated(clone);");
+        sw.WriteLine("        if (Key>=0) {");
+        sw.WriteLine($"          {context}.Data.{PluralName}.ItemHasChanged(clone, this);");
+        sw.WriteLine("        }");
+        sw.WriteLine("        HasChanged?.Invoke(clone, this);");
+        sw.WriteLine("      }");
+        sw.WriteLine("    }");
+        sw.Write("    partial void onUpdating(");
+        if (!writeOnUpdateParameters(sw, updateTypeEnum.Definition)) {
           throw new GeneratorException($"Method '{ClassName}.onUpdating()': has no parameters. Are all properties readonly ?" +
             " Then add attribute [StorageClass(areInstancesUpdatable: false] and remove readonly from the properties.");
         }
-        streamWriter.WriteLine("    partial void onUpdated();");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine($"    partial void onUpdated({ClassName} old);");
+        sw.WriteLine();
+        sw.WriteLine();
         #endregion
 
         #region Internal CSV Update()
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Updates this {ClassName} with values from CSV file");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.Write($"    internal static void Update({ClassName} {LowerClassName}, CsvReader csvReader, {context} ");
-        //if (ParentsWithList.Count>0) {
-        if (ParentsAll.Count>0) {
-          streamWriter.Write("context");
-        } else {
-          streamWriter.Write("_");
-        }
-        streamWriter.WriteLine(") {");
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Updates this {ClassName} with values from CSV file");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    internal static void Update({ClassName} {LowerClassName}, CsvReader csvReader){{");
         foreach (var mi in Members.Values) {
           if (mi.IsReadOnly) {
             if (mi.MemberType==MemberTypeEnum.Enum) {
-              streamWriter.WriteLine($"      var {mi.LowerMemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+              sw.WriteLine($"      var {mi.LowerMemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
             } else {
-              streamWriter.WriteLine($"      var {mi.LowerMemberName} = csvReader.{mi.CsvReaderRead};");
+              sw.WriteLine($"      var {mi.LowerMemberName} = csvReader.{mi.CsvReaderRead};");
             }
-            streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
-            streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Update(): Property {mi.MemberName}" +
+            sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
+            sw.WriteLine($"        throw new Exception($\"{ClassName}.Update(): Property {mi.MemberName}" +
               $" '{{{LowerClassName}.{mi.MemberName}}}' is \" +");
-            streamWriter.WriteLine($"          $\"readonly, {mi.LowerMemberName} '{{{mi.LowerMemberName}}}' read from the CSV file should be the" +
+            sw.WriteLine($"          $\"readonly, {mi.LowerMemberName} '{{{mi.LowerMemberName}}}' read from the CSV file should be the" +
               " same.\" + Environment.NewLine + "); 
-            streamWriter.WriteLine($"          {LowerClassName}.ToString());");
-            streamWriter.WriteLine("      }");
+            sw.WriteLine($"          {LowerClassName}.ToString());");
+            sw.WriteLine("      }");
           } else {
             if (mi.MemberType==MemberTypeEnum.LinkToParent) {
               if (mi.IsNullable) {
-                streamWriter.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
-                streamWriter.WriteLine($"      {mi.ParentTypeString}? {mi.LowerMemberName};");
-                streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
-                streamWriter.WriteLine($"        {mi.LowerMemberName} = null;");
-                streamWriter.WriteLine("      } else {");
-                streamWriter.WriteLine($"        if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
-                streamWriter.WriteLine($"          {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
-                streamWriter.WriteLine("        }");
-                streamWriter.WriteLine("      }");
-                streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
-                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
-                streamWriter.WriteLine("          //nothing to do");
-                streamWriter.WriteLine("        } else {");
-                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
+                sw.WriteLine($"      {mi.ParentTypeString}? {mi.LowerMemberName};");
+                sw.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+                sw.WriteLine($"        {mi.LowerMemberName} = null;");
+                sw.WriteLine("      } else {");
+                sw.WriteLine($"        if (!{context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
+                sw.WriteLine($"          {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+                sw.WriteLine("        }");
+                sw.WriteLine("      }");
+                sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName} is null) {{");
+                sw.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                sw.WriteLine("          //nothing to do");
+                sw.WriteLine("        } else {");
+                sw.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
                 }
-                streamWriter.WriteLine("        }");
-                streamWriter.WriteLine("      } else {");
-                streamWriter.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
+                sw.WriteLine("        }");
+                sw.WriteLine("      } else {");
+                sw.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                  streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
-                  streamWriter.WriteLine("          }");
+                  sw.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                  sw.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine("          }");
                 }
-                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
-                streamWriter.WriteLine("        } else {");
+                sw.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
+                sw.WriteLine("        } else {");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                  streamWriter.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
-                  streamWriter.WriteLine("          }");
+                  sw.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                  sw.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine("          }");
                 }
-                streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
                 }
-                streamWriter.WriteLine("        }");
-                streamWriter.WriteLine("      }");
+                sw.WriteLine("        }");
+                sw.WriteLine("      }");
               } else {
-                streamWriter.WriteLine($"      if (!context.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
-                streamWriter.WriteLine($"        {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
-                streamWriter.WriteLine("      }");
-                streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
+                sw.WriteLine($"      if (!{context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+                sw.WriteLine($"        {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+                sw.WriteLine("      }");
+                sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                  streamWriter.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
-                  streamWriter.WriteLine("        }");
+                  sw.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                  sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine("        }");
                 }
-                streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
+                sw.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
                 if (!mi.IsLookupOnly) {
-                  streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
                 }
-                streamWriter.WriteLine("      }");
+                sw.WriteLine("      }");
               }
             } else if (mi.MemberType<MemberTypeEnum.LinkToParent) {//simple type
               if (mi.NeedsDictionary) {
                 if (mi.IsNullable) {
-                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
-                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
-                  streamWriter.WriteLine($"      }}");
+                  sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+                  sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                  sw.WriteLine($"      }}");
                 } else {
-                  streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                  sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
                 }
               }
               if (mi.MemberType==MemberTypeEnum.Enum) {
-                streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+                sw.WriteLine($"      {LowerClassName}.{mi.MemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
               } else {
-                streamWriter.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+                sw.WriteLine($"      {LowerClassName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
               }
               if (mi.NeedsDictionary) {
                 if (mi.IsNullable) {
-                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
-                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
-                  streamWriter.WriteLine($"      }}");
+                  sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+                  sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
+                  sw.WriteLine($"      }}");
                 } else {
-                  streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
+                  sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
                 }
               }
             }
           }
         }
-        streamWriter.WriteLine($"      {LowerClassName}.onCsvUpdate();");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine("    partial void onCsvUpdate();");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine($"      {LowerClassName}.onCsvUpdate();");
+        sw.WriteLine("    }");
+        sw.WriteLine("    partial void onCsvUpdate();");
+        sw.WriteLine();
+        sw.WriteLine();
         #endregion
       }
 
@@ -1143,59 +1208,65 @@ namespace Storage {
         if (mi.MemberType>=MemberTypeEnum.ParentOneChild) {//ParentOneChild or ParentMultipleChildren
 
           if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
-            streamWriter.WriteLine("    /// <summary>");
-            streamWriter.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.MemberName}.");
-            streamWriter.WriteLine("    /// </summary>");
-            streamWriter.WriteLine($"    internal void AddTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
-            streamWriter.WriteLine($"      if ({mi.MemberName}!=null) {{");
-            streamWriter.WriteLine($"        throw new Exception($\"{mi.ClassInfo.ClassName}.AddTo{mi.MemberName}(): " +
+            sw.WriteLine("    /// <summary>");
+            sw.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.MemberName}.");
+            sw.WriteLine("    /// </summary>");
+            sw.WriteLine($"    internal void AddTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+            sw.WriteLine($"#if DEBUG");
+            sw.WriteLine($"      if ({mi.LowerChildTypeName}=={mi.ChildTypeName}.No{mi.ChildTypeName}) throw new Exception();");
+            sw.WriteLine($"#endif");
+            sw.WriteLine($"      if ({mi.MemberName}!=null) {{");
+            sw.WriteLine($"        throw new Exception($\"{mi.ClassInfo.ClassName}.AddTo{mi.MemberName}(): " +
               $"'{{{mi.MemberName}}}' is already assigned to {mi.MemberName}, it is not possible to assign now '{{{mi.LowerChildTypeName}}}'.\");");
-            streamWriter.WriteLine($"      }}");
-            streamWriter.WriteLine($"      {mi.MemberName} = {mi.LowerChildTypeName};");
-            streamWriter.WriteLine($"      onAddedTo{mi.MemberName}({mi.LowerChildTypeName});");
-            streamWriter.WriteLine("    }");
-            streamWriter.WriteLine($"    partial void onAddedTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine();
+            sw.WriteLine($"      }}");
+            sw.WriteLine($"      {mi.MemberName} = {mi.LowerChildTypeName};");
+            sw.WriteLine($"      onAddedTo{mi.MemberName}({mi.LowerChildTypeName});");
+            sw.WriteLine("    }");
+            sw.WriteLine($"    partial void onAddedTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
+            sw.WriteLine();
+            sw.WriteLine();
 
           } else if (mi.MemberType>MemberTypeEnum.ParentOneChild) {//List, Dictionary or SortedList
-            streamWriter.WriteLine("    /// <summary>");
-            streamWriter.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.ChildClassInfo!.PluralName}.");
-            streamWriter.WriteLine("    /// </summary>");
-            streamWriter.WriteLine($"    internal void AddTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+            sw.WriteLine("    /// <summary>");
+            sw.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.ChildClassInfo!.PluralName}.");
+            sw.WriteLine("    /// </summary>");
+            sw.WriteLine($"    internal void AddTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+            sw.WriteLine($"#if DEBUG");
+            sw.WriteLine($"      if ({mi.LowerChildTypeName}=={mi.ChildTypeName}.No{mi.ChildTypeName}) throw new Exception();");
+            sw.WriteLine($"#endif");
             if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
-              streamWriter.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName});");
+              sw.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName});");
             } else { //Dictionary or SortedList
-              streamWriter.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName}, {mi.LowerChildTypeName});");
+              sw.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName}, {mi.LowerChildTypeName});");
             }
-            streamWriter.WriteLine($"      onAddedTo{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
-            streamWriter.WriteLine("    }");
-            streamWriter.WriteLine($"    partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine();
+            sw.WriteLine($"      onAddedTo{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
+            sw.WriteLine("    }");
+            sw.WriteLine($"    partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
+            sw.WriteLine();
+            sw.WriteLine();
           }
 
           //RemoveFrom
           //----------
-          if (mi.ChildClassInfo!.AreInstancesUpdatable || mi.ChildClassInfo.AreInstancesDeletable) {
-            streamWriter.WriteLine("    /// <summary>");
-            streamWriter.WriteLine($"    /// Removes {mi.LowerChildTypeName} from {mi.ClassInfo!.ClassName}.");
-            streamWriter.WriteLine("    /// </summary>");
+          //if (mi.ChildClassInfo!.AreInstancesUpdatable || mi.ChildClassInfo.AreInstancesDeletable) {
+            sw.WriteLine("    /// <summary>");
+            sw.WriteLine($"    /// Removes {mi.LowerChildTypeName} from {mi.ClassInfo!.ClassName}.");
+            sw.WriteLine("    /// </summary>");
 
             if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
-              streamWriter.WriteLine($"    internal void RemoveFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
-              streamWriter.WriteLine($"#if DEBUG");
-              streamWriter.WriteLine($"      if ({mi.MemberName}!={mi.LowerChildTypeName}) {{");
-              streamWriter.WriteLine($"        throw new Exception($\"{mi.ClassInfo!.ClassName}.RemoveFrom{mi.MemberName}(): {mi.MemberName} does not link to {mi.LowerChildTypeName} '{{{mi.LowerChildTypeName}}}' but '{{{mi.MemberName}}}'.\");");
-              streamWriter.WriteLine($"      }}");
-              streamWriter.WriteLine($"#endif");
-              streamWriter.WriteLine($"      {mi.MemberName} = null;");
-              streamWriter.WriteLine($"      onRemovedFrom{mi.MemberName}({mi.LowerChildTypeName});");
-              streamWriter.WriteLine($"    }}");
-              streamWriter.WriteLine($"    partial void onRemovedFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
+              sw.WriteLine($"    internal void RemoveFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+              sw.WriteLine($"#if DEBUG");
+              sw.WriteLine($"      if ({mi.MemberName}!={mi.LowerChildTypeName}) {{");
+              sw.WriteLine($"        throw new Exception($\"{mi.ClassInfo!.ClassName}.RemoveFrom{mi.MemberName}(): {mi.MemberName} does not link to {mi.LowerChildTypeName} '{{{mi.LowerChildTypeName}}}' but '{{{mi.MemberName}}}'.\");");
+              sw.WriteLine($"      }}");
+              sw.WriteLine($"#endif");
+              sw.WriteLine($"      {mi.MemberName} = null;");
+              sw.WriteLine($"      onRemovedFrom{mi.MemberName}({mi.LowerChildTypeName});");
+              sw.WriteLine($"    }}");
+              sw.WriteLine($"    partial void onRemovedFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
 
             } else {//ParentMultipleChildren
-              streamWriter.WriteLine($"    internal void RemoveFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+              sw.WriteLine($"    internal void RemoveFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
               if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
                 var linksLines = new List<string>();
                 foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
@@ -1206,180 +1277,358 @@ namespace Storage {
                 if (linksLines.Count<1) throw new Exception();
 
                 if (linksLines.Count==1) {
-                  streamWriter.WriteLine("#if DEBUG");
-                  streamWriter.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
-                  streamWriter.WriteLine("#else");
-                  streamWriter.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName});");
-                  streamWriter.WriteLine("#endif");
+                  sw.WriteLine("#if DEBUG");
+                  sw.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
+                  sw.WriteLine("#else");
+                  sw.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName});");
+                  sw.WriteLine("#endif");
                 } else {
-                  streamWriter.WriteLine("      //Execute Remove() only when exactly one property in the child still links to this parent. If");
-                  streamWriter.WriteLine("      //no property links here (Count=0), the child should not be in the children collection. If");
-                  streamWriter.WriteLine("      //more than 1 child property links here, it cannot yet be removed from the children collection.");
-                  streamWriter.WriteLine("      var countLinks = 0;");
+                  sw.WriteLine("      //Execute Remove() only when exactly one property in the child still links to this parent. If");
+                  sw.WriteLine("      //no property links here (Count=0), the child should not be in the children collection. If");
+                  sw.WriteLine("      //more than 1 child property links here, it cannot yet be removed from the children collection.");
+                  sw.WriteLine("      var countLinks = 0;");
                   foreach (var linksLine in linksLines) {
-                    streamWriter.WriteLine(linksLine);
+                    sw.WriteLine(linksLine);
                   }
-                  streamWriter.WriteLine("      if (countLinks>1) return;");
-                  streamWriter.WriteLine("#if DEBUG");
-                  streamWriter.WriteLine("      if (countLinks==0) throw new Exception();");
-                  streamWriter.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
-                  streamWriter.WriteLine("#else");
-                  streamWriter.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName});");
-                  streamWriter.WriteLine("#endif");
+                  sw.WriteLine("      if (countLinks>1) return;");
+                  sw.WriteLine("#if DEBUG");
+                  sw.WriteLine("      if (countLinks==0) throw new Exception();");
+                  sw.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
+                  sw.WriteLine("#else");
+                  sw.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName});");
+                  sw.WriteLine("#endif");
                 }
               } else { //Dictionary or SortedList
-                streamWriter.WriteLine("#if DEBUG");
-                streamWriter.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName})) throw new Exception();");
-                streamWriter.WriteLine("#else");
-                streamWriter.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName});");
-                streamWriter.WriteLine("#endif");
+                sw.WriteLine("#if DEBUG");
+                sw.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName})) throw new Exception();");
+                sw.WriteLine("#else");
+                sw.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName});");
+                sw.WriteLine("#endif");
               }
 
-              streamWriter.WriteLine($"      onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
-              streamWriter.WriteLine("    }");
-              streamWriter.WriteLine($"    partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
+              sw.WriteLine($"      onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
+              sw.WriteLine("    }");
+              sw.WriteLine($"    partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
             }
-            streamWriter.WriteLine();
-            streamWriter.WriteLine();
-          }
+            sw.WriteLine();
+            sw.WriteLine();
+          //}
         }
       }
       #endregion
 
       if (AreInstancesDeletable) {
         #region Remove()
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
-        IsDisconnectNeeded = writeRemoveComment(streamWriter, context, isCapitaliseFirstLetter: false);
-        streamWriter.WriteLine(".");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    public void Remove() {");
-        streamWriter.WriteLine("      if (Key<0) {");
-        streamWriter.WriteLine($"        throw new Exception($\"{ClassName}.Remove(): {ClassName} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
-        streamWriter.WriteLine("      }");
-        streamWriter.WriteLine("      onRemove();");
-        streamWriter.WriteLine($"      {context}.Data.{PluralName}.Remove(Key);");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine("    partial void onRemove();");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.Write($"    /// Removes {ClassName} from {context}.Data.{PluralName}");
+        IsDisconnectNeeded = writeRemoveComment(sw, context, isCapitaliseFirstLetter: false);
+        sw.WriteLine(".");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public void Remove() {");
+        sw.WriteLine("      if (Key<0) {");
+        sw.WriteLine($"        throw new Exception($\"{ClassName}.Remove(): {ClassName} '{this}' is not stored in {context}.Data, key is {{Key}}.\");");
+        sw.WriteLine("      }");
+        sw.WriteLine("      onRemove();");
+        sw.WriteLine($"      {context}.Data.{PluralName}.Remove(Key);");
+        sw.WriteLine("    }");
+        sw.WriteLine("    partial void onRemove();");
+        sw.WriteLine();
+        sw.WriteLine();
         #endregion
 
         #region Disconnect()
         if (IsDisconnectNeeded) {
-          streamWriter.WriteLine("    /// <summary>");
-          streamWriter.Write($"    /// ");
-          writeRemoveComment(streamWriter, context, isCapitaliseFirstLetter: true);
-          streamWriter.WriteLine(".");
-          streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
+          sw.WriteLine("    /// <summary>");
+          sw.Write($"    /// ");
+          writeRemoveComment(sw, context, isCapitaliseFirstLetter: true);
+          sw.WriteLine(".");
+          sw.WriteLine("    /// </summary>");
+          sw.WriteLine($"    internal static void Disconnect({ClassName} {LowerClassName}) {{");
           foreach (var mi in Members.Values) {
             if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
-              streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+              sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
               //streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.Remove();");
               if (mi.ChildMemberInfo!.IsNullable) {
-                streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.Remove();");
+                sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.Remove();");
               } else {
-                streamWriter.WriteLine($"         if ({LowerClassName}.{mi.MemberName}.Key>=0) {{");
-                streamWriter.WriteLine($"           {LowerClassName}.{mi.MemberName}.Remove();");
-                streamWriter.WriteLine("         }");
+                sw.WriteLine($"         if ({LowerClassName}.{mi.MemberName}.Key>=0) {{");
+                sw.WriteLine($"           {LowerClassName}.{mi.MemberName}.Remove();");
+                sw.WriteLine("         }");
               }
-              streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName} = null;");
-              streamWriter.WriteLine("      }");
+              sw.WriteLine($"        {LowerClassName}.{mi.MemberName} = null;");
+              sw.WriteLine("      }");
            
             } else if (mi.MemberType>MemberTypeEnum.ParentOneChild) { //ParentMultipleChildren
               switch (mi.MemberType) {
               case MemberTypeEnum.ParentMultipleChildrenList:
-                streamWriter.WriteLine($"      for (int {mi.LowerChildTypeName}Index = {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count-1; {mi.LowerChildTypeName}Index>= 0; {mi.LowerChildTypeName}Index--) {{");
-                streamWriter.WriteLine($"        var {mi.LowerChildTypeName} = {LowerClassName}.{mi.ChildClassInfo!.PluralName}[{mi.LowerChildTypeName}Index];");
+                sw.WriteLine($"      for (int {mi.LowerChildTypeName}Index = {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count-1; {mi.LowerChildTypeName}Index>= 0; {mi.LowerChildTypeName}Index--) {{");
+                sw.WriteLine($"        var {mi.LowerChildTypeName} = {LowerClassName}.{mi.ChildClassInfo!.PluralName}[{mi.LowerChildTypeName}Index];");
                 break;
               case MemberTypeEnum.ParentMultipleChildrenDictionary:
-                streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Values) {{");
+                sw.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {LowerClassName}.{mi.ChildClassInfo!.PluralName}.Values) {{");
                 break;
               case MemberTypeEnum.ParentMultipleChildrenSortedList:
-                streamWriter.WriteLine($"      var {mi.ChildClassInfo!.LowerPluralName} = new {mi.ChildTypeName}[{LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count];");
-                streamWriter.WriteLine($"      {LowerClassName}.{mi.ChildClassInfo!.LowerPluralName}.Values.CopyTo({mi.ChildClassInfo!.LowerPluralName}, 0);");
-                streamWriter.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.ChildClassInfo!.LowerPluralName}) {{");
+                sw.WriteLine($"      var {mi.ChildClassInfo!.LowerPluralName} = new {mi.ChildTypeName}[{LowerClassName}.{mi.ChildClassInfo!.PluralName}.Count];");
+                sw.WriteLine($"      {LowerClassName}.{mi.ChildClassInfo!.LowerPluralName}.Values.CopyTo({mi.ChildClassInfo!.LowerPluralName}, 0);");
+                sw.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.ChildClassInfo!.LowerPluralName}) {{");
                 break;
               default: throw new NotSupportedException(); 
               }
               foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
                 if (childMI.MemberType==MemberTypeEnum.LinkToParent && (childMI.ParentTypeString!)==ClassName) {
                   if (childMI.IsNullable) {
-                    streamWriter.WriteLine($"        {mi.LowerChildTypeName}.Remove{childMI.MemberName}({LowerClassName});");
+                    sw.WriteLine($"        {mi.LowerChildTypeName}.Remove{childMI.MemberName}({LowerClassName});");
                   } else {
-                    streamWriter.WriteLine($"         if ({mi.LowerChildTypeName}.Key>=0) {{");
-                    streamWriter.WriteLine($"           {mi.LowerChildTypeName}.Remove();");
-                    streamWriter.WriteLine("         }");
+                    sw.WriteLine($"         if ({mi.LowerChildTypeName}.Key>=0) {{");
+                    sw.WriteLine($"           {mi.LowerChildTypeName}.Remove();");
+                    sw.WriteLine("         }");
                   }
                 }
               }
-              streamWriter.WriteLine("      }");
+              sw.WriteLine("      }");
 
             } else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
               if (!mi.IsLookupOnly) {
                 if (mi.IsNullable) {
-                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                  streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
-                  streamWriter.WriteLine("      }");
+                  sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                  sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine("      }");
                 } else {
-                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                  streamWriter.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
-                  streamWriter.WriteLine("      }");
+                  sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                  sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                  sw.WriteLine("      }");
                 }
               }
             } else {
               //simple data type
               if (mi.NeedsDictionary) {
                 if (mi.IsNullable) {
-                  streamWriter.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
-                  streamWriter.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
-                  streamWriter.WriteLine($"      }}");
+                  sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+                  sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                  sw.WriteLine($"      }}");
                 } else {
-                  streamWriter.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+                  sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
                 }
               }
             }
           }
-          streamWriter.WriteLine("    }");
-          streamWriter.WriteLine();
-          streamWriter.WriteLine();
+          sw.WriteLine("    }");
+          sw.WriteLine();
+          sw.WriteLine();
         }
         #endregion
 
         #region Internal RemoveParent())
         foreach (var mi in Members.Values) {
           if (mi.MemberType==MemberTypeEnum.LinkToParent && mi.IsNullable) {
-            streamWriter.WriteLine("    /// <summary>");
-            streamWriter.WriteLine($"    /// Removes {mi.LowerParentType} from {mi.MemberName}");
-            streamWriter.WriteLine("    /// </summary>");
-            streamWriter.WriteLine($"    internal void Remove{mi.MemberName}({mi.ParentTypeString} {mi.LowerParentType}) {{");
-            streamWriter.WriteLine($"      if ({mi.LowerParentType}!={mi.MemberName}) throw new Exception();");
-            streamWriter.WriteLine($"      {mi.MemberName} = null;");
-            streamWriter.WriteLine("      HasChanged?.Invoke(this);");
-            streamWriter.WriteLine("    }");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine();
+            sw.WriteLine("    /// <summary>");
+            sw.WriteLine($"    /// Removes {mi.LowerParentType} from {mi.MemberName}");
+            sw.WriteLine("    /// </summary>");
+            sw.WriteLine($"    internal void Remove{mi.MemberName}({mi.ParentTypeString} {mi.LowerParentType}) {{");
+            sw.WriteLine($"      if ({mi.LowerParentType}!={mi.MemberName}) throw new Exception();");
+            sw.WriteLine();
+            sw.WriteLine($"      var clone = new {ClassName}(this);");
+            sw.WriteLine($"      {mi.MemberName} = null;");
+            sw.WriteLine("      HasChanged?.Invoke(clone, this);");
+            sw.WriteLine("    }");
+            sw.WriteLine();
+            sw.WriteLine();
           }
         }
         #endregion
       } else {
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Removing {ClassName} from {context}.Data.{PluralName} is not supported.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    public void Remove() {");
-        streamWriter.WriteLine("      throw new NotSupportedException(\"StorageClass attribute AreInstancesDeletable is false.\");");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Removing {ClassName} from {context}.Data.{PluralName} is not supported.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public void Remove() {");
+        sw.WriteLine("      throw new NotSupportedException(\"StorageClass attribute AreInstancesDeletable is false.\");");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
       }
+      #region Transaction support
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Removes {ClassName} from possible parents as part of a transaction rollback.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    internal static void RollbackItemStore(IStorageItem item) {");
+      sw.WriteLine($"      var {LowerClassName} = ({ClassName}) item;");
+      foreach (var mi in Members.Values) {
+        if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+          if (!mi.IsLookupOnly) {
+            if (mi.IsNullable) {
+              sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+              sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+              sw.WriteLine("      }");
+            } else {
+              sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+              sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+              sw.WriteLine("      }");
+            }
+          }
+        } else {
+          //simple data type
+          if (mi.NeedsDictionary) {
+            if (mi.IsNullable) {
+              sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+              sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+              sw.WriteLine($"      }}");
+            } else {
+              sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}.{mi.MemberName});");
+            }
+          }
+        }
+      }
+      sw.WriteLine($"      {LowerClassName}.onRollbackItemStored();");
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onRollbackItemStored();");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Restores the {ClassName} item data as it was before the last update as part of a transaction rollback.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {");
+      sw.WriteLine($"      var {LowerClassName}Old = ({ClassName}) oldItem;");
+      sw.WriteLine($"      var {LowerClassName}New = ({ClassName}) newItem;");
+
+      foreach (var mi in Members.Values) {
+        if (mi.IsReadOnly) {
+          //if (mi.MemberType==MemberTypeEnum.Enum) {
+          //  sw.WriteLine($"      var {mi.LowerMemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
+          //} else {
+          //  sw.WriteLine($"      var {mi.LowerMemberName} = csvReader.{mi.CsvReaderRead};");
+          //}
+          sw.WriteLine($"      if ({LowerClassName}New.{mi.MemberName}!={LowerClassName}Old.{mi.MemberName}) {{");
+          sw.WriteLine($"        throw new Exception($\"{ClassName}.Update(): Property {mi.MemberName}" +
+            $" '{{{LowerClassName}New.{mi.MemberName}}}' is \" +");
+          sw.WriteLine($"          $\"readonly, {mi.MemberName} '{{{LowerClassName}Old.{mi.MemberName}}}' read from the CSV file should be the" +
+            " same.\" + Environment.NewLine + ");
+          sw.WriteLine($"          {LowerClassName}New.ToString());");
+          sw.WriteLine("      }");
+        } else {
+          if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            if (mi.IsNullable) {
+              //sw.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
+              //sw.WriteLine($"      {mi.ParentTypeString}? {mi.LowerMemberName};");
+              //sw.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+              //sw.WriteLine($"        {mi.LowerMemberName} = null;");
+              //sw.WriteLine("      } else {");
+              //sw.WriteLine($"        if (!{context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
+              //sw.WriteLine($"          {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+              //sw.WriteLine("        }");
+              //sw.WriteLine("      }");
+              sw.WriteLine($"      if ({LowerClassName}New.{mi.MemberName} is null) {{");
+              sw.WriteLine($"        if ({LowerClassName}Old.{mi.MemberName} is null) {{");
+              sw.WriteLine("          //nothing to do");
+              sw.WriteLine("        } else {");
+              sw.WriteLine($"          {LowerClassName}New.{mi.MemberName} = {LowerClassName}Old.{mi.MemberName};");
+              if (!mi.IsLookupOnly) {
+                sw.WriteLine($"          {LowerClassName}New.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName}New);");
+              }
+              sw.WriteLine("        }");
+              sw.WriteLine("      } else {");
+              sw.WriteLine($"        if ({LowerClassName}Old.{mi.MemberName} is null) {{");
+              if (!mi.IsLookupOnly) {
+                sw.WriteLine($"          if ({LowerClassName}New.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                sw.WriteLine($"            {LowerClassName}New.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName}New);");
+                sw.WriteLine("          }");
+              }
+              sw.WriteLine($"          {LowerClassName}New.{mi.MemberName} = null;");
+              sw.WriteLine("        } else {");
+              if (!mi.IsLookupOnly) {
+                sw.WriteLine($"          if ({LowerClassName}New.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                sw.WriteLine($"            {LowerClassName}New.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName}New);");
+                sw.WriteLine("          }");
+              }
+              sw.WriteLine($"          {LowerClassName}New.{mi.MemberName} = {LowerClassName}Old.{mi.MemberName};");
+              if (!mi.IsLookupOnly) {
+                sw.WriteLine($"          {LowerClassName}New.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName}New);");
+              }
+              sw.WriteLine("        }");
+              sw.WriteLine("      }");
+            } else {
+              //sw.WriteLine($"      if (!{context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+              //sw.WriteLine($"        {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+              //sw.WriteLine("      }");
+              sw.WriteLine($"      if ({LowerClassName}New.{mi.MemberName}!={LowerClassName}Old.{mi.MemberName}) {{");
+              if (!mi.IsLookupOnly) {
+                sw.WriteLine($"        if ({LowerClassName}New.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
+                sw.WriteLine($"          {LowerClassName}New.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName}New);");
+                sw.WriteLine("        }");
+              }
+              sw.WriteLine($"        {LowerClassName}New.{mi.MemberName} = {LowerClassName}Old.{mi.MemberName};");
+              if (!mi.IsLookupOnly) {
+                sw.WriteLine($"        {LowerClassName}New.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName}New);");
+              }
+              sw.WriteLine("      }");
+            }
+          } else if (mi.MemberType<MemberTypeEnum.LinkToParent) {//simple type
+            if (mi.NeedsDictionary) {
+              if (mi.IsNullable) {
+                sw.WriteLine($"      if ({LowerClassName}New.{mi.MemberName}!=null) {{");
+                sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}New.{mi.MemberName});");
+                sw.WriteLine($"      }}");
+              } else {
+                sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Remove({LowerClassName}New.{mi.MemberName});");
+              }
+            }
+            sw.WriteLine($"      {LowerClassName}New.{mi.MemberName} = {LowerClassName}Old.{mi.MemberName};");
+            if (mi.NeedsDictionary) {
+              if (mi.IsNullable) {
+                sw.WriteLine($"      if ({LowerClassName}New.{mi.MemberName}!=null) {{");
+                sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}New.{mi.MemberName}, {LowerClassName}New);");
+                sw.WriteLine($"      }}");
+              } else {
+                sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}New.{mi.MemberName}, {LowerClassName}New);");
+              }
+            }
+          }
+        }
+      }
+      sw.WriteLine($"      {LowerClassName}New.onRollbackItemUpdated({LowerClassName}Old);");
+      sw.WriteLine("    }");
+      sw.WriteLine($"    partial void onRollbackItemUpdated({ClassName} old{ClassName});");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine($"    /// Adds {ClassName} item to possible parents again as part of a transaction rollback.");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    internal static void RollbackItemRemove(IStorageItem item) {");
+      sw.WriteLine($"      var {LowerClassName} = ({ClassName}) item;");
+      foreach (var mi in Members.Values) {
+        if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+          if (!mi.IsLookupOnly) {
+            if (mi.IsNullable) {
+              sw.WriteLine($"      {LowerClassName}.{mi.MemberName}?.AddTo{mi.ParentMethodName}({LowerClassName});");
+            } else {
+              sw.WriteLine($"      {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+            }
+          }
+        } else if (mi.MemberType<MemberTypeEnum.LinkToParent) {
+          //simple data type
+          if (mi.NeedsDictionary) {
+            if (mi.IsNullable) {
+              sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null) {{");
+              sw.WriteLine($"        {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
+              sw.WriteLine($"      }}");
+            } else {
+              sw.WriteLine($"      {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}.Add({LowerClassName}.{mi.MemberName}, {LowerClassName});");
+            }
+          }
+        }
+      }
+      sw.WriteLine($"      {LowerClassName}.onRollbackItemRemoved();");
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onRollbackItemRemoved();");
+      sw.WriteLine();
+      sw.WriteLine();
+      #endregion
 
       #region ToShortString()
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Returns property values");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    public string ToShortString() {");
-      streamWriter.WriteLine("      var returnString =");
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Returns property values");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    public string ToShortString() {");
+      sw.WriteLine("      var returnString =");
       lines.Clear();
       lines.Add("        $\"{Key.ToKeyString()}");
       foreach (var mi in Members.Values) {
@@ -1389,27 +1638,27 @@ namespace Storage {
       }
       for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
         var line = lines[linesIndex];
-        streamWriter.Write(line);
+        sw.Write(line);
         if (linesIndex+1<lines.Count) {
-          streamWriter.WriteLine(",\" +");
+          sw.WriteLine(",\" +");
         } else {
-          streamWriter.WriteLine("\";");
+          sw.WriteLine("\";");
         }
       }
-      streamWriter.WriteLine("      onToShortString(ref returnString);");
-      streamWriter.WriteLine("      return returnString;");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onToShortString(ref string returnString);");
+      sw.WriteLine("      onToShortString(ref returnString);");
+      sw.WriteLine("      return returnString;");
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onToShortString(ref string returnString);");
       #endregion
 
       #region ToString()
-      streamWriter.WriteLine();
-      streamWriter.WriteLine();
-      streamWriter.WriteLine("    /// <summary>");
-      streamWriter.WriteLine("    /// Returns all property names and values");
-      streamWriter.WriteLine("    /// </summary>");
-      streamWriter.WriteLine("    public override string ToString() {");
-      streamWriter.WriteLine("      var returnString =");
+      sw.WriteLine();
+      sw.WriteLine();
+      sw.WriteLine("    /// <summary>");
+      sw.WriteLine("    /// Returns all property names and values");
+      sw.WriteLine("    /// </summary>");
+      sw.WriteLine("    public override string ToString() {");
+      sw.WriteLine("      var returnString =");
       lines.Clear();
       lines.Add("        $\"Key: {Key}");
       foreach (var mi in Members.Values) {
@@ -1425,86 +1674,86 @@ namespace Storage {
       }
       for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
         var line = lines[linesIndex];
-        streamWriter.Write(line);
+        sw.Write(line);
         if (linesIndex+1<lines.Count) {
-          streamWriter.WriteLine(",\" +");
+          sw.WriteLine(",\" +");
         } else {
-          streamWriter.WriteLine(";\";");
+          sw.WriteLine(";\";");
         }
       }
-      streamWriter.WriteLine("      onToString(ref returnString);");
-      streamWriter.WriteLine("      return returnString;");
-      streamWriter.WriteLine("    }");
-      streamWriter.WriteLine("    partial void onToString(ref string returnString);");
+      sw.WriteLine("      onToString(ref returnString);");
+      sw.WriteLine("      return returnString;");
+      sw.WriteLine("    }");
+      sw.WriteLine("    partial void onToString(ref string returnString);");
       #endregion
-      streamWriter.WriteLine("    #endregion");
-      streamWriter.WriteLine("  }");
+      sw.WriteLine("    #endregion");
+      sw.WriteLine("  }");
 
       if (IsGenerateReaderWriter) {
 
         #region Raw Class
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine($"  #region {RawName}");
-        streamWriter.WriteLine("  //      " + new string('-', RawName.Length));
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("  /// <summary>");
-        streamWriter.WriteLine($"  /// {RawName} is used instead {ClassName} and {context}.Data to read an instance from a CSV file with ");
-        streamWriter.WriteLine($"  /// {ReaderName} or write with {WriterName}.");
-        streamWriter.WriteLine("  /// </summary>");
-        streamWriter.WriteLine($"  public class {RawName} {{");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Unique identifier for {RawName}.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    public int Key { get; set; }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine($"  #region {RawName}");
+        sw.WriteLine("  //      " + new string('-', RawName.Length));
+        sw.WriteLine();
+        sw.WriteLine("  /// <summary>");
+        sw.WriteLine($"  /// {RawName} is used instead {ClassName} and {context}.Data to read an instance from a CSV file with ");
+        sw.WriteLine($"  /// {ReaderName} or write with {WriterName}.");
+        sw.WriteLine("  /// </summary>");
+        sw.WriteLine($"  public class {RawName} {{");
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Unique identifier for {RawName}.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public int Key { get; set; }");
         foreach (var mi in Members.Values) {
-          mi.WriteProperty(streamWriter, isRaw: true);
+          mi.WriteProperty(sw, isRaw: true);
         }
         if (AreInstancesUpdatable || AreInstancesDeletable) {
-          streamWriter.WriteLine();
-          streamWriter.WriteLine();
-          streamWriter.WriteLine("    /// <summary>");
-          streamWriter.WriteLine($"    /// How was {RawName} marked in CSV file (read, update, delete) ? If not read from CSV file, RawState is new.");
-          streamWriter.WriteLine("    /// </summary>");
-          streamWriter.WriteLine("    public RawStateEnum RawState { get; set; }");
+          sw.WriteLine();
+          sw.WriteLine();
+          sw.WriteLine("    /// <summary>");
+          sw.WriteLine($"    /// How was {RawName} marked in CSV file (read, update, delete) ? If not read from CSV file, RawState is new.");
+          sw.WriteLine("    /// </summary>");
+          sw.WriteLine("    public RawStateEnum RawState { get; set; }");
         }
 
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Default Constructor.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public {RawName}() {{");
-        streamWriter.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Default Constructor.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    public {RawName}() {{");
+        sw.WriteLine("    }");
 
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Constructor, will replace links to parents with the parents' key.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public {RawName}({ClassName} {LowerClassName}) {{");
-        streamWriter.WriteLine($"      Key = {LowerClassName}.Key;");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Constructor, will replace links to parents with the parents' key.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    public {RawName}({ClassName} {LowerClassName}) {{");
+        sw.WriteLine($"      Key = {LowerClassName}.Key;");
         foreach (var mi in Members.Values) {
           if (mi.MemberType<MemberTypeEnum.LinkToParent) {
-            streamWriter.WriteLine($"      {mi.MemberName} = {LowerClassName}.{mi.MemberName};");
+            sw.WriteLine($"      {mi.MemberName} = {LowerClassName}.{mi.MemberName};");
           } else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
             if (mi.IsNullable) {
-              streamWriter.WriteLine($"      {mi.MemberName}Key = {LowerClassName}.{mi.MemberName}?.Key;");
+              sw.WriteLine($"      {mi.MemberName}Key = {LowerClassName}.{mi.MemberName}?.Key;");
             } else {
-              streamWriter.WriteLine($"      {mi.MemberName}Key = {LowerClassName}.{mi.MemberName}.Key;");
+              sw.WriteLine($"      {mi.MemberName}Key = {LowerClassName}.{mi.MemberName}.Key;");
             }
           }
         }
-        streamWriter.WriteLine("    }");
+        sw.WriteLine("    }");
 
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Returns all property names and values");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    public override string ToString() {");
-        streamWriter.WriteLine("      var returnString =");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Returns all property names and values");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public override string ToString() {");
+        sw.WriteLine("      var returnString =");
         lines.Clear();
         lines.Add("        $\"Key: {Key}");
         foreach (var mi in Members.Values) {
@@ -1517,313 +1766,306 @@ namespace Storage {
         }
         for (int linesIndex = 0; linesIndex < lines.Count; linesIndex++) {
           var line = lines[linesIndex];
-          streamWriter.Write(line);
+          sw.Write(line);
           if (linesIndex+1<lines.Count) {
-            streamWriter.WriteLine(",\" +");
+            sw.WriteLine(",\" +");
           } else {
-            streamWriter.WriteLine(";\";");
+            sw.WriteLine(";\";");
           }
         }
-        streamWriter.WriteLine("      return returnString;");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine("  }");
-        streamWriter.WriteLine("  #endregion");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine("      return returnString;");
+        sw.WriteLine("    }");
+        sw.WriteLine("  }");
+        sw.WriteLine("  #endregion");
+        sw.WriteLine();
+        sw.WriteLine();
         #endregion
 
         #region Reader Class
-        streamWriter.WriteLine($"  #region {ReaderName}");
-        streamWriter.WriteLine("  //      " + new string('-', ReaderName.Length));
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("  /// <summary>");
-        streamWriter.WriteLine($"  /// Reads from a CSV file containing {ClassName} instances. Note that the keys of linked objects will be returned ");
-        streamWriter.WriteLine("  /// and not the linked objects themselves, since the data context will not be involved.");
-        streamWriter.WriteLine("  /// </summary>");
-        streamWriter.WriteLine($"  public class {ReaderName}: IDisposable {{");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    readonly CsvConfig csvConfig;");
-        streamWriter.WriteLine("    readonly CsvReader csvReader;");
+        sw.WriteLine($"  #region {ReaderName}");
+        sw.WriteLine("  //      " + new string('-', ReaderName.Length));
+        sw.WriteLine();
+        sw.WriteLine("  /// <summary>");
+        sw.WriteLine($"  /// Reads from a CSV file containing {ClassName} instances. Note that the keys of linked objects will be returned ");
+        sw.WriteLine("  /// and not the linked objects themselves, since the data context will not be involved.");
+        sw.WriteLine("  /// </summary>");
+        sw.WriteLine($"  public class {ReaderName}: IDisposable {{");
+        sw.WriteLine();
+        sw.WriteLine("    readonly CsvConfig csvConfig;");
+        sw.WriteLine("    readonly CsvReader csvReader;");
         if (!AreInstancesDeletable && !AreInstancesUpdatable) {
-          streamWriter.WriteLine("    int nextKey = 0;");
+          sw.WriteLine("    int nextKey = 0;");
         }
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Constructor, will read and verify the {ClassName} header line. You need to dispose {ReaderName} once");
-        streamWriter.WriteLine($"    /// you are done, except when you have read the whole file, then {ReaderName}.ReadLine() disposes automatically.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public {ReaderName}(string fileNamePath, CsvConfig csvConfig) {{");
-        streamWriter.WriteLine("      this.csvConfig = csvConfig;");
-        streamWriter.WriteLine($"      csvReader = new CsvReader(fileNamePath, csvConfig, {ClassName}.EstimatedLineLength);");
-        streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
-        streamWriter.WriteLine("      var headerLine = csvReader.ReadLine();");
-        streamWriter.WriteLine("      if (csvHeaderString!=headerLine) throw new Exception($\"Error reading file {csvReader.FileName}{Environment.NewLine}'\" +");
-        streamWriter.WriteLine("        headerLine + \"' should be '\" + csvHeaderString + \"'.\");");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Reads the details of one {ClassName} from the CSV file. Returns false when all lines are");
-        streamWriter.WriteLine($"    /// read and disposes the reader.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public bool ReadLine([NotNullWhen(true)] out {RawName}? {LowerRawName}){{");
-        streamWriter.WriteLine("      if (csvReader.IsEndOfFileReached()) {");
-        streamWriter.WriteLine("        csvReader.Dispose();");
-        streamWriter.WriteLine($"        {LowerRawName} = null;");
-        streamWriter.WriteLine("        return false;");
-        streamWriter.WriteLine("      }");
-        streamWriter.WriteLine($"      {LowerRawName} = new {RawName}();");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Constructor, will read and verify the {ClassName} header line. You need to dispose {ReaderName} once");
+        sw.WriteLine($"    /// you are done, except when you have read the whole file, then {ReaderName}.ReadLine() disposes automatically.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    public {ReaderName}(string fileNamePath, CsvConfig csvConfig) {{");
+        sw.WriteLine("      this.csvConfig = csvConfig;");
+        sw.WriteLine($"      csvReader = new CsvReader(fileNamePath, csvConfig, {ClassName}.EstimatedLineLength);");
+        sw.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
+        sw.WriteLine("      var headerLine = csvReader.ReadLine();");
+        sw.WriteLine("      if (csvHeaderString!=headerLine) throw new Exception($\"Error reading file {csvReader.FileName}{Environment.NewLine}'\" +");
+        sw.WriteLine("        headerLine + \"' should be '\" + csvHeaderString + \"'.\");");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Reads the details of one {ClassName} from the CSV file. Returns false when all lines are");
+        sw.WriteLine($"    /// read and disposes the reader.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    public bool ReadLine([NotNullWhen(true)] out {RawName}? {LowerRawName}){{");
+        sw.WriteLine("      if (csvReader.IsEndOfFileReached()) {");
+        sw.WriteLine("        csvReader.Dispose();");
+        sw.WriteLine($"        {LowerRawName} = null;");
+        sw.WriteLine("        return false;");
+        sw.WriteLine("      }");
+        sw.WriteLine($"      {LowerRawName} = new {RawName}();");
         if (AreInstancesDeletable || AreInstancesUpdatable) {
-          streamWriter.WriteLine($"      var firstLineChar = csvReader.ReadFirstLineChar();");
-          streamWriter.WriteLine($"      if (firstLineChar==csvConfig.LineCharAdd) {{");
-          streamWriter.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Read;");
-          streamWriter.WriteLine($"      }} else if (firstLineChar==csvConfig.LineCharUpdate) {{");
-          streamWriter.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Updated;");
-          streamWriter.WriteLine($"      }} else if (firstLineChar==csvConfig.LineCharDelete) {{");
-          streamWriter.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Deleted;");
-          streamWriter.WriteLine($"      }} else {{");
-          streamWriter.WriteLine($"        throw new NotSupportedException($\"Illegal first line character '{{firstLineChar}}' found in '{{csvReader.GetPresentContent()}}'.\");");
-          streamWriter.WriteLine($"      }}");
-          streamWriter.WriteLine($"      {LowerRawName}.Key = csvReader.ReadInt();");
+          sw.WriteLine($"      var firstLineChar = csvReader.ReadFirstLineChar();");
+          sw.WriteLine($"      if (firstLineChar==csvConfig.LineCharAdd) {{");
+          sw.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Read;");
+          sw.WriteLine($"      }} else if (firstLineChar==csvConfig.LineCharUpdate) {{");
+          sw.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Updated;");
+          sw.WriteLine($"      }} else if (firstLineChar==csvConfig.LineCharDelete) {{");
+          sw.WriteLine($"        {LowerRawName}.RawState = RawStateEnum.Deleted;");
+          sw.WriteLine($"      }} else {{");
+          sw.WriteLine($"        throw new NotSupportedException($\"Illegal first line character '{{firstLineChar}}' found in '{{csvReader.GetPresentContent()}}'.\");");
+          sw.WriteLine($"      }}");
+          sw.WriteLine($"      {LowerRawName}.Key = csvReader.ReadInt();");
         } else {
-          streamWriter.WriteLine($"      {LowerRawName}.Key = nextKey++;");
+          sw.WriteLine($"      {LowerRawName}.Key = nextKey++;");
         }
         foreach (var mi in Members.Values) {
           if (mi.MemberType==MemberTypeEnum.LinkToParent) {
             if (mi.IsNullable) {
-              streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName}Key = csvReader.ReadIntNull();");
+              sw.WriteLine($"      {LowerRawName}.{mi.MemberName}Key = csvReader.ReadIntNull();");
             } else {
-              streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName}Key = csvReader.ReadInt();");
+              sw.WriteLine($"      {LowerRawName}.{mi.MemberName}Key = csvReader.ReadInt();");
             }
           } else if (mi.MemberType==MemberTypeEnum.Enum) {
-            streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName} = ({mi.EnumInfo!.Name})csvReader.{mi.CsvReaderRead};");
+            sw.WriteLine($"      {LowerRawName}.{mi.MemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
           } else if (mi.MemberType<=MemberTypeEnum.LinkToParent) {//simple data type or LinkToParent
-            streamWriter.WriteLine($"      {LowerRawName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+            sw.WriteLine($"      {LowerRawName}.{mi.MemberName} = csvReader.{mi.CsvReaderRead};");
           }
         }
-        streamWriter.WriteLine("      csvReader.ReadEndOfLine();");
-        streamWriter.WriteLine($"      return true;");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    #region IDisposable Support");
-        streamWriter.WriteLine("    //      -------------------");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Executes disposal of {ReaderName} exactly once.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    public void Dispose() {");
-        streamWriter.WriteLine("      Dispose(true);");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("      GC.SuppressFinalize(this);");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Is {ReaderName} already exposed ?");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    protected bool IsDisposed {");
-        streamWriter.WriteLine("      get { return isDisposed==1; }");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    int isDisposed = 0;");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    protected void Dispose(bool disposing) {");
-        streamWriter.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
-        streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("      csvReader.Dispose();");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine("    #endregion");
-        streamWriter.WriteLine("  }");
-        streamWriter.WriteLine("  #endregion");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
+        sw.WriteLine("      csvReader.ReadEndOfLine();");
+        sw.WriteLine($"      return true;");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    #region IDisposable Support");
+        sw.WriteLine("    //      -------------------");
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Executes disposal of {ReaderName} exactly once.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public void Dispose() {");
+        sw.WriteLine("      Dispose(true);");
+        sw.WriteLine();
+        sw.WriteLine("      GC.SuppressFinalize(this);");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Is {ReaderName} already exposed ?");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    protected bool IsDisposed {");
+        sw.WriteLine("      get { return isDisposed==1; }");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    int isDisposed = 0;");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    protected void Dispose(bool disposing) {");
+        sw.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
+        sw.WriteLine("      if (wasDisposed==1) return; // already disposed");
+        sw.WriteLine();
+        sw.WriteLine("      csvReader.Dispose();");
+        sw.WriteLine("    }");
+        sw.WriteLine("    #endregion");
+        sw.WriteLine("  }");
+        sw.WriteLine("  #endregion");
+        sw.WriteLine();
+        sw.WriteLine();
         #endregion
 
         #region Writer Class
-        streamWriter.WriteLine($"  #region {WriterName}");
-        streamWriter.WriteLine("  //      " + new string('-', WriterName.Length));
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("  /// <summary>");
-        streamWriter.WriteLine($"  /// Writes a CSV file containing records which can be read back as {ClassName}. Note that the keys of linked objects");
-        streamWriter.WriteLine("  /// need to be provided in Write(), since the data context will not be involved.");
-        streamWriter.WriteLine("  /// </summary>");
-        streamWriter.WriteLine($"  public class {WriterName}: IDisposable {{");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    readonly CsvConfig csvConfig;");
-        streamWriter.WriteLine("    readonly CsvWriter csvWriter;");
+        sw.WriteLine($"  #region {WriterName}");
+        sw.WriteLine("  //      " + new string('-', WriterName.Length));
+        sw.WriteLine();
+        sw.WriteLine("  /// <summary>");
+        sw.WriteLine($"  /// Writes a CSV file containing records which can be read back as {ClassName}. Note that the keys of linked objects");
+        sw.WriteLine("  /// need to be provided in Write(), since the data context will not be involved.");
+        sw.WriteLine("  /// </summary>");
+        sw.WriteLine($"  public class {WriterName}: IDisposable {{");
+        sw.WriteLine();
+        sw.WriteLine("    readonly CsvConfig csvConfig;");
+        sw.WriteLine("    readonly CsvWriter csvWriter;");
         if (AreInstancesDeletable || AreInstancesUpdatable) {
-          streamWriter.WriteLine("    int lastKey = int.MinValue;");
+          sw.WriteLine("    int lastKey = int.MinValue;");
         } else {
-          streamWriter.WriteLine("    int nextKey = 0;");
+          sw.WriteLine("    int nextKey = 0;");
         }
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Constructor, will write the {ClassName} header line into the CSV file. Dispose {WriterName} once done.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public {WriterName}(string fileNamePath, CsvConfig csvConfig){{");
-        streamWriter.WriteLine("      this.csvConfig = csvConfig;");
-        streamWriter.WriteLine($"      csvWriter = new CsvWriter(fileNamePath, csvConfig, {ClassName}.EstimatedLineLength, null, 0);");
-        streamWriter.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
-        streamWriter.WriteLine("      csvWriter.WriteLine(csvHeaderString);");
-        streamWriter.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Constructor, will write the {ClassName} header line into the CSV file. Dispose {WriterName} once done.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    public {WriterName}(string fileNamePath, CsvConfig csvConfig){{");
+        sw.WriteLine("      this.csvConfig = csvConfig;");
+        sw.WriteLine($"      csvWriter = new CsvWriter(fileNamePath, csvConfig, {ClassName}.EstimatedLineLength, null, 0);");
+        sw.WriteLine($"      var csvHeaderString = Csv.ToCsvHeaderString({ClassName}.Headers, csvConfig.Delimiter);");
+        sw.WriteLine("      csvWriter.WriteLine(csvHeaderString);");
+        sw.WriteLine("    }");
 
 
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Writes the details of one {RawName} to the CSV file");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine($"    public void Write({RawName} {LowerRawName}){{");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Writes the details of one {RawName} to the CSV file");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine($"    public void Write({RawName} {LowerRawName}){{");
         if (AreInstancesDeletable || AreInstancesUpdatable) {
-          streamWriter.WriteLine($"      if ({LowerRawName}.Key<0) {{");
-          streamWriter.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} needs to be greater equal 0.\");");
-          streamWriter.WriteLine("      }");
-          streamWriter.WriteLine($"      if ({LowerRawName}.Key<=lastKey) {{");
-          streamWriter.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
-          streamWriter.WriteLine("      }");
-          streamWriter.WriteLine($"      lastKey = {LowerRawName}.Key;");
-          streamWriter.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
-          streamWriter.WriteLine($"      csvWriter.Write({LowerRawName}.Key);");
+          sw.WriteLine($"      if ({LowerRawName}.Key<0) {{");
+          sw.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} needs to be greater equal 0.\");");
+          sw.WriteLine("      }");
+          sw.WriteLine($"      if ({LowerRawName}.Key<=lastKey) {{");
+          sw.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
+          sw.WriteLine("      }");
+          sw.WriteLine($"      lastKey = {LowerRawName}.Key;");
+          sw.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
+          sw.WriteLine($"      csvWriter.Write({LowerRawName}.Key);");
         } else {
-          streamWriter.WriteLine($"      if ({LowerRawName}.Key!=nextKey) {{");
-          streamWriter.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} should be {{nextKey}}.\");");
-          streamWriter.WriteLine("      }");
-          streamWriter.WriteLine("      nextKey++;");
-          streamWriter.WriteLine("      csvWriter.StartNewLine();");
+          sw.WriteLine($"      if ({LowerRawName}.Key!=nextKey) {{");
+          sw.WriteLine($"        throw new Exception($\"{RawName}'s key {{{LowerRawName}.Key}} should be {{nextKey}}.\");");
+          sw.WriteLine("      }");
+          sw.WriteLine("      nextKey++;");
+          sw.WriteLine("      csvWriter.StartNewLine();");
         }
         foreach (var mi in Members.Values) {
           if (mi.MemberType==MemberTypeEnum.LinkToParent) {
             if (mi.IsNullable) {
-              streamWriter.WriteLine($"      if ({LowerRawName}.{mi.MemberName}Key is null) {{");
-              streamWriter.WriteLine("        csvWriter.WriteNull();");
-              streamWriter.WriteLine("      } else {");
-              streamWriter.WriteLine($"        if ({LowerRawName}.{mi.MemberName}Key<0) throw new Exception($\"Cannot write" +
+              sw.WriteLine($"      if ({LowerRawName}.{mi.MemberName}Key is null) {{");
+              sw.WriteLine("        csvWriter.WriteNull();");
+              sw.WriteLine("      } else {");
+              sw.WriteLine($"        if ({LowerRawName}.{mi.MemberName}Key<0) throw new Exception($\"Cannot write" +
                 $" {LowerClassName} to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-              streamWriter.WriteLine();
-              streamWriter.WriteLine($"        csvWriter.Write({LowerRawName}.{mi.MemberName}Key.ToString());");
-              streamWriter.WriteLine("      }");
+              sw.WriteLine();
+              sw.WriteLine($"        csvWriter.Write({LowerRawName}.{mi.MemberName}Key.ToString());");
+              sw.WriteLine("      }");
             } else {
-              streamWriter.WriteLine($"      if ({LowerRawName}.{mi.MemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
+              sw.WriteLine($"      if ({LowerRawName}.{mi.MemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
                 $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-              streamWriter.WriteLine();
-              streamWriter.WriteLine($"      csvWriter.Write({LowerRawName}.{mi.MemberName}Key.ToString());");
+              sw.WriteLine();
+              sw.WriteLine($"      csvWriter.Write({LowerRawName}.{mi.MemberName}Key.ToString());");
             }
           } else if (mi.MemberType==MemberTypeEnum.Enum) {
-            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){LowerRawName}.{mi.MemberName});");
+            sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){LowerRawName}.{mi.MemberName});");
           } else if (mi.MemberType<MemberTypeEnum.Enum) {//simple data
-            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({LowerRawName}.{mi.MemberName});");
+            sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({LowerRawName}.{mi.MemberName});");
           }
         }
-        streamWriter.WriteLine("      csvWriter.WriteEndOfLine();");
-        streamWriter.WriteLine("    }");
+        sw.WriteLine("      csvWriter.WriteEndOfLine();");
+        sw.WriteLine("    }");
 
-
-
-
-
-
-
-
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Writes the details of one {ClassName} to the CSV file");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.Write("    public void Write(");
-        writeParameters(streamWriter, isConstructor: true, isWriterWrite: true);
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Writes the details of one {ClassName} to the CSV file");
+        sw.WriteLine("    /// </summary>");
+        sw.Write("    public void Write(");
+        writeParameters(sw, isConstructor: true, isWriterWrite: true);
         if (AreInstancesDeletable || AreInstancesUpdatable) {
-          streamWriter.WriteLine("      if (key<0) {");
-          streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} needs to be greater equal 0.\");");
-          streamWriter.WriteLine("      }");
-          streamWriter.WriteLine("      if (key<=lastKey) {");
-          streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
-          streamWriter.WriteLine("      }");
-          streamWriter.WriteLine("      lastKey = key;");
-          streamWriter.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
-          streamWriter.WriteLine("      csvWriter.Write(key);");
+          sw.WriteLine("      if (key<0) {");
+          sw.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} needs to be greater equal 0.\");");
+          sw.WriteLine("      }");
+          sw.WriteLine("      if (key<=lastKey) {");
+          sw.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} must be greater than the last written {ClassName}'s key {{lastKey}}.\");");
+          sw.WriteLine("      }");
+          sw.WriteLine("      lastKey = key;");
+          sw.WriteLine("      csvWriter.WriteFirstLineChar(csvConfig.LineCharAdd);");
+          sw.WriteLine("      csvWriter.Write(key);");
         } else {
-          streamWriter.WriteLine("      if (key!=nextKey) {");
-          streamWriter.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} should be {{nextKey}}.\");");
-          streamWriter.WriteLine("      }");
-          streamWriter.WriteLine("      nextKey++;");
-          streamWriter.WriteLine("      csvWriter.StartNewLine();");
+          sw.WriteLine("      if (key!=nextKey) {");
+          sw.WriteLine($"        throw new Exception($\"{ClassName}'s key {{key}} should be {{nextKey}}.\");");
+          sw.WriteLine("      }");
+          sw.WriteLine("      nextKey++;");
+          sw.WriteLine("      csvWriter.StartNewLine();");
         }
         foreach (var mi in Members.Values) {
           if (mi.MemberType==MemberTypeEnum.LinkToParent) {
             if (mi.IsNullable) {
-              streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
-              streamWriter.WriteLine("        csvWriter.WriteNull();");
-              streamWriter.WriteLine("      } else {");
-              streamWriter.WriteLine($"        if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write" +
+              sw.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+              sw.WriteLine("        csvWriter.WriteNull();");
+              sw.WriteLine("      } else {");
+              sw.WriteLine($"        if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write" +
                 $" {LowerClassName} to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-              streamWriter.WriteLine();
-              streamWriter.WriteLine($"        csvWriter.Write({mi.LowerMemberName}Key.ToString());");
-              streamWriter.WriteLine("      }");
+              sw.WriteLine();
+              sw.WriteLine($"        csvWriter.Write({mi.LowerMemberName}Key.ToString());");
+              sw.WriteLine("      }");
             } else {
-              streamWriter.WriteLine($"      if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
+              sw.WriteLine($"      if ({mi.LowerMemberName}Key<0) throw new Exception($\"Cannot write {LowerClassName}" +
                 $" to CSV File, because {mi.MemberName} is not stored in {context}.Data.{mi.ParentClassInfo!.PluralName}.\");");
-              streamWriter.WriteLine();
-              streamWriter.WriteLine($"      csvWriter.Write({mi.LowerMemberName}Key.ToString());");
+              sw.WriteLine();
+              sw.WriteLine($"      csvWriter.Write({mi.LowerMemberName}Key.ToString());");
             }
           } else if (mi.MemberType==MemberTypeEnum.Enum) {
-            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){mi.LowerMemberName});");
+            sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}((int){mi.LowerMemberName});");
           } else if (mi.MemberType<MemberTypeEnum.Enum) {//simple data
-            streamWriter.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({mi.LowerMemberName});");
+            sw.WriteLine($"      csvWriter.{mi.CsvWriterWrite}({mi.LowerMemberName});");
           }
         }
-        streamWriter.WriteLine("      csvWriter.WriteEndOfLine();");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    #region IDisposable Support");
-        streamWriter.WriteLine("    //      -------------------");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Executes disposal of {WriterName} exactly once.");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    public void Dispose() {");
-        streamWriter.WriteLine("      Dispose(true);");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("      GC.SuppressFinalize(this);");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine($"    /// Is {WriterName} already exposed ?");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    protected bool IsDisposed {");
-        streamWriter.WriteLine("      get { return isDisposed==1; }");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    int isDisposed = 0;");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("    /// <summary>");
-        streamWriter.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
-        streamWriter.WriteLine("    /// </summary>");
-        streamWriter.WriteLine("    protected void Dispose(bool disposing) {");
-        streamWriter.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
-        streamWriter.WriteLine("      if (wasDisposed==1) return; // already disposed");
-        streamWriter.WriteLine();
-        streamWriter.WriteLine("      csvWriter.Dispose();");
-        streamWriter.WriteLine("    }");
-        streamWriter.WriteLine("    #endregion");
-        streamWriter.WriteLine("  }");
-        streamWriter.WriteLine("  #endregion");
+        sw.WriteLine("      csvWriter.WriteEndOfLine();");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    #region IDisposable Support");
+        sw.WriteLine("    //      -------------------");
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Executes disposal of {WriterName} exactly once.");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public void Dispose() {");
+        sw.WriteLine("      Dispose(true);");
+        sw.WriteLine();
+        sw.WriteLine("      GC.SuppressFinalize(this);");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Is {WriterName} already exposed ?");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    protected bool IsDisposed {");
+        sw.WriteLine("      get { return isDisposed==1; }");
+        sw.WriteLine("    }");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    int isDisposed = 0;");
+        sw.WriteLine();
+        sw.WriteLine();
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine("    /// Inheritors should call Dispose(false) from their destructor");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    protected void Dispose(bool disposing) {");
+        sw.WriteLine("      var wasDisposed = Interlocked.Exchange(ref isDisposed, 1);//prevents that 2 threads dispose simultaneously");
+        sw.WriteLine("      if (wasDisposed==1) return; // already disposed");
+        sw.WriteLine();
+        sw.WriteLine("      csvWriter.Dispose();");
+        sw.WriteLine("    }");
+        sw.WriteLine("    #endregion");
+        sw.WriteLine("  }");
+        sw.WriteLine("  #endregion");
         #endregion
       }
 
-      streamWriter.WriteLine("}");
+      sw.WriteLine("}");
       #endregion
     }
 

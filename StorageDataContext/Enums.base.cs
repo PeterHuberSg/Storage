@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
   /// <summary>

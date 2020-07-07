@@ -14,14 +14,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Example of deletable parent using a List for its children. It can have only deletable children. The child must have a 
     /// parent (the child.Parent property is not nullable).
     /// </summary>
-  public partial class ChildrenList_Parent: IStorage<ChildrenList_Parent> {
+  public partial class ChildrenList_Parent: IStorageItemGeneric<ChildrenList_Parent> {
 
     #region Properties
     //      ----------
@@ -30,7 +30,9 @@ namespace StorageModel  {
     /// Unique identifier for ChildrenList_Parent. Gets set once ChildrenList_Parent gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ChildrenList_Parent childrenList_Parent, int key) { childrenList_Parent.Key = key; }
+    internal static void SetKey(IStorageItem childrenList_Parent, int key) {
+      ((ChildrenList_Parent)childrenList_Parent).Key = key;
+    }
 
 
     /// <summary>
@@ -65,7 +67,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ChildrenList_Parent has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ChildrenList_Parent>? HasChanged;
+    public event Action</*old*/ChildrenList_Parent, /*new*/ChildrenList_Parent>? HasChanged;
     #endregion
 
 
@@ -89,22 +91,35 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ChildrenList_Parent(ChildrenList_Parent original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      onCloned(this);
+    }
+    partial void onCloned(ChildrenList_Parent clone);
+
+
+    /// <summary>
     /// Constructor for ChildrenList_Parent read from CSV file
     /// </summary>
-    private ChildrenList_Parent(int key, CsvReader csvReader, DC context) {
+    private ChildrenList_Parent(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       childrenList_Children = new List<ChildrenList_Child>();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ChildrenList_Parent read from CSV file
     /// </summary>
-    internal static ChildrenList_Parent Create(int key, CsvReader csvReader, DC context) {
-      return new ChildrenList_Parent(key, csvReader, context);
+    internal static ChildrenList_Parent Create(int key, CsvReader csvReader) {
+      return new ChildrenList_Parent(key, csvReader);
     }
     #endregion
 
@@ -150,6 +165,7 @@ namespace StorageModel  {
     /// Updates ChildrenList_Parent with the provided values
     /// </summary>
     public void Update(string text) {
+      var clone = new ChildrenList_Parent(this);
       var isCancelled = false;
       onUpdating(text, ref isCancelled);
       if (isCancelled) return;
@@ -160,18 +176,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ChildrenList_Parents.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ChildrenList_Parent old);
 
 
     /// <summary>
     /// Updates this ChildrenList_Parent with values from CSV file
     /// </summary>
-    internal static void Update(ChildrenList_Parent childrenList_Parent, CsvReader csvReader, DC _) {
+    internal static void Update(ChildrenList_Parent childrenList_Parent, CsvReader csvReader){
       childrenList_Parent.Text = csvReader.ReadString();
       childrenList_Parent.onCsvUpdate();
     }
@@ -182,6 +201,9 @@ namespace StorageModel  {
     /// Add childrenList_Child to ChildrenList_Children.
     /// </summary>
     internal void AddToChildrenList_Children(ChildrenList_Child childrenList_Child) {
+#if DEBUG
+      if (childrenList_Child==ChildrenList_Child.NoChildrenList_Child) throw new Exception();
+#endif
       childrenList_Children.Add(childrenList_Child);
       onAddedToChildrenList_Children(childrenList_Child);
     }
@@ -227,6 +249,38 @@ namespace StorageModel  {
          }
       }
     }
+
+
+    /// <summary>
+    /// Removes ChildrenList_Parent from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var childrenList_Parent = (ChildrenList_Parent) item;
+      childrenList_Parent.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ChildrenList_Parent item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var childrenList_ParentOld = (ChildrenList_Parent) oldItem;
+      var childrenList_ParentNew = (ChildrenList_Parent) newItem;
+      childrenList_ParentNew.Text = childrenList_ParentOld.Text;
+      childrenList_ParentNew.onRollbackItemUpdated(childrenList_ParentOld);
+    }
+    partial void onRollbackItemUpdated(ChildrenList_Parent oldChildrenList_Parent);
+
+
+    /// <summary>
+    /// Adds ChildrenList_Parent item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var childrenList_Parent = (ChildrenList_Parent) item;
+      childrenList_Parent.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

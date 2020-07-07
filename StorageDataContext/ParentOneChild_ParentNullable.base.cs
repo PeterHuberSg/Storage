@@ -13,13 +13,13 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Example for parent which can have at most 1 child and the parent property in the child is nullable.
     /// </summary>
-  public partial class ParentOneChild_ParentNullable: IStorage<ParentOneChild_ParentNullable> {
+  public partial class ParentOneChild_ParentNullable: IStorageItemGeneric<ParentOneChild_ParentNullable> {
 
     #region Properties
     //      ----------
@@ -28,7 +28,9 @@ namespace StorageModel  {
     /// Unique identifier for ParentOneChild_ParentNullable. Gets set once ParentOneChild_ParentNullable gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ParentOneChild_ParentNullable parentOneChild_ParentNullable, int key) { parentOneChild_ParentNullable.Key = key; }
+    internal static void SetKey(IStorageItem parentOneChild_ParentNullable, int key) {
+      ((ParentOneChild_ParentNullable)parentOneChild_ParentNullable).Key = key;
+    }
 
 
     /// <summary>
@@ -63,7 +65,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ParentOneChild_ParentNullable has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ParentOneChild_ParentNullable>? HasChanged;
+    public event Action</*old*/ParentOneChild_ParentNullable, /*new*/ParentOneChild_ParentNullable>? HasChanged;
     #endregion
 
 
@@ -86,21 +88,34 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ParentOneChild_ParentNullable(ParentOneChild_ParentNullable original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      onCloned(this);
+    }
+    partial void onCloned(ParentOneChild_ParentNullable clone);
+
+
+    /// <summary>
     /// Constructor for ParentOneChild_ParentNullable read from CSV file
     /// </summary>
-    private ParentOneChild_ParentNullable(int key, CsvReader csvReader, DC context) {
+    private ParentOneChild_ParentNullable(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ParentOneChild_ParentNullable read from CSV file
     /// </summary>
-    internal static ParentOneChild_ParentNullable Create(int key, CsvReader csvReader, DC context) {
-      return new ParentOneChild_ParentNullable(key, csvReader, context);
+    internal static ParentOneChild_ParentNullable Create(int key, CsvReader csvReader) {
+      return new ParentOneChild_ParentNullable(key, csvReader);
     }
     #endregion
 
@@ -146,6 +161,7 @@ namespace StorageModel  {
     /// Updates ParentOneChild_ParentNullable with the provided values
     /// </summary>
     public void Update(string text) {
+      var clone = new ParentOneChild_ParentNullable(this);
       var isCancelled = false;
       onUpdating(text, ref isCancelled);
       if (isCancelled) return;
@@ -156,18 +172,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ParentOneChild_ParentNullables.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ParentOneChild_ParentNullable old);
 
 
     /// <summary>
     /// Updates this ParentOneChild_ParentNullable with values from CSV file
     /// </summary>
-    internal static void Update(ParentOneChild_ParentNullable parentOneChild_ParentNullable, CsvReader csvReader, DC _) {
+    internal static void Update(ParentOneChild_ParentNullable parentOneChild_ParentNullable, CsvReader csvReader){
       parentOneChild_ParentNullable.Text = csvReader.ReadString();
       parentOneChild_ParentNullable.onCsvUpdate();
     }
@@ -178,6 +197,9 @@ namespace StorageModel  {
     /// Add parentOneChild_Child to Child.
     /// </summary>
     internal void AddToChild(ParentOneChild_Child parentOneChild_Child) {
+#if DEBUG
+      if (parentOneChild_Child==ParentOneChild_Child.NoParentOneChild_Child) throw new Exception();
+#endif
       if (Child!=null) {
         throw new Exception($"ParentOneChild_ParentNullable.AddToChild(): '{Child}' is already assigned to Child, it is not possible to assign now '{parentOneChild_Child}'.");
       }
@@ -225,6 +247,38 @@ namespace StorageModel  {
         parentOneChild_ParentNullable.Child = null;
       }
     }
+
+
+    /// <summary>
+    /// Removes ParentOneChild_ParentNullable from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var parentOneChild_ParentNullable = (ParentOneChild_ParentNullable) item;
+      parentOneChild_ParentNullable.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ParentOneChild_ParentNullable item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var parentOneChild_ParentNullableOld = (ParentOneChild_ParentNullable) oldItem;
+      var parentOneChild_ParentNullableNew = (ParentOneChild_ParentNullable) newItem;
+      parentOneChild_ParentNullableNew.Text = parentOneChild_ParentNullableOld.Text;
+      parentOneChild_ParentNullableNew.onRollbackItemUpdated(parentOneChild_ParentNullableOld);
+    }
+    partial void onRollbackItemUpdated(ParentOneChild_ParentNullable oldParentOneChild_ParentNullable);
+
+
+    /// <summary>
+    /// Adds ParentOneChild_ParentNullable item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var parentOneChild_ParentNullable = (ParentOneChild_ParentNullable) item;
+      parentOneChild_ParentNullable.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

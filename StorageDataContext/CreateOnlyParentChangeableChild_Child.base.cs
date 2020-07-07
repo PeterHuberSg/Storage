@@ -13,15 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Example of an updatable and deletable Child, i.e. the child's properties will not change and once it is added to its parent
-    /// and therefore it also cannot be removed from parent, because the Parent property of the child cannot be changed
-    /// either.
+    /// Example of an updatable and deletable Child, i.e. the child's properties can change.Therefore it 
+    /// can be removed from parent and assigned to another parent.
     /// </summary>
-  public partial class CreateOnlyParentChangeableChild_Child: IStorage<CreateOnlyParentChangeableChild_Child> {
+  public partial class CreateOnlyParentChangeableChild_Child: IStorageItemGeneric<CreateOnlyParentChangeableChild_Child> {
 
     #region Properties
     //      ----------
@@ -30,7 +29,9 @@ namespace StorageModel  {
     /// Unique identifier for CreateOnlyParentChangeableChild_Child. Gets set once CreateOnlyParentChangeableChild_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(CreateOnlyParentChangeableChild_Child createOnlyParentChangeableChild_Child, int key) { createOnlyParentChangeableChild_Child.Key = key; }
+    internal static void SetKey(IStorageItem createOnlyParentChangeableChild_Child, int key) {
+      ((CreateOnlyParentChangeableChild_Child)createOnlyParentChangeableChild_Child).Key = key;
+    }
 
 
     /// <summary>
@@ -76,7 +77,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of CreateOnlyParentChangeableChild_Child has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<CreateOnlyParentChangeableChild_Child>? HasChanged;
+    public event Action</*old*/CreateOnlyParentChangeableChild_Child, /*new*/CreateOnlyParentChangeableChild_Child>? HasChanged;
     #endregion
 
 
@@ -110,14 +111,30 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public CreateOnlyParentChangeableChild_Child(CreateOnlyParentChangeableChild_Child original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      ReadonlyText = original.ReadonlyText;
+      UpdatableText = original.UpdatableText;
+      Parent = original.Parent;
+      ParentNullable = original.ParentNullable;
+      onCloned(this);
+    }
+    partial void onCloned(CreateOnlyParentChangeableChild_Child clone);
+
+
+    /// <summary>
     /// Constructor for CreateOnlyParentChangeableChild_Child read from CSV file
     /// </summary>
-    private CreateOnlyParentChangeableChild_Child(int key, CsvReader csvReader, DC context) {
+    private CreateOnlyParentChangeableChild_Child(int key, CsvReader csvReader){
       Key = key;
       ReadonlyText = csvReader.ReadString();
       UpdatableText = csvReader.ReadString();
       var createOnlyParentChangeableChild_ParentKey = csvReader.ReadInt();
-      if (context.CreateOnlyParentChangeableChild_Parents.TryGetValue(createOnlyParentChangeableChild_ParentKey, out var parent)) {
+      if (DC.Data.CreateOnlyParentChangeableChild_Parents.TryGetValue(createOnlyParentChangeableChild_ParentKey, out var parent)) {
           Parent = parent;
       } else {
         throw new Exception($"Read CreateOnlyParentChangeableChild_Child from CSV file: Cannot find Parent with key {createOnlyParentChangeableChild_ParentKey}." + Environment.NewLine + 
@@ -125,7 +142,7 @@ namespace StorageModel  {
       }
       var parentNullableKey = csvReader.ReadIntNull();
       if (parentNullableKey.HasValue) {
-        if (context.CreateOnlyParentChangeableChild_ParentNullables.TryGetValue(parentNullableKey.Value, out var parentNullable)) {
+        if (DC.Data.CreateOnlyParentChangeableChild_ParentNullables.TryGetValue(parentNullableKey.Value, out var parentNullable)) {
           ParentNullable = parentNullable;
         } else {
           ParentNullable = CreateOnlyParentChangeableChild_ParentNullable.NoCreateOnlyParentChangeableChild_ParentNullable;
@@ -137,16 +154,16 @@ namespace StorageModel  {
       if (parentNullableKey.HasValue && ParentNullable!=CreateOnlyParentChangeableChild_ParentNullable.NoCreateOnlyParentChangeableChild_ParentNullable) {
         ParentNullable!.AddToCreateOnlyParentChangeableChild_Children(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New CreateOnlyParentChangeableChild_Child read from CSV file
     /// </summary>
-    internal static CreateOnlyParentChangeableChild_Child Create(int key, CsvReader csvReader, DC context) {
-      return new CreateOnlyParentChangeableChild_Child(key, csvReader, context);
+    internal static CreateOnlyParentChangeableChild_Child Create(int key, CsvReader csvReader) {
+      return new CreateOnlyParentChangeableChild_Child(key, csvReader);
     }
 
 
@@ -222,6 +239,7 @@ namespace StorageModel  {
     /// Updates CreateOnlyParentChangeableChild_Child with the provided values
     /// </summary>
     public void Update(string updatableText, CreateOnlyParentChangeableChild_Parent parent, CreateOnlyParentChangeableChild_ParentNullable? parentNullable) {
+      var clone = new CreateOnlyParentChangeableChild_Child(this);
       var isCancelled = false;
       onUpdating(updatableText, parent, parentNullable, ref isCancelled);
       if (isCancelled) return;
@@ -272,18 +290,21 @@ namespace StorageModel  {
         }
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.CreateOnlyParentChangeableChild_Children.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string updatableText, CreateOnlyParentChangeableChild_Parent parent, CreateOnlyParentChangeableChild_ParentNullable? parentNullable, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(CreateOnlyParentChangeableChild_Child old);
 
 
     /// <summary>
     /// Updates this CreateOnlyParentChangeableChild_Child with values from CSV file
     /// </summary>
-    internal static void Update(CreateOnlyParentChangeableChild_Child createOnlyParentChangeableChild_Child, CsvReader csvReader, DC context) {
+    internal static void Update(CreateOnlyParentChangeableChild_Child createOnlyParentChangeableChild_Child, CsvReader csvReader){
       var readonlyText = csvReader.ReadString();
       if (createOnlyParentChangeableChild_Child.ReadonlyText!=readonlyText) {
         throw new Exception($"CreateOnlyParentChangeableChild_Child.Update(): Property ReadonlyText '{createOnlyParentChangeableChild_Child.ReadonlyText}' is " +
@@ -291,7 +312,7 @@ namespace StorageModel  {
           createOnlyParentChangeableChild_Child.ToString());
       }
       createOnlyParentChangeableChild_Child.UpdatableText = csvReader.ReadString();
-      if (!context.CreateOnlyParentChangeableChild_Parents.TryGetValue(csvReader.ReadInt(), out var parent)) {
+      if (!DC.Data.CreateOnlyParentChangeableChild_Parents.TryGetValue(csvReader.ReadInt(), out var parent)) {
         parent = CreateOnlyParentChangeableChild_Parent.NoCreateOnlyParentChangeableChild_Parent;
       }
       if (createOnlyParentChangeableChild_Child.Parent!=parent) {
@@ -306,7 +327,7 @@ namespace StorageModel  {
       if (parentNullableKey is null) {
         parentNullable = null;
       } else {
-        if (!context.CreateOnlyParentChangeableChild_ParentNullables.TryGetValue(parentNullableKey.Value, out parentNullable)) {
+        if (!DC.Data.CreateOnlyParentChangeableChild_ParentNullables.TryGetValue(parentNullableKey.Value, out parentNullable)) {
           parentNullable = CreateOnlyParentChangeableChild_ParentNullable.NoCreateOnlyParentChangeableChild_ParentNullable;
         }
       }
@@ -370,9 +391,84 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveParentNullable(CreateOnlyParentChangeableChild_ParentNullable createOnlyParentChangeableChild_ParentNullable) {
       if (createOnlyParentChangeableChild_ParentNullable!=ParentNullable) throw new Exception();
+
+      var clone = new CreateOnlyParentChangeableChild_Child(this);
       ParentNullable = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
+
+
+    /// <summary>
+    /// Removes CreateOnlyParentChangeableChild_Child from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var createOnlyParentChangeableChild_Child = (CreateOnlyParentChangeableChild_Child) item;
+      if (createOnlyParentChangeableChild_Child.Parent!=CreateOnlyParentChangeableChild_Parent.NoCreateOnlyParentChangeableChild_Parent) {
+        createOnlyParentChangeableChild_Child.Parent.RemoveFromCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_Child);
+      }
+      if (createOnlyParentChangeableChild_Child.ParentNullable!=null && createOnlyParentChangeableChild_Child.ParentNullable!=CreateOnlyParentChangeableChild_ParentNullable.NoCreateOnlyParentChangeableChild_ParentNullable) {
+        createOnlyParentChangeableChild_Child.ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_Child);
+      }
+      createOnlyParentChangeableChild_Child.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the CreateOnlyParentChangeableChild_Child item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var createOnlyParentChangeableChild_ChildOld = (CreateOnlyParentChangeableChild_Child) oldItem;
+      var createOnlyParentChangeableChild_ChildNew = (CreateOnlyParentChangeableChild_Child) newItem;
+      if (createOnlyParentChangeableChild_ChildNew.ReadonlyText!=createOnlyParentChangeableChild_ChildOld.ReadonlyText) {
+        throw new Exception($"CreateOnlyParentChangeableChild_Child.Update(): Property ReadonlyText '{createOnlyParentChangeableChild_ChildNew.ReadonlyText}' is " +
+          $"readonly, ReadonlyText '{createOnlyParentChangeableChild_ChildOld.ReadonlyText}' read from the CSV file should be the same." + Environment.NewLine + 
+          createOnlyParentChangeableChild_ChildNew.ToString());
+      }
+      createOnlyParentChangeableChild_ChildNew.UpdatableText = createOnlyParentChangeableChild_ChildOld.UpdatableText;
+      if (createOnlyParentChangeableChild_ChildNew.Parent!=createOnlyParentChangeableChild_ChildOld.Parent) {
+        if (createOnlyParentChangeableChild_ChildNew.Parent!=CreateOnlyParentChangeableChild_Parent.NoCreateOnlyParentChangeableChild_Parent) {
+          createOnlyParentChangeableChild_ChildNew.Parent.RemoveFromCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_ChildNew);
+        }
+        createOnlyParentChangeableChild_ChildNew.Parent = createOnlyParentChangeableChild_ChildOld.Parent;
+        createOnlyParentChangeableChild_ChildNew.Parent.AddToCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_ChildNew);
+      }
+      if (createOnlyParentChangeableChild_ChildNew.ParentNullable is null) {
+        if (createOnlyParentChangeableChild_ChildOld.ParentNullable is null) {
+          //nothing to do
+        } else {
+          createOnlyParentChangeableChild_ChildNew.ParentNullable = createOnlyParentChangeableChild_ChildOld.ParentNullable;
+          createOnlyParentChangeableChild_ChildNew.ParentNullable.AddToCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_ChildNew);
+        }
+      } else {
+        if (createOnlyParentChangeableChild_ChildOld.ParentNullable is null) {
+          if (createOnlyParentChangeableChild_ChildNew.ParentNullable!=CreateOnlyParentChangeableChild_ParentNullable.NoCreateOnlyParentChangeableChild_ParentNullable) {
+            createOnlyParentChangeableChild_ChildNew.ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_ChildNew);
+          }
+          createOnlyParentChangeableChild_ChildNew.ParentNullable = null;
+        } else {
+          if (createOnlyParentChangeableChild_ChildNew.ParentNullable!=CreateOnlyParentChangeableChild_ParentNullable.NoCreateOnlyParentChangeableChild_ParentNullable) {
+            createOnlyParentChangeableChild_ChildNew.ParentNullable.RemoveFromCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_ChildNew);
+          }
+          createOnlyParentChangeableChild_ChildNew.ParentNullable = createOnlyParentChangeableChild_ChildOld.ParentNullable;
+          createOnlyParentChangeableChild_ChildNew.ParentNullable.AddToCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_ChildNew);
+        }
+      }
+      createOnlyParentChangeableChild_ChildNew.onRollbackItemUpdated(createOnlyParentChangeableChild_ChildOld);
+    }
+    partial void onRollbackItemUpdated(CreateOnlyParentChangeableChild_Child oldCreateOnlyParentChangeableChild_Child);
+
+
+    /// <summary>
+    /// Adds CreateOnlyParentChangeableChild_Child item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var createOnlyParentChangeableChild_Child = (CreateOnlyParentChangeableChild_Child) item;
+      createOnlyParentChangeableChild_Child.Parent.AddToCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_Child);
+      createOnlyParentChangeableChild_Child.ParentNullable?.AddToCreateOnlyParentChangeableChild_Children(createOnlyParentChangeableChild_Child);
+      createOnlyParentChangeableChild_Child.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

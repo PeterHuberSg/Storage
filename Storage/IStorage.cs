@@ -3,7 +3,7 @@
 Storage.IStorage
 ================
 
-Interface IStorage defines the class members needed that a class can be written to and read from a CSV file.
+Interfaces for Storage
 
 Written in 2020 by Jürgpeter Huber 
 Contact: PeterCode at Peterbox dot com
@@ -18,40 +18,57 @@ This software is distributed without any warranty.
 using System;
 
 
+/*
+Storage uses 2 Interfaces:
+--------------------------
+
+IStorageItemGeneric<TItem>: IStorageItem
+Implemented by classes who wants to store their data in DataStore
+
+IStorageItem
+None generic version of IStorageItemGeneric<TItem>, used for transaction processing mostly
+*/
+
 namespace Storage {
 
 
+  #region StorageItem Interfaces
+  //      ----------------------
+
   /// <summary>
-  /// Inheriting classes can be written to and read from a CSV file,
+  /// Gives none generic access to IStorageItemGeneric<TItem>, used only for transaction processing
   /// </summary>
-  public interface IStorage<TItem> where TItem : class, IStorage<TItem> {
+  public interface IStorageItem {
 
     #region Properties
     //      ----------
 
     /// <summary>
-    /// Unique key, used to establish Master detail relationships
+    /// Unique key, used to identify item
     /// </summary>
-    public int Key { get;  }
-    #endregion
-
-
-    #region Events
-    //      ------
-
-    /// <summary>
-    /// Called when some properties of the class have been changed, which usually requires that the
-    /// class gets written to the CSV file.
-    /// </summary>
-    public event Action<TItem>? HasChanged;
+    public int Key { get; }
     #endregion
 
 
     #region Methods
     //      -------
 
+    /*+
     /// <summary>
-    /// Removes item from StorageDictionary and parent collections, deletes all children.
+    /// Copies all data except any collection (children) to a new IStorageItem instance.
+    /// </summary>
+    public IStorageItem Clone();
+    +*/
+
+    /// <summary>
+    /// Item.Store() adds the item to its DataStore items. It can also be added to the DataStore by setting the construction
+    /// parameter isStoring to true.
+    /// </summary>
+    public void Store();
+
+
+    /// <summary>
+    /// Removes item from DataStore and parent collections, deletes all children.
     /// </summary>
     public void Remove();
 
@@ -63,4 +80,21 @@ namespace Storage {
     #endregion
   }
 
+
+  /// <summary>
+  /// Inheriting classes can be written to and read from a CSV file,
+  /// </summary>
+  public interface IStorageItemGeneric<TItem>: IStorageItem where TItem : class {
+
+    #region Events
+    //      ------
+
+    /// <summary>
+    /// Called when some properties of the class have been changed, which usually requires that the
+    /// class gets written to the CSV file.
+    /// </summary>
+    public event Action</*old*/TItem, /*new*/TItem>? HasChanged;
+    #endregion
+  }
+  #endregion
 }

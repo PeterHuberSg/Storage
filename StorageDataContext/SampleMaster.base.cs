@@ -13,14 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Some comment for SampleMaster.
     /// With an additional line.
     /// </summary>
-  public partial class SampleMaster: IStorage<SampleMaster> {
+  public partial class SampleMaster: IStorageItemGeneric<SampleMaster> {
 
     #region Properties
     //      ----------
@@ -29,7 +29,9 @@ namespace StorageModel  {
     /// Unique identifier for SampleMaster. Gets set once SampleMaster gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(SampleMaster sampleMaster, int key) { sampleMaster.Key = key; }
+    internal static void SetKey(IStorageItem sampleMaster, int key) {
+      ((SampleMaster)sampleMaster).Key = key;
+    }
 
 
     /// <summary>
@@ -70,7 +72,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of SampleMaster has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<SampleMaster>? HasChanged;
+    public event Action</*old*/SampleMaster, /*new*/SampleMaster>? HasChanged;
     #endregion
 
 
@@ -95,23 +97,37 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public SampleMaster(SampleMaster original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      NumberWithDefault = original.NumberWithDefault;
+      onCloned(this);
+    }
+    partial void onCloned(SampleMaster clone);
+
+
+    /// <summary>
     /// Constructor for SampleMaster read from CSV file
     /// </summary>
-    private SampleMaster(int key, CsvReader csvReader, DC context) {
+    private SampleMaster(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       sampleX = new HashSet<Sample>();
       NumberWithDefault = csvReader.ReadInt();
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New SampleMaster read from CSV file
     /// </summary>
-    internal static SampleMaster Create(int key, CsvReader csvReader, DC context) {
-      return new SampleMaster(key, csvReader, context);
+    internal static SampleMaster Create(int key, CsvReader csvReader) {
+      return new SampleMaster(key, csvReader);
     }
     #endregion
 
@@ -158,6 +174,7 @@ namespace StorageModel  {
     /// Updates SampleMaster with the provided values
     /// </summary>
     public void Update(string text, int numberWithDefault) {
+      var clone = new SampleMaster(this);
       var isCancelled = false;
       onUpdating(text, numberWithDefault, ref isCancelled);
       if (isCancelled) return;
@@ -172,18 +189,21 @@ namespace StorageModel  {
         isChangeDetected = true;
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.SampleMasters.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, int numberWithDefault, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(SampleMaster old);
 
 
     /// <summary>
     /// Updates this SampleMaster with values from CSV file
     /// </summary>
-    internal static void Update(SampleMaster sampleMaster, CsvReader csvReader, DC _) {
+    internal static void Update(SampleMaster sampleMaster, CsvReader csvReader){
       sampleMaster.Text = csvReader.ReadString();
       sampleMaster.NumberWithDefault = csvReader.ReadInt();
       sampleMaster.onCsvUpdate();
@@ -195,6 +215,9 @@ namespace StorageModel  {
     /// Add sample to SampleX.
     /// </summary>
     internal void AddToSampleX(Sample sample) {
+#if DEBUG
+      if (sample==Sample.NoSample) throw new Exception();
+#endif
       sampleX.Add(sample);
       onAddedToSampleX(sample);
     }
@@ -229,6 +252,39 @@ namespace StorageModel  {
     public void Remove() {
       throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
+
+
+    /// <summary>
+    /// Removes SampleMaster from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var sampleMaster = (SampleMaster) item;
+      sampleMaster.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the SampleMaster item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var sampleMasterOld = (SampleMaster) oldItem;
+      var sampleMasterNew = (SampleMaster) newItem;
+      sampleMasterNew.Text = sampleMasterOld.Text;
+      sampleMasterNew.NumberWithDefault = sampleMasterOld.NumberWithDefault;
+      sampleMasterNew.onRollbackItemUpdated(sampleMasterOld);
+    }
+    partial void onRollbackItemUpdated(SampleMaster oldSampleMaster);
+
+
+    /// <summary>
+    /// Adds SampleMaster item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var sampleMaster = (SampleMaster) item;
+      sampleMaster.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

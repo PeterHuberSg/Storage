@@ -13,13 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Some comment for Lookup_Child
+    /// Example of a child with a none nullable and a nullable lookup parent. The child maintains links
+    /// to its parents, but the parents don't have children collections.
     /// </summary>
-  public partial class Lookup_Child: IStorage<Lookup_Child> {
+  public partial class Lookup_Child: IStorageItemGeneric<Lookup_Child> {
 
     #region Properties
     //      ----------
@@ -28,28 +29,41 @@ namespace StorageModel  {
     /// Unique identifier for Lookup_Child. Gets set once Lookup_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(Lookup_Child lookup_Child, int key) { lookup_Child.Key = key; }
+    internal static void SetKey(IStorageItem lookup_Child, int key) {
+      ((Lookup_Child)lookup_Child).Key = key;
+    }
 
 
-    public int Number { get; }
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text { get; private set; }
 
 
-    public Lookup_Parent LookupParent { get; }
+    /// <summary>
+    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
+    /// lookup. This property requires a parent.
+    /// </summary>
+    public Lookup_Parent LookupParent { get; private set; }
 
 
-    public Lookup_ParentNullable? LookupParentNullable { get; }
+    /// <summary>
+    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
+    /// lookup. This property does not require a parent.
+    /// </summary>
+    public Lookup_ParentNullable? LookupParentNullable { get; private set; }
 
 
     /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Number", "LookupParent", "LookupParentNullable"};
+    internal static readonly string[] Headers = {"Key", "Text", "LookupParent", "LookupParentNullable"};
 
 
     /// <summary>
     /// None existing Lookup_Child
     /// </summary>
-    internal static Lookup_Child NoLookup_Child = new Lookup_Child(int.MinValue, Lookup_Parent.NoLookup_Parent, null, isStoring: false);
+    internal static Lookup_Child NoLookup_Child = new Lookup_Child("NoText", Lookup_Parent.NoLookup_Parent, null, isStoring: false);
     #endregion
 
 
@@ -57,11 +71,9 @@ namespace StorageModel  {
     //      ------
 
     /// <summary>
-    /// This event will never be raised, but is needed to comply with IStorage.
+    /// Content of Lookup_Child has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-#pragma warning disable 67
-    public event Action<Lookup_Child>? HasChanged;
-#pragma warning restore 67
+    public event Action</*old*/Lookup_Child, /*new*/Lookup_Child>? HasChanged;
     #endregion
 
 
@@ -73,9 +85,9 @@ namespace StorageModel  {
     /// adds Lookup_Child to lookup_Parent.Lookup_Children
     /// and if there is a LookupParentNullable adds Lookup_Child to lookup_ParentNullable.Lookup_Children.
     /// </summary>
-    public Lookup_Child(int number, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable, bool isStoring = true) {
+    public Lookup_Child(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
-      Number = number;
+      Text = text;
       LookupParent = lookupParent;
       LookupParentNullable = lookupParentNullable;
       onConstruct();
@@ -88,13 +100,28 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public Lookup_Child(Lookup_Child original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      LookupParent = original.LookupParent;
+      LookupParentNullable = original.LookupParentNullable;
+      onCloned(this);
+    }
+    partial void onCloned(Lookup_Child clone);
+
+
+    /// <summary>
     /// Constructor for Lookup_Child read from CSV file
     /// </summary>
-    private Lookup_Child(int key, CsvReader csvReader, DC context) {
+    private Lookup_Child(int key, CsvReader csvReader){
       Key = key;
-      Number = csvReader.ReadInt();
+      Text = csvReader.ReadString();
       var lookup_ParentKey = csvReader.ReadInt();
-      if (context.Lookup_Parents.TryGetValue(lookup_ParentKey, out var lookupParent)) {
+      if (DC.Data.Lookup_Parents.TryGetValue(lookup_ParentKey, out var lookupParent)) {
           LookupParent = lookupParent;
       } else {
         throw new Exception($"Read Lookup_Child from CSV file: Cannot find LookupParent with key {lookup_ParentKey}." + Environment.NewLine + 
@@ -102,22 +129,22 @@ namespace StorageModel  {
       }
       var lookupParentNullableKey = csvReader.ReadIntNull();
       if (lookupParentNullableKey.HasValue) {
-        if (context.Lookup_ParentNullables.TryGetValue(lookupParentNullableKey.Value, out var lookupParentNullable)) {
+        if (DC.Data.Lookup_ParentNullables.TryGetValue(lookupParentNullableKey.Value, out var lookupParentNullable)) {
           LookupParentNullable = lookupParentNullable;
         } else {
           LookupParentNullable = Lookup_ParentNullable.NoLookup_ParentNullable;
         }
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New Lookup_Child read from CSV file
     /// </summary>
-    internal static Lookup_Child Create(int key, CsvReader csvReader, DC context) {
-      return new Lookup_Child(key, csvReader, context);
+    internal static Lookup_Child Create(int key, CsvReader csvReader) {
+      return new Lookup_Child(key, csvReader);
     }
 
 
@@ -157,7 +184,7 @@ namespace StorageModel  {
     /// <summary>
     /// Estimated number of UTF8 characters needed to write Lookup_Child to CSV file
     /// </summary>
-    public const int EstimatedLineLength = 41;
+    public const int EstimatedLineLength = 150;
 
 
     /// <summary>
@@ -165,7 +192,7 @@ namespace StorageModel  {
     /// </summary>
     internal static void Write(Lookup_Child lookup_Child, CsvWriter csvWriter) {
       lookup_Child.onCsvWrite();
-      csvWriter.Write(lookup_Child.Number);
+      csvWriter.Write(lookup_Child.Text);
       if (lookup_Child.LookupParent.Key<0) throw new Exception($"Cannot write lookup_Child '{lookup_Child}' to CSV File, because LookupParent is not stored in DC.Data.Lookup_Parents.");
 
       csvWriter.Write(lookup_Child.LookupParent.Key.ToString());
@@ -181,11 +208,172 @@ namespace StorageModel  {
 
 
     /// <summary>
-    /// Removing Lookup_Child from DC.Data.Lookup_Children is not supported.
+    /// Updates Lookup_Child with the provided values
+    /// </summary>
+    public void Update(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable) {
+      var clone = new Lookup_Child(this);
+      var isCancelled = false;
+      onUpdating(text, lookupParent, lookupParentNullable, ref isCancelled);
+      if (isCancelled) return;
+
+      var isChangeDetected = false;
+      if (Text!=text) {
+        Text = text;
+        isChangeDetected = true;
+      }
+      if (LookupParent!=lookupParent) {
+        LookupParent = lookupParent;
+        isChangeDetected = true;
+      }
+      if (LookupParentNullable is null) {
+        if (lookupParentNullable is null) {
+          //nothing to do
+        } else {
+          LookupParentNullable = lookupParentNullable;
+          isChangeDetected = true;
+        }
+      } else {
+        if (lookupParentNullable is null) {
+          LookupParentNullable = null;
+          isChangeDetected = true;
+        } else {
+          if (LookupParentNullable!=lookupParentNullable) {
+            LookupParentNullable = lookupParentNullable;
+            isChangeDetected = true;
+          }
+        }
+      }
+      if (isChangeDetected) {
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.Lookup_Children.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
+      }
+    }
+    partial void onUpdating(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable, ref bool isCancelled);
+    partial void onUpdated(Lookup_Child old);
+
+
+    /// <summary>
+    /// Updates this Lookup_Child with values from CSV file
+    /// </summary>
+    internal static void Update(Lookup_Child lookup_Child, CsvReader csvReader){
+      lookup_Child.Text = csvReader.ReadString();
+      if (!DC.Data.Lookup_Parents.TryGetValue(csvReader.ReadInt(), out var lookupParent)) {
+        lookupParent = Lookup_Parent.NoLookup_Parent;
+      }
+      if (lookup_Child.LookupParent!=lookupParent) {
+        lookup_Child.LookupParent = lookupParent;
+      }
+      var lookupParentNullableKey = csvReader.ReadIntNull();
+      Lookup_ParentNullable? lookupParentNullable;
+      if (lookupParentNullableKey is null) {
+        lookupParentNullable = null;
+      } else {
+        if (!DC.Data.Lookup_ParentNullables.TryGetValue(lookupParentNullableKey.Value, out lookupParentNullable)) {
+          lookupParentNullable = Lookup_ParentNullable.NoLookup_ParentNullable;
+        }
+      }
+      if (lookup_Child.LookupParentNullable is null) {
+        if (lookupParentNullable is null) {
+          //nothing to do
+        } else {
+          lookup_Child.LookupParentNullable = lookupParentNullable;
+        }
+      } else {
+        if (lookupParentNullable is null) {
+          lookup_Child.LookupParentNullable = null;
+        } else {
+          lookup_Child.LookupParentNullable = lookupParentNullable;
+        }
+      }
+      lookup_Child.onCsvUpdate();
+    }
+    partial void onCsvUpdate();
+
+
+    /// <summary>
+    /// Removes Lookup_Child from DC.Data.Lookup_Children, 
+    /// disconnects Lookup_Child from Lookup_Parent because of LookupParent and 
+    /// disconnects Lookup_Child from Lookup_ParentNullable because of LookupParentNullable.
     /// </summary>
     public void Remove() {
-      throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
+      if (Key<0) {
+        throw new Exception($"Lookup_Child.Remove(): Lookup_Child 'Class Lookup_Child' is not stored in DC.Data, key is {Key}.");
+      }
+      onRemove();
+      DC.Data.Lookup_Children.Remove(Key);
     }
+    partial void onRemove();
+
+
+    /// <summary>
+    /// Disconnects Lookup_Child from Lookup_Parent because of LookupParent and 
+    /// disconnects Lookup_Child from Lookup_ParentNullable because of LookupParentNullable.
+    /// </summary>
+    internal static void Disconnect(Lookup_Child lookup_Child) {
+    }
+
+
+    /// <summary>
+    /// Removes lookup_ParentNullable from LookupParentNullable
+    /// </summary>
+    internal void RemoveLookupParentNullable(Lookup_ParentNullable lookup_ParentNullable) {
+      if (lookup_ParentNullable!=LookupParentNullable) throw new Exception();
+
+      var clone = new Lookup_Child(this);
+      LookupParentNullable = null;
+      HasChanged?.Invoke(clone, this);
+    }
+
+
+    /// <summary>
+    /// Removes Lookup_Child from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var lookup_Child = (Lookup_Child) item;
+      lookup_Child.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the Lookup_Child item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var lookup_ChildOld = (Lookup_Child) oldItem;
+      var lookup_ChildNew = (Lookup_Child) newItem;
+      lookup_ChildNew.Text = lookup_ChildOld.Text;
+      if (lookup_ChildNew.LookupParent!=lookup_ChildOld.LookupParent) {
+        lookup_ChildNew.LookupParent = lookup_ChildOld.LookupParent;
+      }
+      if (lookup_ChildNew.LookupParentNullable is null) {
+        if (lookup_ChildOld.LookupParentNullable is null) {
+          //nothing to do
+        } else {
+          lookup_ChildNew.LookupParentNullable = lookup_ChildOld.LookupParentNullable;
+        }
+      } else {
+        if (lookup_ChildOld.LookupParentNullable is null) {
+          lookup_ChildNew.LookupParentNullable = null;
+        } else {
+          lookup_ChildNew.LookupParentNullable = lookup_ChildOld.LookupParentNullable;
+        }
+      }
+      lookup_ChildNew.onRollbackItemUpdated(lookup_ChildOld);
+    }
+    partial void onRollbackItemUpdated(Lookup_Child oldLookup_Child);
+
+
+    /// <summary>
+    /// Adds Lookup_Child item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var lookup_Child = (Lookup_Child) item;
+      lookup_Child.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>
@@ -194,7 +382,7 @@ namespace StorageModel  {
     public string ToShortString() {
       var returnString =
         $"{Key.ToKeyString()}," +
-        $" {Number}," +
+        $" {Text}," +
         $" {LookupParent.ToShortString()}," +
         $" {LookupParentNullable?.ToShortString()}";
       onToShortString(ref returnString);
@@ -209,7 +397,7 @@ namespace StorageModel  {
     public override string ToString() {
       var returnString =
         $"Key: {Key}," +
-        $" Number: {Number}," +
+        $" Text: {Text}," +
         $" LookupParent: {LookupParent.ToShortString()}," +
         $" LookupParentNullable: {LookupParentNullable?.ToShortString()};";
       onToString(ref returnString);

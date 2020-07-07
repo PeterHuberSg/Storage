@@ -7,10 +7,10 @@ using Storage;
 namespace StorageTest {
 
 
-  public class TestItemCsv: IStorage<TestItemCsv> {
+  public class TestItemCsv: IStorageItemGeneric<TestItemCsv> {
 
     public int Key { get; private set; }
-    internal static void SetKey(TestItemCsv testItemCsv, int key) { testItemCsv.Key = key; }
+    public static void SetKey(IStorageItem testItem, int key) { ((TestItemCsv)testItem).Key = key; }
 
     public string Text { get; private set; }
 
@@ -19,7 +19,7 @@ namespace StorageTest {
 
     public const int MaxLineLength = 30;
 
-    public event Action<TestItemCsv>? HasChanged;
+    public event Action<TestItemCsv, TestItemCsv>? HasChanged;
 
 
     public TestItemCsv(string text) {
@@ -34,7 +34,12 @@ namespace StorageTest {
     }
 
 
-    public static TestItemCsv Create(int key, CsvReader csvReader, object _) {
+    public void Store() {
+      throw new NotSupportedException();
+    }
+
+
+    public static TestItemCsv Create(int key, CsvReader csvReader) {
       return new TestItemCsv(key, csvReader);
     }
 
@@ -44,16 +49,18 @@ namespace StorageTest {
     }
 
 
-    internal static void Update(TestItemCsv testItemCsv, CsvReader csvReader, object _) 
+    internal static void Update(TestItemCsv testItemCsv, CsvReader csvReader) 
     {
       testItemCsv.Text = csvReader.ReadString()!;
     }
 
 
-    public void Update(string text) {
+    public void Update(string text, DataStore<TestItemCsv> dataStore) {
       if (Text!=text) {
+        var old = new TestItemCsv(Text);
         Text = text;
-        HasChanged?.Invoke(this);
+        dataStore.ItemHasChanged(old, this);
+        HasChanged?.Invoke(old, this);
       }
     }
 
@@ -63,16 +70,33 @@ namespace StorageTest {
     }
 
 
-    public void Remove(StorageDictionary<TestItemCsv, object> storageDictionary) {
+    public void Remove(DataStore<TestItemCsv> dataStore) {
       if (Key<0) {
         throw new Exception($"TestItemCsv.Remove(): TestItemCsv is not in storageDictionary, key is {Key}.");
       }
-      storageDictionary.Remove(Key);
+      dataStore.Remove(Key);
     }
 
 
     internal static void Disconnect(TestItemCsv _) {
       //nothing to do
+    }
+
+
+    internal static void RollbackItemStore(IStorageItem _) {
+      throw new NotSupportedException();
+    }
+
+
+    #pragma warning disable IDE0060 // Remove unused parameter oldItem, newItem
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+    #pragma warning restore IDE0060
+      throw new NotSupportedException();
+    }
+
+
+    internal static void RollbackItemRemove(IStorageItem _) {
+      throw new NotSupportedException();
     }
 
 

@@ -18,12 +18,12 @@ This software is distributed without any warranty.
 **************************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 
 namespace Storage {
-
 
   /// <summary>
   /// starts and configures data compiler by just creating a new StorageClassGenerator

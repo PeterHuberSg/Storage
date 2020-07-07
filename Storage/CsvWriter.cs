@@ -79,9 +79,9 @@ namespace Storage {
     #region Constructor
     //      -----------
 
-#pragma warning disable IDE0069 // Disposable fields should be disposed
+    #pragma warning disable IDE0069 // Disposable fields should be disposed
     FileStream? fileStream;
-#pragma warning restore IDE0069 // Disposable fields should be disposed
+    #pragma warning restore IDE0069 // Disposable fields should be disposed
     readonly bool isFileStreamOwner;
     readonly byte[] byteArray;
     int writePos;

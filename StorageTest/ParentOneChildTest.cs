@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
-using StorageModel;
+using StorageDataContext;
 
 
 namespace StorageTest {
@@ -13,13 +13,13 @@ namespace StorageTest {
 
 
     CsvConfig? csvConfig;
-    readonly Dictionary<int, string> expectedParentStrings= new Dictionary<int, string>();
-    readonly Dictionary<int, string> expectedParentNullableStrings= new Dictionary<int, string>();
-    readonly Dictionary<int, string> expectedChildStrings= new Dictionary<int, string>();
+    readonly Dictionary<int, string> expectedParents= new Dictionary<int, string>();
+    readonly Dictionary<int, string> expectedParentsNullable= new Dictionary<int, string>();
+    readonly Dictionary<int, string> expectedChildren = new Dictionary<int, string>();
 
 
     [TestMethod]
-    public void TestMultipleChildrenDictionary() {
+    public void TestParentOneChild() {
       try {
         var directoryInfo = new DirectoryInfo("TestCsv");
         if (directoryInfo.Exists) {
@@ -34,49 +34,81 @@ namespace StorageTest {
         assertDL();
 
         var parent = new ParentOneChild_Parent("P0");
-        expectedParentStrings[parent.Key] = parent.ToString();
+        expectedParents[parent.Key] = parent.ToString();
         assertData();
 
-        //create children
+        //create child
+        DC.Data.StartTransaction();
         parent = DC.Data.ParentOneChild_Parents[parent.Key];
         var child = new ParentOneChild_Child("C0", parent, null);
-        expectedChildStrings[child.Key] = child.ToString();
-        expectedParentStrings[parent.Key] = parent.ToString();
+        expectedChildren[child.Key] = child.ToString();
+        expectedParents[parent.Key] = parent.ToString();
+        DC.Data.CommitTransaction();
         assertData();
 
-        //update children
-        parent = DC.Data.ParentOneChild_Parents[parent.Key];
+        //update child
+        //the following 2 parents get stored immediately without transaction
         var parent1 = new ParentOneChild_Parent("P1");
+        expectedParents[parent1.Key] = parent1.ToString();
         var parentNullable = new ParentOneChild_ParentNullable("P0N");
+        expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
         child = DC.Data.ParentOneChild_Children[child.Key];
+        DC.Data.StartTransaction();
         child.Update("C0U", parent1, parentNullable);
-        expectedChildStrings[child.Key] = child.ToString();
-        expectedParentStrings[parent.Key] = parent.ToString();
-        expectedParentStrings[parent1.Key] = parent1.ToString();
-        expectedParentNullableStrings[parentNullable.Key] = parentNullable.ToString();
+        DC.Data.RollbackTransaction();
         assertData();
-
-        //update children
         parent = DC.Data.ParentOneChild_Parents[parent.Key];
         parent1 = DC.Data.ParentOneChild_Parents[parent1.Key];
         parentNullable = DC.Data.ParentOneChild_ParentNullables[parentNullable.Key];
-        var parentNullable1 = new ParentOneChild_ParentNullable("P1N");
         child = DC.Data.ParentOneChild_Children[child.Key];
+        DC.Data.StartTransaction();
+        child.Update("C0U", parent1, parentNullable);
+        DC.Data.CommitTransaction();
+        expectedChildren[child.Key] = child.ToString();
+        expectedParents[parent.Key] = parent.ToString();
+        expectedParents[parent1.Key] = parent1.ToString();
+        expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+        assertData();
+
+        //update child
+        var parentNullable1 = new ParentOneChild_ParentNullable("P1N");
+        expectedParentsNullable[parentNullable1.Key] = parentNullable1.ToString();
+        parent = DC.Data.ParentOneChild_Parents[parent.Key];
+        child = DC.Data.ParentOneChild_Children[child.Key];
+        DC.Data.StartTransaction();
         child.Update("C0U1", parent, parentNullable1);
-        expectedChildStrings[child.Key] = child.ToString();
-        expectedParentStrings[parent.Key] = parent.ToString();
-        expectedParentStrings[parent1.Key] = parent1.ToString();
-        expectedParentNullableStrings[parentNullable.Key] = parentNullable.ToString();
-        expectedParentNullableStrings[parentNullable1.Key] = parentNullable1.ToString();
+        DC.Data.RollbackTransaction();
+        assertData();
+        parent = DC.Data.ParentOneChild_Parents[parent.Key];
+        parent1 = DC.Data.ParentOneChild_Parents[parent1.Key];
+        parentNullable = DC.Data.ParentOneChild_ParentNullables[parentNullable.Key];
+        parentNullable1 = DC.Data.ParentOneChild_ParentNullables[parentNullable1.Key];
+        child = DC.Data.ParentOneChild_Children[child.Key];
+        DC.Data.StartTransaction();
+        child.Update("C0U1", parent, parentNullable1);
+        DC.Data.CommitTransaction();
+        expectedChildren[child.Key] = child.ToString();
+        expectedParents[parent.Key] = parent.ToString();
+        expectedParents[parent1.Key] = parent1.ToString();
+        expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+        expectedParentsNullable[parentNullable1.Key] = parentNullable1.ToString();
         assertData();
 
         //delete children
         child = DC.Data.ParentOneChild_Children[child.Key];
+        DC.Data.StartTransaction();
         child.Remove();
-        expectedChildStrings.Remove(child.Key);
-        expectedParentStrings[parent.Key] = parent.ToString();
-        expectedParentStrings[parent1.Key] = parent1.ToString();
-        expectedParentNullableStrings[parentNullable1.Key] = parentNullable1.ToString();
+        DC.Data.RollbackTransaction();
+        assertData();
+        parent = DC.Data.ParentOneChild_Parents[parent.Key];
+        parentNullable1 = DC.Data.ParentOneChild_ParentNullables[parentNullable1.Key];
+        child = DC.Data.ParentOneChild_Children[child.Key];
+        DC.Data.StartTransaction();
+        child.Remove();
+        DC.Data.CommitTransaction();
+        expectedChildren.Remove(child.Key);
+        expectedParents[parent.Key] = parent.ToString();
+        expectedParentsNullable[parentNullable1.Key] = parentNullable1.ToString();
 
       } finally {
         DC.DisposeData();
@@ -85,7 +117,8 @@ namespace StorageTest {
 
 
     private void reportException(Exception obj) {
-      Console.WriteLine(obj);
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
       Assert.Fail();
     }
 
@@ -96,17 +129,17 @@ namespace StorageTest {
 
 
     private void assertDL() {
-      Assert.AreEqual(expectedParentStrings.Count, DC.Data.ParentOneChild_Parents.Count);
+      Assert.AreEqual(expectedParents.Count, DC.Data.ParentOneChild_Parents.Count);
       foreach (var parent in DC.Data.ParentOneChild_Parents) {
-        Assert.AreEqual(expectedParentStrings[parent.Key], parent.ToString());
+        Assert.AreEqual(expectedParents[parent.Key], parent.ToString());
       }
-      Assert.AreEqual(expectedParentNullableStrings.Count, DC.Data.ParentOneChild_ParentNullables.Count);
+      Assert.AreEqual(expectedParentsNullable.Count, DC.Data.ParentOneChild_ParentNullables.Count);
       foreach (var parent in DC.Data.ParentOneChild_ParentNullables) {
-        Assert.AreEqual(expectedParentNullableStrings[parent.Key], parent.ToString());
+        Assert.AreEqual(expectedParentsNullable[parent.Key], parent.ToString());
       }
-      Assert.AreEqual(expectedChildStrings.Count, DC.Data.ParentOneChild_Children.Count);
+      Assert.AreEqual(expectedChildren.Count, DC.Data.ParentOneChild_Children.Count);
       foreach (var child in DC.Data.ParentOneChild_Children) {
-        Assert.AreEqual(expectedChildStrings[child.Key], child.ToString());
+        Assert.AreEqual(expectedChildren[child.Key], child.ToString());
       }
     }
 

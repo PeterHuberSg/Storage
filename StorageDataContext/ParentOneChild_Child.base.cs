@@ -13,14 +13,14 @@ using System.Threading;
 using Storage;
 
 
-namespace StorageModel  {
+namespace StorageDataContext  {
 
 
     /// <summary>
     /// Child class with one parent property which is not nullable and one property to a different parent 
     /// which is nullable
     /// </summary>
-  public partial class ParentOneChild_Child: IStorage<ParentOneChild_Child> {
+  public partial class ParentOneChild_Child: IStorageItemGeneric<ParentOneChild_Child> {
 
     #region Properties
     //      ----------
@@ -29,7 +29,9 @@ namespace StorageModel  {
     /// Unique identifier for ParentOneChild_Child. Gets set once ParentOneChild_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(ParentOneChild_Child parentOneChild_Child, int key) { parentOneChild_Child.Key = key; }
+    internal static void SetKey(IStorageItem parentOneChild_Child, int key) {
+      ((ParentOneChild_Child)parentOneChild_Child).Key = key;
+    }
 
 
     /// <summary>
@@ -69,7 +71,7 @@ namespace StorageModel  {
     /// <summary>
     /// Content of ParentOneChild_Child has changed. Gets only raised for changes occurring after loading DC.Data with previously stored data.
     /// </summary>
-    public event Action<ParentOneChild_Child>? HasChanged;
+    public event Action</*old*/ParentOneChild_Child, /*new*/ParentOneChild_Child>? HasChanged;
     #endregion
 
 
@@ -96,13 +98,28 @@ namespace StorageModel  {
 
 
     /// <summary>
+    /// Cloning constructor. It will copy all data from original except any collection (children).
+    /// </summary>
+    #pragma warning disable CS8618 // Children collections are uninitialized.
+    public ParentOneChild_Child(ParentOneChild_Child original) {
+    #pragma warning restore CS8618 //
+      Key = StorageExtensions.NoKey;
+      Text = original.Text;
+      Parent = original.Parent;
+      ParentNullable = original.ParentNullable;
+      onCloned(this);
+    }
+    partial void onCloned(ParentOneChild_Child clone);
+
+
+    /// <summary>
     /// Constructor for ParentOneChild_Child read from CSV file
     /// </summary>
-    private ParentOneChild_Child(int key, CsvReader csvReader, DC context) {
+    private ParentOneChild_Child(int key, CsvReader csvReader){
       Key = key;
       Text = csvReader.ReadString();
       var parentOneChild_ParentKey = csvReader.ReadInt();
-      if (context.ParentOneChild_Parents.TryGetValue(parentOneChild_ParentKey, out var parent)) {
+      if (DC.Data.ParentOneChild_Parents.TryGetValue(parentOneChild_ParentKey, out var parent)) {
           Parent = parent;
       } else {
         throw new Exception($"Read ParentOneChild_Child from CSV file: Cannot find Parent with key {parentOneChild_ParentKey}." + Environment.NewLine + 
@@ -110,7 +127,7 @@ namespace StorageModel  {
       }
       var parentNullableKey = csvReader.ReadIntNull();
       if (parentNullableKey.HasValue) {
-        if (context.ParentOneChild_ParentNullables.TryGetValue(parentNullableKey.Value, out var parentNullable)) {
+        if (DC.Data.ParentOneChild_ParentNullables.TryGetValue(parentNullableKey.Value, out var parentNullable)) {
           ParentNullable = parentNullable;
         } else {
           ParentNullable = ParentOneChild_ParentNullable.NoParentOneChild_ParentNullable;
@@ -122,16 +139,16 @@ namespace StorageModel  {
       if (parentNullableKey.HasValue && ParentNullable!=ParentOneChild_ParentNullable.NoParentOneChild_ParentNullable) {
         ParentNullable!.AddToChild(this);
       }
-      onCsvConstruct(context);
+      onCsvConstruct();
     }
-    partial void onCsvConstruct(DC context);
+    partial void onCsvConstruct();
 
 
     /// <summary>
     /// New ParentOneChild_Child read from CSV file
     /// </summary>
-    internal static ParentOneChild_Child Create(int key, CsvReader csvReader, DC context) {
-      return new ParentOneChild_Child(key, csvReader, context);
+    internal static ParentOneChild_Child Create(int key, CsvReader csvReader) {
+      return new ParentOneChild_Child(key, csvReader);
     }
 
 
@@ -206,6 +223,7 @@ namespace StorageModel  {
     /// Updates ParentOneChild_Child with the provided values
     /// </summary>
     public void Update(string text, ParentOneChild_Parent parent, ParentOneChild_ParentNullable? parentNullable) {
+      var clone = new ParentOneChild_Child(this);
       var isCancelled = false;
       onUpdating(text, parent, parentNullable, ref isCancelled);
       if (isCancelled) return;
@@ -256,20 +274,23 @@ namespace StorageModel  {
         }
       }
       if (isChangeDetected) {
-        onUpdated();
-        HasChanged?.Invoke(this);
+        onUpdated(clone);
+        if (Key>=0) {
+          DC.Data.ParentOneChild_Children.ItemHasChanged(clone, this);
+        }
+        HasChanged?.Invoke(clone, this);
       }
     }
     partial void onUpdating(string text, ParentOneChild_Parent parent, ParentOneChild_ParentNullable? parentNullable, ref bool isCancelled);
-    partial void onUpdated();
+    partial void onUpdated(ParentOneChild_Child old);
 
 
     /// <summary>
     /// Updates this ParentOneChild_Child with values from CSV file
     /// </summary>
-    internal static void Update(ParentOneChild_Child parentOneChild_Child, CsvReader csvReader, DC context) {
+    internal static void Update(ParentOneChild_Child parentOneChild_Child, CsvReader csvReader){
       parentOneChild_Child.Text = csvReader.ReadString();
-      if (!context.ParentOneChild_Parents.TryGetValue(csvReader.ReadInt(), out var parent)) {
+      if (!DC.Data.ParentOneChild_Parents.TryGetValue(csvReader.ReadInt(), out var parent)) {
         parent = ParentOneChild_Parent.NoParentOneChild_Parent;
       }
       if (parentOneChild_Child.Parent!=parent) {
@@ -284,7 +305,7 @@ namespace StorageModel  {
       if (parentNullableKey is null) {
         parentNullable = null;
       } else {
-        if (!context.ParentOneChild_ParentNullables.TryGetValue(parentNullableKey.Value, out parentNullable)) {
+        if (!DC.Data.ParentOneChild_ParentNullables.TryGetValue(parentNullableKey.Value, out parentNullable)) {
           parentNullable = ParentOneChild_ParentNullable.NoParentOneChild_ParentNullable;
         }
       }
@@ -348,9 +369,79 @@ namespace StorageModel  {
     /// </summary>
     internal void RemoveParentNullable(ParentOneChild_ParentNullable parentOneChild_ParentNullable) {
       if (parentOneChild_ParentNullable!=ParentNullable) throw new Exception();
+
+      var clone = new ParentOneChild_Child(this);
       ParentNullable = null;
-      HasChanged?.Invoke(this);
+      HasChanged?.Invoke(clone, this);
     }
+
+
+    /// <summary>
+    /// Removes ParentOneChild_Child from possible parents as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemStore(IStorageItem item) {
+      var parentOneChild_Child = (ParentOneChild_Child) item;
+      if (parentOneChild_Child.Parent!=ParentOneChild_Parent.NoParentOneChild_Parent) {
+        parentOneChild_Child.Parent.RemoveFromChild(parentOneChild_Child);
+      }
+      if (parentOneChild_Child.ParentNullable!=null && parentOneChild_Child.ParentNullable!=ParentOneChild_ParentNullable.NoParentOneChild_ParentNullable) {
+        parentOneChild_Child.ParentNullable.RemoveFromChild(parentOneChild_Child);
+      }
+      parentOneChild_Child.onRollbackItemStored();
+    }
+    partial void onRollbackItemStored();
+
+
+    /// <summary>
+    /// Restores the ParentOneChild_Child item data as it was before the last update as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+      var parentOneChild_ChildOld = (ParentOneChild_Child) oldItem;
+      var parentOneChild_ChildNew = (ParentOneChild_Child) newItem;
+      parentOneChild_ChildNew.Text = parentOneChild_ChildOld.Text;
+      if (parentOneChild_ChildNew.Parent!=parentOneChild_ChildOld.Parent) {
+        if (parentOneChild_ChildNew.Parent!=ParentOneChild_Parent.NoParentOneChild_Parent) {
+          parentOneChild_ChildNew.Parent.RemoveFromChild(parentOneChild_ChildNew);
+        }
+        parentOneChild_ChildNew.Parent = parentOneChild_ChildOld.Parent;
+        parentOneChild_ChildNew.Parent.AddToChild(parentOneChild_ChildNew);
+      }
+      if (parentOneChild_ChildNew.ParentNullable is null) {
+        if (parentOneChild_ChildOld.ParentNullable is null) {
+          //nothing to do
+        } else {
+          parentOneChild_ChildNew.ParentNullable = parentOneChild_ChildOld.ParentNullable;
+          parentOneChild_ChildNew.ParentNullable.AddToChild(parentOneChild_ChildNew);
+        }
+      } else {
+        if (parentOneChild_ChildOld.ParentNullable is null) {
+          if (parentOneChild_ChildNew.ParentNullable!=ParentOneChild_ParentNullable.NoParentOneChild_ParentNullable) {
+            parentOneChild_ChildNew.ParentNullable.RemoveFromChild(parentOneChild_ChildNew);
+          }
+          parentOneChild_ChildNew.ParentNullable = null;
+        } else {
+          if (parentOneChild_ChildNew.ParentNullable!=ParentOneChild_ParentNullable.NoParentOneChild_ParentNullable) {
+            parentOneChild_ChildNew.ParentNullable.RemoveFromChild(parentOneChild_ChildNew);
+          }
+          parentOneChild_ChildNew.ParentNullable = parentOneChild_ChildOld.ParentNullable;
+          parentOneChild_ChildNew.ParentNullable.AddToChild(parentOneChild_ChildNew);
+        }
+      }
+      parentOneChild_ChildNew.onRollbackItemUpdated(parentOneChild_ChildOld);
+    }
+    partial void onRollbackItemUpdated(ParentOneChild_Child oldParentOneChild_Child);
+
+
+    /// <summary>
+    /// Adds ParentOneChild_Child item to possible parents again as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemRemove(IStorageItem item) {
+      var parentOneChild_Child = (ParentOneChild_Child) item;
+      parentOneChild_Child.Parent.AddToChild(parentOneChild_Child);
+      parentOneChild_Child.ParentNullable?.AddToChild(parentOneChild_Child);
+      parentOneChild_Child.onRollbackItemRemoved();
+    }
+    partial void onRollbackItemRemoved();
 
 
     /// <summary>

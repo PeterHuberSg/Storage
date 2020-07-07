@@ -103,9 +103,9 @@ namespace Storage {
     /// </summary>
     public static string ToCompactDateString(this DateTime date) {
       string returnString = date.Date.ToString(CsvConfig.DateFormat);
-      if (returnString[3]=='0') returnString = returnString.Substring(0, 3) + returnString.Substring(4, returnString.Length-4);
+      if (returnString[3]=='0') returnString = returnString.Substring(0, 3) + returnString[4..];
 
-      if (returnString[0]=='0') returnString = returnString.Substring(1, returnString.Length-1);
+      if (returnString[0]=='0') returnString = returnString[1..];
 
       return returnString;
     }

@@ -7,14 +7,14 @@ using Storage;
 namespace StorageTest {
 
 
-  public class TestItem: IStorage<TestItem> {
+  public class TestItem: IStorageItemGeneric<TestItem> {
     public int Key { get; private set; }
-    public static void SetKey(TestItem testItem, int key) { testItem.Key = key; }
+    public static void SetKey(IStorageItem testItem, int key) { ((TestItem)testItem).Key = key; }
 
     public string Text { get; private set; }
 
 
-    public event Action<TestItem>? HasChanged;
+    public event Action<TestItem, TestItem>? HasChanged;
 
 
     public TestItem(string text) {
@@ -23,10 +23,16 @@ namespace StorageTest {
     }
 
 
+    public void Store() {
+      throw new NotSupportedException();
+    }
+
+
     public void Update(string text) {
       if (Text!=text) {
+        var old = new TestItem(Text);
         Text = text;
-        HasChanged?.Invoke(this);
+        HasChanged?.Invoke(old, this);
       }
     }
 
@@ -36,16 +42,28 @@ namespace StorageTest {
     }
 
 
-    public void Remove(StorageDictionary<TestItem, object> storageDictionary) {
+    public void Remove(DataStore<TestItem> dataStore) {
       if (Key<0) {
         throw new Exception($"TestItem.Remove(): TestItem '{this}' is not stored in storageDictionary, key is {Key}.");
       }
-      storageDictionary.Remove(Key);
+      dataStore.Remove(Key);
     }
 
 
     internal static void Disconnect(TestItem _) {
       //nothing to do
+    }
+
+
+    internal static void RollbackItemStore(IStorageItem _) {
+    }
+
+
+    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+    }
+
+
+    internal static void RollbackItemRemove(IStorageItem _) {
     }
 
 

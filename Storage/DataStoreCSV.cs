@@ -1,11 +1,11 @@
 ﻿/**************************************************************************************
 
-Storage.StorageDictionaryCSV
-============================
+Storage.DataStoreCSV
+====================
 
-Stores items in a StorageDictionary and permanently in a CSV (comma separated value) file. An item can be accessed by its 
-key. When starting, the file content gets read into the StorageDictionary, if a file exists, otherwise an empty file with 
-only the header definition gets written. Items added to or deleted from StorageDictionary and items with changed content get 
+Stores items in a DataStore and permanently in a CSV (comma separated value) file. An item can be accessed by its 
+key. When starting, the file content gets read into the DataStoreCSV, if a file exists, otherwise an empty file with 
+only the header definition gets written. Items added to or deleted from DataStoreCSV and items with changed content get 
 continuously written to the file. 
 
 Written in 2020 by Jürgpeter Huber 
@@ -29,16 +29,15 @@ namespace Storage {
 
 
   /// <summary>
-  /// Stores items in a StorageDictionary and permanently in a CSV (comma separated value) file. When starting, the file 
-  /// content gets read into the StorageDictionary, if a file exists, otherwise an empty file with only the header definition 
-  /// gets written. Items added to or deleted from StorageDictionary and items with changed content get continuously written 
+  /// Stores items in a DataStore and permanently in a CSV (comma separated value) file. When starting, the file 
+  /// content gets read into the DataStoreCSV, if a file exists, otherwise an empty file with only the header definition 
+  /// gets written. Items added to or deleted from DataStoreCSV and items with changed content get continuously written 
   /// to the file. If there is no write activity, a flush timer ensures that the writes are committed to the hard disk.
-  /// Disposing the StorageDictionary ensures that all data is flushed to the file if only new files were added or the complete 
-  /// StorageDictionaryCSV is rewritten, which eliminates all the updated and deleted lines.
+  /// Disposing the DataStoreCSV ensures that all data is flushed to the file if only new files were added or the complete 
+  /// DataStoreCSV is rewritten, which eliminates all the updated and deleted lines.
   /// </summary>
-  public class StorageDictionaryCSV<TItemCSV, TContext>: StorageDictionary<TItemCSV, TContext> 
-    where TItemCSV : class, IStorage<TItemCSV> 
-    where TContext: class 
+  public class DataStoreCSV<TItemCSV>: DataStore<TItemCSV> 
+    where TItemCSV : class, IStorageItemGeneric<TItemCSV>
   {
 
     #region Properties
@@ -78,10 +77,10 @@ namespace Storage {
     #region Constructor
     //     ------------
 
-    readonly Func<int, CsvReader, TContext, TItemCSV?> create;
-    readonly Func<TItemCSV, bool>? verify;
-    readonly Action<TItemCSV, CsvReader, TContext>? update;
-    readonly Action<TItemCSV, CsvWriter>? write;
+    Func<int, CsvReader, TItemCSV?> create;
+    Func<TItemCSV, bool>? verify;
+    Action<TItemCSV, CsvReader>? update;
+    Action<TItemCSV, CsvWriter>? write;
 
     readonly bool isInitialReading;
     FileStream? fileStream;
@@ -91,69 +90,86 @@ namespace Storage {
 
 
     /// <summary>
-    /// Constructs a readonly StorageDictionaryCSV. If a CSV file exists already, its content gets read at startup. If no CSV
+    /// Constructs a readonly DataStoreCSV. If a CSV file exists already, its content gets read at startup. If no CSV
     /// file exists, an empty one gets created with a header line.
     /// </summary>
-    /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
+    /// <param name="dataContext">DataContext creating this DataStore</param>
+    /// <param name="storeKey">Unique number to identify DataStore</param>
     /// <param name="csvConfig">File name and other parameters for CSV file</param>
     /// <param name="maxLineLenght">Maximal number of bytes needed to write one line</param>
     /// <param name="headers">Name for each item property</param>
-    /// <param name="setKey">Method to be called if item has no key yet</param>
+    /// <param name="setKey">Called when an item gets added to set its Key</param>
     /// <param name="create">Creates a new item with one line read from the CSV file</param>
     /// <param name="verify">Verifies item, for example it parent(s) exist</param>
     /// <param name="write">Writes item to CSV file</param>
-    /// <param name="capacity">How many items should StorageDictionaryCSV by able to hold initially ?</param>
-    /// <param name="flushDelay">When the items in StorageDictionaryCSV are not changed for flushDelay milliseconds, the internal
+    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
+    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
+    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
+    /// <param name="capacity">How many items should DataStoreCSV by able to hold initially ?</param>
+    /// <param name="flushDelay">When the items in DataStoreCSV are not changed for flushDelay milliseconds, the internal
     /// buffer gets written to the CSV file.</param>
-    public StorageDictionaryCSV(
-      TContext? context,
+    public DataStoreCSV(
+      DataContextBase? dataContext,
+      int storeKey,
       CsvConfig csvConfig,
       int maxLineLenght,
       string[] headers,
-      Action<TItemCSV, int> setKey,
-      Func<int, CsvReader, TContext, TItemCSV> create,
+      Action<IStorageItem, int> setKey,
+      Func<int, CsvReader, TItemCSV> create,
       Func<TItemCSV, bool>? verify,
       Action<TItemCSV, CsvWriter> write,
+      Action<IStorageItem> rollbackItemStore,
+      Action</*old*/IStorageItem, /*new*/IStorageItem> rollbackItemUpdate,
+      Action<IStorageItem> rollbackItemRemove,
       int capacity = 0,
-      int flushDelay = 200) : this(context, csvConfig, maxLineLenght, headers, setKey, create, verify, null, write, 
-        null, false, false, capacity, flushDelay) {}
+      int flushDelay = 200) : this(dataContext, storeKey, csvConfig, maxLineLenght, headers, setKey, create, verify, null, 
+        write, rollbackItemStore, rollbackItemUpdate, rollbackItemRemove, null, false, false, capacity, flushDelay) {}
 
 
     /// <summary>
-    /// Constructs a StorageDictionaryCSV. If a CSV file exists already, its content gets read at startup. If no CSV file 
+    /// Constructs a DataStoreCSV. If a CSV file exists already, its content gets read at startup. If no CSV file 
     /// exists, an empty one gets created with a header line.
     /// </summary>
-    /// <param name="context">Should be parent holding all StorageDictionaries of the application</param>
+    /// <param name="dataContext">DataContext creating this DataStore</param>
+    /// <param name="storeKey">Unique number to identify DataStore</param>
     /// <param name="csvConfig">File name and other parameters for CSV file</param>
     /// <param name="maxLineLenght">Maximal number of bytes needed to write one line</param>
     /// <param name="headers">Name for each item property</param>
-    /// <param name="setKey">Method to be called if item has no key yet</param>
+    /// <param name="setKey">Called when an item gets added to set its Key</param>
     /// <param name="create">Creates a new item with one line read from the CSV file</param>
     /// <param name="verify">Verifies item, for example it parent(s) exist</param>
     /// <param name="update">Updates an item if an line with updates is read</param>
     /// <param name="write">Writes item to CSV file</param>
+    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
+    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
+    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
     /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
     /// items linked to this item and/or to remove item from parent(s)</param>
     /// <param name="areInstancesUpdatable">Can the property of an item change ?</param>
-    /// <param name="areInstancesDeletable">Can an item be removed from StorageDictionaryCSV</param>
-    /// <param name="capacity">How many items should StorageDictionaryCSV by able to hold initially ?</param>
-    /// <param name="flushDelay">When the items in StorageDictionaryCSV are not changed for flushDelay milliseconds, the internal
+    /// <param name="areInstancesDeletable">Can an item be removed from DataStoreCSV</param>
+    /// <param name="capacity">How many items should DataStoreCSV by able to hold initially ?</param>
+    /// <param name="flushDelay">When the items in DataStoreCSV are not changed for flushDelay milliseconds, the internal
     /// buffer gets written to the CSV file.</param>
-    public StorageDictionaryCSV(
-      TContext? context,
+    public DataStoreCSV(
+      DataContextBase? dataContext,
+      int storeKey,
       CsvConfig csvConfig,
       int maxLineLenght,
       string[] headers,
-      Action<TItemCSV, int> setKey,
-      Func<int, CsvReader, TContext, TItemCSV> create,
+      Action<IStorageItem, int> setKey,
+      Func<int, CsvReader, TItemCSV> create,
       Func<TItemCSV, bool>? verify,
-      Action<TItemCSV, CsvReader, TContext>? update,
+      Action<TItemCSV, CsvReader>? update,
       Action<TItemCSV, CsvWriter> write,
+      Action<IStorageItem> rollbackItemStore,
+      Action</*old*/IStorageItem, /*new*/IStorageItem>? rollbackItemUpdate,
+      Action<IStorageItem>? rollbackItemRemove,
       Action<TItemCSV>? disconnect,
       bool areInstancesUpdatable = false,
       bool areInstancesDeletable = false,
       int capacity = 0,
-      int flushDelay = 200) : base(context, setKey, disconnect, areInstancesUpdatable, areInstancesDeletable, capacity) 
+      int flushDelay = 200) : base(dataContext, storeKey, setKey, rollbackItemStore, rollbackItemUpdate, rollbackItemRemove, 
+        disconnect, areInstancesUpdatable, areInstancesDeletable, capacity) 
     {
       CsvConfig = csvConfig;
       MaxLineLenght = maxLineLenght;
@@ -190,7 +206,7 @@ namespace Storage {
     readonly object disposingLock = new object();
 
 
-    protected override void OnDispose(bool disposing) {
+    protected override void Dispose(bool disposing) {
       lock (disposingLock) {
         var wasCsvWriter = Interlocked.Exchange(ref csvWriter, null);
         if (wasCsvWriter!=null) {
@@ -221,13 +237,30 @@ namespace Storage {
             CsvConfig.ReportException?.Invoke(ex);
           }
         }
+
+        create = null!;
+        verify = null;
+        update = null;
+        write = null;
       }
+
+      base.Dispose(disposing);
     }
     #endregion
 
 
     #region Methods
     //      -------
+
+    /// <summary>
+    /// Initiates that all data presently in RAM write buffers are written immediately to a file. Usually buffers get 
+    /// written when they are full, the CSVWriter.Flushtimer runs or the DataStore gets disposed. For normal operation
+    /// it should not be necessary to call Flush(), it is mainly used for time measurement.
+    /// </summary>
+    public override void Flush() {
+      csvWriter?.Flush();
+    }
+
 
     private void readFromCsvFile(CsvReader csvReader) {
       //verify headers line
@@ -244,13 +277,13 @@ namespace Storage {
           var firstLineChar = csvReader.ReadFirstLineChar();
           if (firstLineChar==CsvConfig.LineCharAdd) {
             addItem(csvReader, errorStringBuilder);
-            
-          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          //Todo: improve StorageDictionaryCSV.readFromCsvFile()
-          //actually, there should never be the case where deletion or updates get read, since all
-          //CSV files get now compacted on Dispose. Need to detect the case here when the Dispose()
-          //did not work properly
-          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //Todo: improve DataStoreCSV.readFromCsvFile()
+            //actually, there should never be the case where deletion or updates get read, since all
+            //CSV files get now compacted on Dispose. Need to detect the case here when the Dispose()
+            //did not work properly
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           } else if (firstLineChar==CsvConfig.LineCharDelete) {
             //delete
             int key = csvReader.ReadInt();
@@ -262,7 +295,7 @@ namespace Storage {
             //update
             var key = csvReader.ReadInt();
             var item = this[key];
-            update!(item, csvReader, Context!);
+            update!(item, csvReader);
             csvReader.ReadEndOfLine();
           } else {
             throw new Exception($"Error reading file {csvReader.FileName}{Environment.NewLine}" +
@@ -275,7 +308,7 @@ namespace Storage {
       if (verify!=null) {
         foreach (var item in this) {
           if (!verify(item)) {
-            errorStringBuilder.AppendLine($"StorageDictionaryCSV<{typeof(TItemCSV).Name}>: item '{item}' could not be validated in {PathFileName}.");
+            errorStringBuilder.AppendLine($"DataStoreCSV<{typeof(TItemCSV).Name}>: item '{item}' could not be validated in {PathFileName}.");
           }
         }
       }
@@ -284,16 +317,16 @@ namespace Storage {
         throw new Exception($"Errors reading file {csvReader.FileName}, wrong formatting on following lines:" + Environment.NewLine +
           errorStringBuilder.ToString());
       }
-      UpdateAreKeysContinous();
+      UpdateAreKeysContinuous();
     }
 
 
     private void addItem(CsvReader csvReader, StringBuilder errorStringBuilder) {
       TItemCSV? item;
       if (IsReadOnly) {
-        item = create(LastItemIndex+1, csvReader, Context!);
+        item = create(LastItemIndex+1, csvReader);
       } else {
-        item = create(csvReader.ReadInt(), csvReader, Context!);
+        item = create(csvReader.ReadInt(), csvReader);
       }
       if (errorStringBuilder.Length==0) {
         AddProtected(item!);
@@ -303,7 +336,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Writes all items in StorageDictionaryCSV to a CSV file
+    /// Writes all items in DataStoreCSV to a CSV file
     /// </summary>
     public void WriteToCsvFile(CsvWriter csvWriter) {
       csvWriter.WriteLine(CsvHeaderString);
@@ -347,14 +380,14 @@ namespace Storage {
     }
 
 
-    protected override void OnItemHasChanged(TItemCSV item) {
+    protected override void OnItemHasChanged(TItemCSV oldIitem, TItemCSV newIitem) {
       if (isInitialReading) return;
 
       try {
         lock (csvWriter!) {
           csvWriter.WriteFirstLineChar(CsvConfig.LineCharUpdate);
-          csvWriter.Write(item.Key);
-          write!(item, csvWriter);
+          csvWriter.Write(newIitem.Key);
+          write!(newIitem, csvWriter);
           csvWriter.WriteEndOfLine();
         }
         //kickFlushTimer();
@@ -377,6 +410,34 @@ namespace Storage {
         //kickFlushTimer();
       } catch (Exception ex) {
         CsvConfig.ReportException?.Invoke(ex);
+      }
+    }
+
+
+    /// <summary>
+    /// Reset any transaction related data. 
+    /// </summary>
+    protected override void OnStartTransaction() {
+      csvWriter!.StartTransaction();
+    }
+
+
+    /// <summary>
+    /// Reset any transaction related data. 
+    /// </summary>
+    protected override void OnCommitTransaction() {
+      lock (csvWriter!) {
+        csvWriter!.CommitTransaction();
+      }
+    }
+
+
+    /// <summary>
+    /// Undo any change on the hard disk that happened since a new transaction started. 
+    /// </summary>
+    protected override void OnRollbackTransaction() {
+      lock (csvWriter!) {
+        csvWriter!.RollbackTransaction();
       }
     }
 

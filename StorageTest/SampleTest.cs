@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
-using StorageModel;
+using StorageDataContext;
 
 
 namespace StorageTest {
@@ -81,7 +81,8 @@ namespace StorageTest {
 
 
     private void reportException(Exception obj) {
-      Console.WriteLine(obj);
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
       Assert.Fail();
     }
 

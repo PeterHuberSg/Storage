@@ -4,7 +4,7 @@ using System.IO;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
-using StorageModel;
+using StorageDataContext;
 
 namespace StorageTest {
 
@@ -53,13 +53,20 @@ namespace StorageTest {
 
 
     private static void reportException(Exception obj) {
-      Console.WriteLine(obj);
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
       Assert.Fail();
     }
 
 
     private int addData(int idInt, string? idString, string text) {
+      DC.Data.StartTransaction();
+      _ = new PropertyNeedsDictionaryClass(idInt, idString, text);
+      DC.Data.RollbackTransaction();
+      assertData();
+      DC.Data.StartTransaction();
       var sample = new PropertyNeedsDictionaryClass(idInt, idString, text);
+      DC.Data.CommitTransaction();
       var sampleString = sample.ToString();
       expectedIdInts.Add(idInt, sampleString);
       if (idString!=null) {
@@ -72,26 +79,42 @@ namespace StorageTest {
 
     private void update(int key, int idInt, string? idString, string text) {
       var sample = DC.Data.PropertyNeedsDictionaryClasses[key];
+      DC.Data.StartTransaction();
+      sample.Update(idInt, idString, text);
+      DC.Data.RollbackTransaction();
+      assertData();
+      sample = DC.Data.PropertyNeedsDictionaryClasses[key];
       expectedIdInts.Remove(sample.IdInt);
       if (sample.IdString!=null) {
         expectedIdStrings.Remove(sample.IdString);
       }
+      DC.Data.StartTransaction();
       sample.Update(idInt, idString, text);
+      DC.Data.CommitTransaction();
       var sampleString = sample.ToString();
       expectedIdInts.Add(idInt, sampleString);
       if (idString!=null) {
         expectedIdStrings.Add(idString, sampleString);
       }
+      assertData();
     }
 
 
     private void delete(int key) {
       var sample = DC.Data.PropertyNeedsDictionaryClasses[key];
+      DC.Data.StartTransaction();
+      sample.Remove();
+      DC.Data.RollbackTransaction();
+      assertData();
+      sample = DC.Data.PropertyNeedsDictionaryClasses[key];
+      DC.Data.StartTransaction();
+      sample.Remove();
+      DC.Data.CommitTransaction();
       expectedIdInts.Remove(sample.IdInt);
       if (sample.IdString!=null) {
         expectedIdStrings.Remove(sample.IdString);
       }
-      sample.Remove();
+      assertData();
     }
 
 

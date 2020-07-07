@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
-using StorageModel;
+using StorageDataContext;
 
 
 namespace StorageTest {
@@ -32,6 +32,7 @@ namespace StorageTest {
         initDL();
         assertDL();
 
+        //no transaction is used to have also testing if everything works without transactions.
         addParent("1");
         addChild(0, "11");
 
@@ -45,7 +46,8 @@ namespace StorageTest {
 
 
     private void reportException(Exception obj) {
-      Console.WriteLine(obj);
+      System.Diagnostics.Debug.WriteLine(obj);
+      System.Diagnostics.Debugger.Break();
       Assert.Fail();
     }
 
