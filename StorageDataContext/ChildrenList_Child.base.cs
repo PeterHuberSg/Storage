@@ -80,7 +80,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing ChildrenList_Child
     /// </summary>
-    internal static ChildrenList_Child NoChildrenList_Child = new ChildrenList_Child("NoText", ChildrenList_Parent.NoChildrenList_Parent, null, ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent, null, isStoring: false);
+    internal static ChildrenList_Child NoChildrenList_Child = new ChildrenList_Child("NoText", isStoring: false);
     #endregion
 
 

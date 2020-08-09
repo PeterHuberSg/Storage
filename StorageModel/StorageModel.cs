@@ -444,7 +444,7 @@ namespace StorageDataContext {
   //      ----------------------------------------------------------------------------------
 
   // Often, a class has one property which can be used to identify one particular instance. 
-  // StorageProperty(needsDictionary: true) adds a Dictionary to the data context, which gets updated whenever
+  // [StorageProperty(needsDictionary: true)] adds a Dictionary to the data context, which gets updated whenever
   // an instance get added, that property updated or the instance deleted.
 
   /// <summary>
@@ -454,13 +454,13 @@ namespace StorageDataContext {
   public class PropertyNeedsDictionaryClass {
 
     /// <summary>
-    /// Used as key into dictionary SampleWithDictionaryByIdInt
+    /// Used as key into dictionary PropertyNeedsDictionaryClassesByIdInt
     /// </summary>
     [StorageProperty(needsDictionary: true)]
     public int IdInt;
 
     /// <summary>
-    /// Used as key into dictionary SampleWithDictionaryByIdString
+    /// Used as key into dictionary PropertyNeedsDictionaryClassesByIdString
     /// </summary>
     [StorageProperty(needsDictionary: true)]
     public string? IdString;
@@ -469,6 +469,34 @@ namespace StorageDataContext {
     /// Some Text comment
     /// </summary>
     public string Text;
+
+    /// <summary>
+    /// Lower case version of Text
+    /// </summary>
+    [StorageProperty(toLower: "Text", needsDictionary: true)]
+    public string TextLower;
+
+    /// <summary>
+    /// Some Text comment which can be null
+    /// </summary>
+    public string? TextNullable;
+
+    /// <summary>
+    /// Lower case version of TextNullable
+    /// </summary>
+    [StorageProperty(toLower: "TextNullable", needsDictionary: true)]
+    public string? TextNullableLower;
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public readonly string TextReadonly;
+
+    /// <summary>
+    /// Lower case version of TextReadonly
+    /// </summary>
+    [StorageProperty(toLower: "TextReadonly", needsDictionary: true)]
+    public string TextReadonlyLower;
   }
   #endregion
 

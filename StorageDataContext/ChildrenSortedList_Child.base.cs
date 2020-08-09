@@ -68,7 +68,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing ChildrenSortedList_Child
     /// </summary>
-    internal static ChildrenSortedList_Child NoChildrenSortedList_Child = new ChildrenSortedList_Child(DateTime.MinValue.Date, "NoText", ChildrenSortedList_Parent.NoChildrenSortedList_Parent, null, isStoring: false);
+    internal static ChildrenSortedList_Child NoChildrenSortedList_Child = new ChildrenSortedList_Child(DateTime.MinValue.Date, "NoText", isStoring: false);
     #endregion
 
 

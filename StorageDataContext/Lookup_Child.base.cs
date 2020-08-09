@@ -63,7 +63,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing Lookup_Child
     /// </summary>
-    internal static Lookup_Child NoLookup_Child = new Lookup_Child("NoText", Lookup_Parent.NoLookup_Parent, null, isStoring: false);
+    internal static Lookup_Child NoLookup_Child = new Lookup_Child("NoText", isStoring: false);
     #endregion
 
 

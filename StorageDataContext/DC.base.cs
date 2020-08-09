@@ -196,12 +196,32 @@ namespace StorageDataContext  {
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by IdInt
     /// </summary>
-    public Dictionary<int, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdInt { get; private set; }
+    public IDictionary<int, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdInt => _PropertyNeedsDictionaryClassesByIdInt;
+    internal Dictionary<int, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByIdInt { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by IdString
     /// </summary>
-    public Dictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdString { get; private set; }
+    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdString => _PropertyNeedsDictionaryClassesByIdString;
+    internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByIdString { get; private set; }
+
+    /// <summary>
+    /// Directory of all PropertyNeedsDictionaryClasses by TextLower
+    /// </summary>
+    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextLower => _PropertyNeedsDictionaryClassesByTextLower;
+    internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByTextLower { get; private set; }
+
+    /// <summary>
+    /// Directory of all PropertyNeedsDictionaryClasses by TextNullableLower
+    /// </summary>
+    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextNullableLower => _PropertyNeedsDictionaryClassesByTextNullableLower;
+    internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByTextNullableLower { get; private set; }
+
+    /// <summary>
+    /// Directory of all PropertyNeedsDictionaryClasses by TextReadonlyLower
+    /// </summary>
+    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextReadonlyLower => _PropertyNeedsDictionaryClassesByTextReadonlyLower;
+    internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByTextReadonlyLower { get; private set; }
 
     /// <summary>
     /// Directory of all SampleX
@@ -246,8 +266,11 @@ namespace StorageDataContext  {
       CsvConfig = csvConfig;
       onConstructing(backupResult);
 
-      PropertyNeedsDictionaryClassesByIdInt = new Dictionary<int, PropertyNeedsDictionaryClass>();
-      PropertyNeedsDictionaryClassesByIdString = new Dictionary<string, PropertyNeedsDictionaryClass>();
+      _PropertyNeedsDictionaryClassesByIdInt = new Dictionary<int, PropertyNeedsDictionaryClass>();
+      _PropertyNeedsDictionaryClassesByIdString = new Dictionary<string, PropertyNeedsDictionaryClass>();
+      _PropertyNeedsDictionaryClassesByTextLower = new Dictionary<string, PropertyNeedsDictionaryClass>();
+      _PropertyNeedsDictionaryClassesByTextNullableLower = new Dictionary<string, PropertyNeedsDictionaryClass>();
+      _PropertyNeedsDictionaryClassesByTextReadonlyLower = new Dictionary<string, PropertyNeedsDictionaryClass>();
       var storeKey = 0;
       if (csvConfig==null) {
         DataTypeSamples = new DataStore<DataTypeSample>(
@@ -1400,8 +1423,11 @@ namespace StorageDataContext  {
         Lookup_Parents = null!;
         PropertyNeedsDictionaryClasses.Dispose();
         PropertyNeedsDictionaryClasses = null!;
-        PropertyNeedsDictionaryClassesByIdInt = null!;
-        PropertyNeedsDictionaryClassesByIdString = null!;
+        _PropertyNeedsDictionaryClassesByIdInt = null!;
+        _PropertyNeedsDictionaryClassesByIdString = null!;
+        _PropertyNeedsDictionaryClassesByTextLower = null!;
+        _PropertyNeedsDictionaryClassesByTextNullableLower = null!;
+        _PropertyNeedsDictionaryClassesByTextReadonlyLower = null!;
         ParentOneChild_Children.Dispose();
         ParentOneChild_Children = null!;
         ParentOneChild_ParentNullables.Dispose();

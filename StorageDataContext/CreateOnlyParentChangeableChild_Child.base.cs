@@ -67,7 +67,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing CreateOnlyParentChangeableChild_Child
     /// </summary>
-    internal static CreateOnlyParentChangeableChild_Child NoCreateOnlyParentChangeableChild_Child = new CreateOnlyParentChangeableChild_Child("NoReadonlyText", "NoUpdatableText", CreateOnlyParentChangeableChild_Parent.NoCreateOnlyParentChangeableChild_Parent, null, isStoring: false);
+    internal static CreateOnlyParentChangeableChild_Child NoCreateOnlyParentChangeableChild_Child = new CreateOnlyParentChangeableChild_Child("NoReadonlyText", "NoUpdatableText", isStoring: false);
     #endregion
 
 

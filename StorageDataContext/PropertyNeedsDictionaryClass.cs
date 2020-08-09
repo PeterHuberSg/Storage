@@ -78,7 +78,13 @@ namespace StorageDataContext  {
     /// <summary>
     /// Called after all properties are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(int idInt, string? idString, string text, ref bool isCancelled){
+    partial void onUpdating(
+      int idInt, 
+      string? idString, 
+      string text, 
+      string? textNullable, 
+      ref bool isCancelled)
+   {
    }
 
 

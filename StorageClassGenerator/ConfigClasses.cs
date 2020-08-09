@@ -60,9 +60,10 @@ namespace Storage {
     /// the value of this property.</param>
     public StoragePropertyAttribute(
       string? defaultValue = null, 
-      bool isLookupOnly = false, 
+      bool isLookupOnly = false,
+      bool isParentOneChild = false,
       bool needsDictionary = false,
-      bool isParentOneChild = false) { }
+      string? toLower = null) { }
   }
 #pragma warning restore IDE0060 // Remove unused parameter
 

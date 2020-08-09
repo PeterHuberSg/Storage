@@ -69,7 +69,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing ChildrenDictionary_Child
     /// </summary>
-    internal static ChildrenDictionary_Child NoChildrenDictionary_Child = new ChildrenDictionary_Child(DateTime.MinValue.Date, "NoText", ChildrenDictionary_Parent.NoChildrenDictionary_Parent, null, isStoring: false);
+    internal static ChildrenDictionary_Child NoChildrenDictionary_Child = new ChildrenDictionary_Child(DateTime.MinValue.Date, "NoText", isStoring: false);
     #endregion
 
 

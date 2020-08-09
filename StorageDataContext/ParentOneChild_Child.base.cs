@@ -61,7 +61,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing ParentOneChild_Child
     /// </summary>
-    internal static ParentOneChild_Child NoParentOneChild_Child = new ParentOneChild_Child("NoText", ParentOneChild_Parent.NoParentOneChild_Parent, null, isStoring: false);
+    internal static ParentOneChild_Child NoParentOneChild_Child = new ParentOneChild_Child("NoText", isStoring: false);
     #endregion
 
 

@@ -24,6 +24,7 @@ namespace Storage {
     Long,
     Char,
     String,
+    ToLower, //lower case copy of another string property
     Enum,
     //---- add new simple types before List ----
     LinkToParent, //member of child linking to parent

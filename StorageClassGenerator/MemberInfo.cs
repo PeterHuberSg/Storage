@@ -28,15 +28,19 @@ namespace Storage {
   /// Some info for each class defined in data model
   /// </summary>
   public class MemberInfo {
+    public readonly string MemberText;
     public readonly string MemberName;
     public readonly string LowerMemberName;
     public MemberTypeEnum MemberType;
     public readonly ClassInfo ClassInfo;
     public string? CsvTypeString;
     public string TypeString;
+    public string? PropertyForToLower; // used by ToLower to indicate from which other property in this class a lower 
+                                       // case version should be made.
+    public MemberInfo? ToLowerTarget; // ToLower source member can use ToLowerTarget to find target
     public string? ReadOnlyTypeString; //used by Dictionary and SortedList: IReadOnlyDictionary<DateTime, DictionaryChild>
-    public readonly bool IsNullable;
-    public readonly bool IsReadOnly; //property is marked 'readonly' or class is not updatable 
+    public bool IsNullable; //is also set in Compiler.AnalyzeDependencies() for ToLower properties
+    public bool IsReadOnly; //property is marked 'readonly' or class is not updatable 
     public readonly string? Comment;
     public readonly string? PrecissionComment;
     public readonly string? Rounding;
@@ -69,6 +73,7 @@ namespace Storage {
     /// constructor for simple data type, not enum
     /// </summary>
     public MemberInfo(
+      string memberText,
       string name, 
       string csvTypeString, 
       MemberTypeEnum memberType, 
@@ -79,6 +84,7 @@ namespace Storage {
       string? defaultValue,
       bool needsDictionary) 
     {
+      MemberText = memberText;
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
       CsvTypeString = csvTypeString;
@@ -341,15 +347,57 @@ namespace Storage {
 
 
     /// <summary>
+    /// constructor for toLower (copy of another property in lower case letters)
+    /// </summary>
+    public MemberInfo(
+      string memberText,
+      string name,
+      ClassInfo classInfo,
+      string toLower,
+      bool isNullable,
+      string? comment,
+      bool needsDictionary) 
+    {
+      MemberText = memberText;
+      MemberName = name;
+      LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
+      CsvTypeString = "string";
+      MemberType = MemberTypeEnum.ToLower;
+      ClassInfo = classInfo;
+      PropertyForToLower = toLower;
+      IsNullable = isNullable;
+      IsReadOnly = false;
+      Comment = comment;
+      DefaultValue = null;
+      NeedsDictionary = needsDictionary;
+      TypeString = "string";
+
+      MaxStorageSize = 150;//reasonable limit, but could be much longer. CsvWriter checks if it writes longer strings and corrects this number for CsvReader
+      CsvWriterWrite = null;
+      ToStringFunc = null;
+      NoValue = null;
+      //isNullable and IsReadOnly will be set like for the "other" property, the original
+
+      //if (isNullable) {
+      //  NoValue = "null";
+      //} else {
+      //  CsvReaderRead = "ReadString()";
+      //  NoValue = $"\"No{name}\"";
+      //}
+    }
+
+
+    /// <summary>
     /// constructor for ParentOneChild
     /// </summary>
     public MemberInfo(
+      string memberText,
       string name,
       ClassInfo classInfo,
       string childType,
-      string? comment,
-      string? defaultValue) 
+      string? comment) 
     {
+      MemberText = memberText;
       MemberType = MemberTypeEnum.ParentOneChild;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
@@ -364,7 +412,7 @@ namespace Storage {
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
-      DefaultValue = defaultValue;
+      DefaultValue = null;
     }
 
 
@@ -372,13 +420,15 @@ namespace Storage {
     /// constructor for List
     /// </summary>
     public MemberInfo(
+      int _,
+      string memberText,
       string name, 
       ClassInfo classInfo, 
       string listType, 
       string childType, 
-      string? comment, 
-      string? defaultValue) 
+      string? comment) 
     {
+      MemberText = memberText;
       MemberType = MemberTypeEnum.ParentMultipleChildrenList;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
@@ -392,7 +442,7 @@ namespace Storage {
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
-      DefaultValue = defaultValue;
+      DefaultValue = null;
     }
 
 
@@ -400,6 +450,7 @@ namespace Storage {
     /// constructor for CollectionKeyValue, i.e. Dictionary&lt;TKey, TValue> or SortedList&lt;TKey, TValue>
     /// </summary>
     public MemberInfo(
+      string memberText,
       string name, 
       ClassInfo classInfo, 
       string memberTypeString,
@@ -407,9 +458,9 @@ namespace Storage {
       string childType,
       string childKeyPropertyName, 
       string keyTypeString, 
-      string? comment, 
-      string? defaultValue) 
+      string? comment) 
     {
+      MemberText = memberText;
       MemberType = memberType;
       MaxStorageSize = 0;//a reference is only stored in the child, not the parent
       MemberName = name;
@@ -425,23 +476,24 @@ namespace Storage {
       CsvReaderRead = null;
       CsvWriterWrite = null;
       Comment = comment;
-      DefaultValue = defaultValue;
+      DefaultValue = null;
     }
 
 
     /// <summary>
-    /// constructor for Parent
+    /// constructor for a parent property in child class
     /// </summary>
     public MemberInfo(
+      string memberText,
       string name, 
       ClassInfo classInfo, 
       string memberTypeString, 
       bool isNullable,
       bool isReadOnly,
       string? comment, 
-      string? defaultValue,
       bool isLookupOnly) 
     {
+      MemberText = memberText;
       MemberType = MemberTypeEnum.LinkToParent;
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
@@ -463,7 +515,7 @@ namespace Storage {
         ToStringFunc = ".ToShortString()";
       }
       Comment = comment;
-      DefaultValue = defaultValue;
+      DefaultValue = null;
       IsLookupOnly = isLookupOnly;
     }
 

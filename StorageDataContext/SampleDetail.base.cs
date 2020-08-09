@@ -54,7 +54,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing SampleDetail
     /// </summary>
-    internal static SampleDetail NoSampleDetail = new SampleDetail("NoText", Sample.NoSample, isStoring: false);
+    internal static SampleDetail NoSampleDetail = new SampleDetail("NoText", isStoring: false);
     #endregion
 
 
