@@ -172,13 +172,22 @@ namespace StorageDataContext  {
     private PropertyNeedsDictionaryClass(int key, CsvReader csvReader){
       Key = key;
       IdInt = csvReader.ReadInt();
+      DC.Data._PropertyNeedsDictionaryClassesByIdInt.Add(IdInt, this);
       IdString = csvReader.ReadStringNull();
+      if (IdString!=null) {
+        DC.Data._PropertyNeedsDictionaryClassesByIdString.Add(IdString, this);
+      }
       Text = csvReader.ReadString();
       TextLower = Text.ToLowerInvariant();
+      DC.Data._PropertyNeedsDictionaryClassesByTextLower.Add(TextLower, this);
       TextNullable = csvReader.ReadStringNull();
       TextNullableLower = TextNullable?.ToLowerInvariant();
+      if (TextNullableLower!=null) {
+        DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(TextNullableLower, this);
+      }
       TextReadonly = csvReader.ReadString();
       TextReadonlyLower = TextReadonly.ToLowerInvariant();
+      DC.Data._PropertyNeedsDictionaryClassesByTextReadonlyLower.Add(TextReadonlyLower, this);
       onCsvConstruct();
     }
     partial void onCsvConstruct();
@@ -213,14 +222,9 @@ namespace StorageDataContext  {
         DC.Data._PropertyNeedsDictionaryClassesByIdString.Add(IdString, this);
       }
       DC.Data._PropertyNeedsDictionaryClassesByTextLower.Add(TextLower, this);
-      DC.Data._PropertyNeedsDictionaryClassesByTextLower.Add(TextLower, this);
       if (TextNullableLower!=null) {
         DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(TextNullableLower, this);
       }
-      if (TextNullableLower!=null) {
-        DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(TextNullableLower, this);
-      }
-      DC.Data._PropertyNeedsDictionaryClassesByTextReadonlyLower.Add(TextReadonlyLower, this);
       DC.Data._PropertyNeedsDictionaryClassesByTextReadonlyLower.Add(TextReadonlyLower, this);
       onStored();
     }
@@ -287,6 +291,7 @@ namespace StorageDataContext  {
             DC.Data._PropertyNeedsDictionaryClassesByTextLower.Remove(TextLower);
         }
         Text = text;
+        TextLower = Text.ToLowerInvariant();
         if (Key>=0) {
             DC.Data._PropertyNeedsDictionaryClassesByTextLower.Add(TextLower, this);
         }
@@ -299,6 +304,7 @@ namespace StorageDataContext  {
             }
         }
         TextNullable = textNullable;
+        TextNullableLower = TextNullable?.ToLowerInvariant();
         if (Key>=0) {
             if (TextNullableLower!=null) {
               DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(TextNullableLower, this);
@@ -472,14 +478,9 @@ namespace StorageDataContext  {
         DC.Data._PropertyNeedsDictionaryClassesByIdString.Add(propertyNeedsDictionaryClass.IdString, propertyNeedsDictionaryClass);
       }
       DC.Data._PropertyNeedsDictionaryClassesByTextLower.Add(propertyNeedsDictionaryClass.TextLower, propertyNeedsDictionaryClass);
-      DC.Data._PropertyNeedsDictionaryClassesByTextLower.Add(propertyNeedsDictionaryClass.TextLower, propertyNeedsDictionaryClass);
       if (propertyNeedsDictionaryClass.TextNullableLower!=null) {
         DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(propertyNeedsDictionaryClass.TextNullableLower, propertyNeedsDictionaryClass);
       }
-      if (propertyNeedsDictionaryClass.TextNullableLower!=null) {
-        DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(propertyNeedsDictionaryClass.TextNullableLower, propertyNeedsDictionaryClass);
-      }
-      DC.Data._PropertyNeedsDictionaryClassesByTextReadonlyLower.Add(propertyNeedsDictionaryClass.TextReadonlyLower, propertyNeedsDictionaryClass);
       DC.Data._PropertyNeedsDictionaryClassesByTextReadonlyLower.Add(propertyNeedsDictionaryClass.TextReadonlyLower, propertyNeedsDictionaryClass);
       propertyNeedsDictionaryClass.onRollbackItemRemoved();
     }

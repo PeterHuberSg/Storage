@@ -14,8 +14,12 @@ namespace StorageTest {
 
     static readonly DirectoryInfo directoryInfo =  new DirectoryInfo("TestCsv");
     static readonly CsvConfig csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
+    static readonly Dictionary<int, string> expectedSamples = new Dictionary<int, string>();
     static readonly Dictionary<int, string> expectedIdInts = new Dictionary<int, string>();
     static readonly Dictionary<string, string> expectedIdStrings = new Dictionary<string, string>();
+    static readonly Dictionary<string, string> expectedTextLowers = new Dictionary<string, string>();
+    static readonly Dictionary<string, string> expectedTextNullableLowers = new Dictionary<string, string>();
+    static readonly Dictionary<string, string> expectedTextReadonlyLowers = new Dictionary<string, string>();
 
 
     [TestMethod]
@@ -32,14 +36,14 @@ namespace StorageTest {
 
         new DC(csvConfig);
         assertData();
-        var key0 = addData(1, "one", "first");
-        var key1 = addData(2, null, "second null");
+        var key0 = addData(1, "One", "FirstLower", "FirstLowerNull", "FirstReadonly");
+        var key1 = addData(2, null, "SecondLower", "SecondLowerNull", "SecondReadonly");
 
-        update(key0, 1, "one", "first");
-        update(key0, 11, "one.one", "changed");
-        update(key0, 10, null, "one.null changed");
-        update(key1, 20, null, "two.null");
-        update(key1, 21, null, "two.one");
+        update(key0, 1, "One", "FirstLower", "FirstLowerNull");
+        update(key0, 11, "One.one", "FirstLower", "FirstLowerNull Changed");
+        update(key0, 10, null, "FirstLower Changed", null);
+        update(key1, 20, null, "Two.zero", "SecondLowerNull");
+        update(key1, 21, null, "Two.one", null);
 
         delete(key0);
         delete(key1);
@@ -59,43 +63,72 @@ namespace StorageTest {
     }
 
 
-    private int addData(int idInt, string? idString, string text) {
+    private int addData(int idInt, string? idString, string text, string? textNullable, string textReadonly) {
       DC.Data.StartTransaction();
-      _ = new PropertyNeedsDictionaryClass(idInt, idString, text);
+      _ = new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly, isStoring: false);
       DC.Data.RollbackTransaction();
       assertData();
+
       DC.Data.StartTransaction();
-      var sample = new PropertyNeedsDictionaryClass(idInt, idString, text);
+      _ = new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly);
+      DC.Data.RollbackTransaction();
+      assertData();
+
+      DC.Data.StartTransaction();
+      var sample = new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly, isStoring: false);
       DC.Data.CommitTransaction();
+      DC.Data.StartTransaction();
+      sample.Store();
+      DC.Data.CommitTransaction();
+      sample = DC.Data.PropertyNeedsDictionaryClasses[sample.Key];
       var sampleString = sample.ToString();
+      expectedSamples.Add(sample.Key, sampleString);
       expectedIdInts.Add(idInt, sampleString);
       if (idString!=null) {
         expectedIdStrings.Add(idString, sampleString);
       }
+      expectedTextLowers.Add(sample.TextLower, sampleString);
+      if (sample.TextNullableLower!=null) {
+        expectedTextNullableLowers.Add(sample.TextNullableLower, sampleString);
+      }
+      expectedTextReadonlyLowers.Add(sample.TextReadonlyLower, sampleString);
       assertData();
       return sample.Key;
     }
 
 
-    private void update(int key, int idInt, string? idString, string text) {
+    private void update(int key, int idInt, string? idString, string text, string? textNullable) {
       var sample = DC.Data.PropertyNeedsDictionaryClasses[key];
       DC.Data.StartTransaction();
-      sample.Update(idInt, idString, text);
+      sample.Update(idInt, idString, text, textNullable);
       DC.Data.RollbackTransaction();
       assertData();
+
       sample = DC.Data.PropertyNeedsDictionaryClasses[key];
       expectedIdInts.Remove(sample.IdInt);
       if (sample.IdString!=null) {
         expectedIdStrings.Remove(sample.IdString);
       }
+      expectedTextLowers.Remove(sample.TextLower);
+      if (sample.TextNullableLower!=null) {
+        expectedTextNullableLowers.Remove(sample.TextNullableLower);
+      }
+      expectedTextReadonlyLowers.Remove(sample.TextReadonlyLower);
       DC.Data.StartTransaction();
-      sample.Update(idInt, idString, text);
+      sample.Update(idInt, idString, text, textNullable);
       DC.Data.CommitTransaction();
+      sample = DC.Data.PropertyNeedsDictionaryClasses[sample.Key];
       var sampleString = sample.ToString();
+      expectedSamples[sample.Key] = sampleString;
       expectedIdInts.Add(idInt, sampleString);
       if (idString!=null) {
         expectedIdStrings.Add(idString, sampleString);
       }
+      expectedTextLowers.Add(sample.TextLower, sampleString);
+      if (sample.TextNullableLower!=null) {
+        expectedTextNullableLowers.Add(sample.TextNullableLower, sampleString);
+      }
+      expectedTextReadonlyLowers.Add(sample.TextReadonlyLower, sampleString);
       assertData();
     }
 
@@ -106,14 +139,21 @@ namespace StorageTest {
       sample.Remove();
       DC.Data.RollbackTransaction();
       assertData();
+
       sample = DC.Data.PropertyNeedsDictionaryClasses[key];
-      DC.Data.StartTransaction();
-      sample.Remove();
-      DC.Data.CommitTransaction();
+      expectedSamples.Remove(key);
       expectedIdInts.Remove(sample.IdInt);
       if (sample.IdString!=null) {
         expectedIdStrings.Remove(sample.IdString);
       }
+      expectedTextLowers.Remove(sample.TextLower);
+      if (sample.TextNullableLower!=null) {
+        expectedTextNullableLowers.Remove(sample.TextNullableLower);
+      }
+      expectedTextReadonlyLowers.Remove(sample.TextReadonlyLower);
+      DC.Data.StartTransaction();
+      sample.Remove();
+      DC.Data.CommitTransaction();
       assertData();
     }
 
@@ -127,10 +167,17 @@ namespace StorageTest {
 
 
     private void assertDictionaries() {
+      Assert.AreEqual(expectedSamples.Count, DC.Data.PropertyNeedsDictionaryClasses.Count);
+      if (expectedSamples.Count>0) {
+        foreach (var expectedSample in expectedSamples) {
+          Assert.AreEqual(expectedSample.Value,
+            DC.Data.PropertyNeedsDictionaryClasses[expectedSample.Key].ToString());
+        }
+      }
       Assert.AreEqual(expectedIdInts.Count, DC.Data.PropertyNeedsDictionaryClassesByIdInt.Count);
       if (expectedIdInts.Count>0) {
         foreach (var expectedIntKVP in expectedIdInts) {
-          Assert.AreEqual(expectedIntKVP.Value, 
+          Assert.AreEqual(expectedIntKVP.Value,
             DC.Data.PropertyNeedsDictionaryClassesByIdInt[expectedIntKVP.Key].ToString());
         }
       }
@@ -139,6 +186,27 @@ namespace StorageTest {
         foreach (var expectedIntKVP in expectedIdStrings) {
           Assert.AreEqual(expectedIntKVP.Value,
             DC.Data.PropertyNeedsDictionaryClassesByIdString[expectedIntKVP.Key].ToString());
+        }
+      }
+      Assert.AreEqual(expectedTextLowers.Count, DC.Data.PropertyNeedsDictionaryClassesByTextLower.Count);
+      if (expectedTextLowers.Count>0) {
+        foreach (var expectedTextLower in expectedTextLowers) {
+          Assert.AreEqual(expectedTextLower.Value,
+            DC.Data.PropertyNeedsDictionaryClassesByTextLower[expectedTextLower.Key].ToString());
+        }
+      }
+      Assert.AreEqual(expectedTextNullableLowers.Count, DC.Data.PropertyNeedsDictionaryClassesByTextNullableLower.Count);
+      if (expectedTextNullableLowers.Count>0) {
+        foreach (var expectedTextNullableLower in expectedTextNullableLowers) {
+          Assert.AreEqual(expectedTextNullableLower.Value,
+            DC.Data.PropertyNeedsDictionaryClassesByTextNullableLower[expectedTextNullableLower.Key].ToString());
+        }
+      }
+      Assert.AreEqual(expectedTextReadonlyLowers.Count, DC.Data.PropertyNeedsDictionaryClassesByTextReadonlyLower.Count);
+      if (expectedTextReadonlyLowers.Count>0) {
+        foreach (var expectedTextReadonlyLower in expectedTextReadonlyLowers) {
+          Assert.AreEqual(expectedTextReadonlyLower.Value,
+            DC.Data.PropertyNeedsDictionaryClassesByTextReadonlyLower[expectedTextReadonlyLower.Key].ToString());
         }
       }
     }

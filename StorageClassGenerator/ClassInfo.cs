@@ -684,7 +684,7 @@ namespace Storage {
       sw.WriteLine();
       writePublicConstructor(sw, context, lines);
       writeCloningConsructor(sw);
-      writeCsvConstructor(sw, context, lines);
+      writeCsvConstructor(sw, context);
       writeVerify(sw, lines);
       sw.WriteLine("    #endregion");
       sw.WriteLine();
@@ -781,7 +781,7 @@ namespace Storage {
     }
 
 
-    private void writeCsvConstructor(StreamWriter sw, string context, List<string> lines) {
+    private void writeCsvConstructor(StreamWriter sw, string context) {
       sw.WriteLine("    /// <summary>");
       sw.WriteLine($"    /// Constructor for {ClassName} read from CSV file");
       sw.WriteLine("    /// </summary>");
@@ -828,9 +828,9 @@ namespace Storage {
             sw.WriteLine($"      {mi.MemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
           } else {
             sw.WriteLine($"      {mi.MemberName} = csvReader.{mi.CsvReaderRead};");
+            writeToLowerCopyStatement(sw, mi);
           }
-          writeToLowerCopyStatement(sw, mi);
-          //writeNeedsDictionaryAddStatement() does not get called here, only once instance gets stored
+          writeNeedsDictionaryAddStatement(sw, mi, context);
         }
       }
       //if the parent is a Dictionary or SortedList, the key property must be assigned first (i.e. in the for loop 
@@ -984,6 +984,8 @@ namespace Storage {
       sw.WriteLine();
       sw.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
       foreach (var mi in Members.Values) {
+        if (mi.MemberType==MemberTypeEnum.ToLower) continue;
+
         if (mi.MemberType==MemberTypeEnum.LinkToParent) {
           if (!mi.IsLookupOnly) {
             if (mi.IsNullable) {
@@ -994,7 +996,7 @@ namespace Storage {
           }
         } else if (mi.MemberType<MemberTypeEnum.LinkToParent) {
           //enum, toLower or simple data type
-          //toLower should already be copied here from source property y constructor or update
+          //toLower should already be copied here from source property by constructor or update
           writeNeedsDictionaryAddStatement(sw, mi, context);
         }
       }
@@ -1153,9 +1155,7 @@ namespace Storage {
             sw.WriteLine($"      if ({mi.MemberName}!={mi.LowerMemberName}) {{");
             writeNeedsDictionaryRemoveStatement(sw, mi, context, isUpdate: true);
             sw.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
-            if (mi.ToLowerTarget!=null) {
-              writeToLowerCopyStatement(sw, mi.ToLowerTarget, "  ");
-            }
+            writeToLowerCopyStatement(sw, mi, "  ");
             writeNeedsDictionaryAddStatement(sw, mi, context, isUpdate: true);
           }
           sw.WriteLine("        isChangeDetected = true;");
@@ -1636,6 +1636,8 @@ namespace Storage {
       sw.WriteLine("    internal static void RollbackItemRemove(IStorageItem item) {");
       sw.WriteLine($"      var {LowerClassName} = ({ClassName}) item;");
       foreach (var mi in Members.Values) {
+        if (mi.MemberType==MemberTypeEnum.ToLower) continue;
+
         if (mi.MemberType==MemberTypeEnum.LinkToParent) {
           if (!mi.IsLookupOnly) {
             if (mi.IsNullable) {
