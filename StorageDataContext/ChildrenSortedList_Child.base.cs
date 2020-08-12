@@ -68,7 +68,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing ChildrenSortedList_Child
     /// </summary>
-    internal static ChildrenSortedList_Child NoChildrenSortedList_Child = new ChildrenSortedList_Child(DateTime.MinValue.Date, "NoText", isStoring: false);
+    internal static ChildrenSortedList_Child NoChildrenSortedList_Child = new ChildrenSortedList_Child(DateTime.MinValue.Date, "NoText", ChildrenSortedList_Parent.NoChildrenSortedList_Parent, null, isStoring: false);
     #endregion
 
 
@@ -373,6 +373,8 @@ namespace StorageDataContext  {
         throw new Exception($"ChildrenSortedList_Child.Remove(): ChildrenSortedList_Child 'Class ChildrenSortedList_Child' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.ChildrenSortedList_Children.Remove(Key);
     }
     partial void onRemove();

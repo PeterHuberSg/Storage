@@ -172,7 +172,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing Sample
     /// </summary>
-    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, null, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, DateTime.MinValue, DateTime.MinValue, null, isStoring: false);
+    internal static Sample NoSample = new Sample("NoText", false, int.MinValue, Decimal.MinValue, Decimal.MinValue, null, Decimal.MinValue, 0, DateTime.MinValue.Date, TimeSpan.MinValue, DateTime.MinValue, DateTime.MinValue, DateTime.MinValue, null, null, null, isStoring: false);
     #endregion
 
 
@@ -724,6 +724,8 @@ namespace StorageDataContext  {
         throw new Exception($"Sample.Remove(): Sample 'Class Sample' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.SampleX.Remove(Key);
     }
     partial void onRemove();

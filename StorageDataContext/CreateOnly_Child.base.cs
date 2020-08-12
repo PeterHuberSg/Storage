@@ -62,7 +62,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing CreateOnly_Child
     /// </summary>
-    internal static CreateOnly_Child NoCreateOnly_Child = new CreateOnly_Child("NoText", isStoring: false);
+    internal static CreateOnly_Child NoCreateOnly_Child = new CreateOnly_Child("NoText", CreateOnly_Parent.NoCreateOnly_Parent, null, isStoring: false);
     #endregion
 
 

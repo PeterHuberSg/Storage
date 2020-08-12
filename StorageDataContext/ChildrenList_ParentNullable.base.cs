@@ -233,6 +233,8 @@ namespace StorageDataContext  {
         throw new Exception($"ChildrenList_ParentNullable.Remove(): ChildrenList_ParentNullable 'Class ChildrenList_ParentNullable' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.ChildrenList_ParentNullables.Remove(Key);
     }
     partial void onRemove();

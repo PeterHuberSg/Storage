@@ -67,7 +67,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing CreateOnlyParentChangeableChild_Child
     /// </summary>
-    internal static CreateOnlyParentChangeableChild_Child NoCreateOnlyParentChangeableChild_Child = new CreateOnlyParentChangeableChild_Child("NoReadonlyText", "NoUpdatableText", isStoring: false);
+    internal static CreateOnlyParentChangeableChild_Child NoCreateOnlyParentChangeableChild_Child = new CreateOnlyParentChangeableChild_Child("NoReadonlyText", "NoUpdatableText", CreateOnlyParentChangeableChild_Parent.NoCreateOnlyParentChangeableChild_Parent, null, isStoring: false);
     #endregion
 
 
@@ -367,6 +367,8 @@ namespace StorageDataContext  {
         throw new Exception($"CreateOnlyParentChangeableChild_Child.Remove(): CreateOnlyParentChangeableChild_Child 'Class CreateOnlyParentChangeableChild_Child' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.CreateOnlyParentChangeableChild_Children.Remove(Key);
     }
     partial void onRemove();

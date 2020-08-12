@@ -80,7 +80,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing ChildrenList_Child
     /// </summary>
-    internal static ChildrenList_Child NoChildrenList_Child = new ChildrenList_Child("NoText", isStoring: false);
+    internal static ChildrenList_Child NoChildrenList_Child = new ChildrenList_Child("NoText", ChildrenList_Parent.NoChildrenList_Parent, null, ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent, null, isStoring: false);
     #endregion
 
 
@@ -514,6 +514,8 @@ namespace StorageDataContext  {
         throw new Exception($"ChildrenList_Child.Remove(): ChildrenList_Child 'Class ChildrenList_Child' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.ChildrenList_Children.Remove(Key);
     }
     partial void onRemove();

@@ -54,7 +54,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing SampleDetail
     /// </summary>
-    internal static SampleDetail NoSampleDetail = new SampleDetail("NoText", isStoring: false);
+    internal static SampleDetail NoSampleDetail = new SampleDetail("NoText", Sample.NoSample, isStoring: false);
     #endregion
 
 
@@ -250,6 +250,8 @@ namespace StorageDataContext  {
         throw new Exception($"SampleDetail.Remove(): SampleDetail 'Class SampleDetail' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.SampleDetails.Remove(Key);
     }
     partial void onRemove();

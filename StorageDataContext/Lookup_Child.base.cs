@@ -63,7 +63,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// None existing Lookup_Child
     /// </summary>
-    internal static Lookup_Child NoLookup_Child = new Lookup_Child("NoText", isStoring: false);
+    internal static Lookup_Child NoLookup_Child = new Lookup_Child("NoText", Lookup_Parent.NoLookup_Parent, null, isStoring: false);
     #endregion
 
 
@@ -303,6 +303,8 @@ namespace StorageDataContext  {
         throw new Exception($"Lookup_Child.Remove(): Lookup_Child 'Class Lookup_Child' is not stored in DC.Data, key is {Key}.");
       }
       onRemove();
+      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
+      //called during the execution of the following line.
       DC.Data.Lookup_Children.Remove(Key);
     }
     partial void onRemove();
