@@ -51,32 +51,9 @@ namespace Storage {
       new StorageClassGenerator(
         sourceDirectoryString: sourceDirectoryPath, //directory from where the .cs files get read.
         targetDirectoryString: targetDirectoryPath, //directory where the new .cs files get written.
-        context: "DC"); //>Name of Context class, which gives static access to all data stored.
-
-      //#region normally not needed code ----------------------------------------------------------------
-      ////normally, there is no sampleDirectory. We have it here for the unit tests, so they still work, 
-      ////while the files in targetDirectory have already been changed, but might not be correct yet.
-      //var sampleDirectoryPath = storageSolutionDirectory.FullName + @"\StorageSample";
-      //Console.WriteLine($"Press 'y' 'enter' to copy the files from {targetDirectoryPath} to {sampleDirectoryPath}.");
-      //if (Console.ReadLine()=="y") {
-      //  var sampleDirectory = new DirectoryInfo(sampleDirectoryPath);
-      //  int filesDeletedCount = 0;
-      //  foreach (FileInfo file in sampleDirectory.GetFiles()) {
-      //    if (file.Extension.ToLowerInvariant()==".cs" && !file.Name.StartsWith('_')) {
-      //      file.Delete();
-      //      filesDeletedCount++;
-      //    }
-      //  }
-      //  int filesCopiedCount = 0;
-      //  foreach (FileInfo file in targetDirectory.GetFiles()) {
-      //    if (file.Extension.ToLowerInvariant()==".cs") {
-      //      file.CopyTo(sampleDirectoryPath + @"\" + file.Name);
-      //      filesCopiedCount++;
-      //    }
-      //  }
-      //  Console.WriteLine($"{sampleDirectoryPath}: {filesDeletedCount} files deleted, {filesCopiedCount} files copied");
-      //}
-      //#endregion -------------------------------------------------------------------------------------
+        context: "DC", //class name of data context, which gives static access to all data stored.
+        isFullyCommented: false); //If true (default), the created .cs files (not .base.cs files) have all code lines 
+                                  //commented out. False is only used here for testing.
     }
   }
 }

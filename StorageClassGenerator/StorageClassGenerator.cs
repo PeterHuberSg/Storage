@@ -57,7 +57,14 @@ namespace Storage {
     /// <param name="sourceDirectoryString">Source directory from where the .cs files get read.</param>
     /// <param name="targetDirectoryString">Target directory where the new .cs files get written.</param>
     /// <param name="context">Name of Context class, which gives static access to all data stored.</param>
-    public StorageClassGenerator(string sourceDirectoryString, string targetDirectoryString, string context) {
+    /// <param name="isFullyCommented">If true (default), the created .cs files (not .base.cs files) have all code lines 
+    /// commented out.</param>
+    public StorageClassGenerator(
+      string sourceDirectoryString, 
+      string targetDirectoryString, 
+      string context, 
+      bool isFullyCommented = true) 
+    {
       try {
         Console.WriteLine("Storage Class Generator");
         Console.WriteLine("**********************");
@@ -67,7 +74,7 @@ namespace Storage {
         DirectoryInfo targetDirectory= findDirectory(targetDirectoryString, "target directory");
         Console.WriteLine();
 
-        var compiler = new Compiler();
+        var compiler = new Compiler(isFullyCommented);
         foreach (var file in sourceDirectory.GetFiles("*.cs")) {
           if (isModelFile(file, out NamespaceDeclarationSyntax? namespaceDeclaration)) {
             Console.WriteLine($"Parse {file.Name}");

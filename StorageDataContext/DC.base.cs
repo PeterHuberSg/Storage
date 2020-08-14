@@ -196,31 +196,31 @@ namespace StorageDataContext  {
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by IdInt
     /// </summary>
-    public IDictionary<int, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdInt => _PropertyNeedsDictionaryClassesByIdInt;
+    public IReadOnlyDictionary<int, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdInt => _PropertyNeedsDictionaryClassesByIdInt;
     internal Dictionary<int, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByIdInt { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by IdString
     /// </summary>
-    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdString => _PropertyNeedsDictionaryClassesByIdString;
+    public IReadOnlyDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByIdString => _PropertyNeedsDictionaryClassesByIdString;
     internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByIdString { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by TextLower
     /// </summary>
-    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextLower => _PropertyNeedsDictionaryClassesByTextLower;
+    public IReadOnlyDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextLower => _PropertyNeedsDictionaryClassesByTextLower;
     internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByTextLower { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by TextNullableLower
     /// </summary>
-    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextNullableLower => _PropertyNeedsDictionaryClassesByTextNullableLower;
+    public IReadOnlyDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextNullableLower => _PropertyNeedsDictionaryClassesByTextNullableLower;
     internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByTextNullableLower { get; private set; }
 
     /// <summary>
     /// Directory of all PropertyNeedsDictionaryClasses by TextReadonlyLower
     /// </summary>
-    public IDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextReadonlyLower => _PropertyNeedsDictionaryClassesByTextReadonlyLower;
+    public IReadOnlyDictionary<string, PropertyNeedsDictionaryClass> PropertyNeedsDictionaryClassesByTextReadonlyLower => _PropertyNeedsDictionaryClassesByTextReadonlyLower;
     internal Dictionary<string, PropertyNeedsDictionaryClass> _PropertyNeedsDictionaryClassesByTextReadonlyLower { get; private set; }
 
     /// <summary>

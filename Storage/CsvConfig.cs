@@ -110,11 +110,17 @@ namespace Storage {
     /// Constructor
     /// </summary>
     /// <param name="directoryPath">Directory where the CSV files get stored</param>
+    /// <param name="backupPath">Directory where the content of directoryPath should be backed up to. Null means no backup.</param>
+    /// <param name="backupPeriodicity">Backup periodicity in days.</param>
+    /// <param name="backupCopies">Number of backup copies to keep before the oldest gets deleted</param>
     /// <param name="delimiter">Delimiter character used in CSV file to separate fields</param>
     /// <param name="encoding">Encoding used to read and write CSV Files</param>
     /// <param name="bufferSize">BufferSize of FileStream. Default is 32k Bytes, any smaller Buffer is slower.</param>
     /// <param name="reportException">The timer throws exception on a ThreadPool thread. reportException() needs to 
     /// pass the exception to the main thread of the application.</param>
+    /// <param name="lineCharAdd">Character used at the start of a line in a CSV file to mark adding a new item.</param>
+    /// <param name="lineCharUpdate">Character used at the start of a line in a CSV file to mark an updated item.</param>
+    /// <param name="lineCharDelete">Character used at the start of a line in a CSV file to mark a deleted item.</param>
     public CsvConfig(
       string directoryPath,
       string? backupPath = null,

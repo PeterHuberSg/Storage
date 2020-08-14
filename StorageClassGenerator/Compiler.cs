@@ -34,17 +34,22 @@ namespace Storage {
   /// </summary>
   public class Compiler {
 
-    //public const bool IsFullyCommented = true; //set false to create Xxx.cs files where executable code is not commented out
-    public const bool IsFullyCommented = false; 
+    //Step 1 Parse(): Find all classes and their properties in the Model
+    //Step 2 AnalyzeDependencies()(): Find which class (=parents) has collections of other classes (=children). Parents
+    //       must be created (read from files) before their children. Also ensure that every parent child relationship
+    //       is correctly defined (no orphans).
+
+    public readonly bool IsFullyCommented; 
 
     readonly Dictionary<string, ClassInfo> classes;
     readonly List<ClassInfo> parentChildTree;
     readonly Dictionary<string, EnumInfo> enums;
     public IReadOnlyDictionary<string, EnumInfo> Enums { get { return enums; } }
-    bool isUsingDictionary = false;
+    bool isUsingDictionary = false; // is statement 'using System.Collections.Generic' needed in data context source file ? 
 
 
-    public Compiler() {
+    public Compiler(bool isFullyCommented = true) {
+      IsFullyCommented = isFullyCommented;
       classes = new Dictionary<string, ClassInfo>();
       parentChildTree = new List<ClassInfo>();
       enums = new Dictionary<string, EnumInfo>();
@@ -633,7 +638,7 @@ namespace Storage {
             sw.WriteLine("    /// <summary>");
             sw.WriteLine($"    /// Directory of all {classInfo.PluralName} by {mi.MemberName}");
             sw.WriteLine("    /// </summary>");
-            sw.WriteLine($"    public IDictionary<{mi.TypeString.Replace("?", "")}, {classInfo.ClassName}> " +
+            sw.WriteLine($"    public IReadOnlyDictionary<{mi.TypeString.Replace("?", "")}, {classInfo.ClassName}> " +
               $"{classInfo.PluralName}By{mi.MemberName} => _{classInfo.PluralName}By{mi.MemberName};");
             sw.WriteLine($"    internal Dictionary<{mi.TypeString.Replace("?", "")}, {classInfo.ClassName}> " +
               $"_{classInfo.PluralName}By{mi.MemberName} {{ get; private set; }}");
