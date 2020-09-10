@@ -29,7 +29,16 @@ namespace StorageDataContext  {
     /// Unique identifier for ChildrenList_Child. Gets set once ChildrenList_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem childrenList_Child, int key) {
+    internal static void SetKey(IStorageItem childrenList_Child, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release ChildrenList_Child key @{childrenList_Child.Key} #{childrenList_Child.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store ChildrenList_Child key @{key} #{childrenList_Child.GetHashCode()}");
+        }
+      }
+#endif
       ((ChildrenList_Child)childrenList_Child).Key = key;
     }
 
@@ -98,11 +107,7 @@ namespace StorageDataContext  {
     //      ------------
 
     /// <summary>
-    /// ChildrenList_Child Constructor. If isStoring is true, adds ChildrenList_Child to DC.Data.ChildrenList_Children, 
-    /// adds ChildrenList_Child to childrenList_Parent.ChildrenList_Children, 
-    /// if there is a ParentNullable adds ChildrenList_Child to childrenList_ParentNullable.ChildrenList_Children, 
-    /// adds ChildrenList_Child to childrenList_CreateOnlyParent.ChildrenList_Children
-    /// and if there is a CreateOnlyParentNullable adds ChildrenList_Child to childrenList_CreateOnlyParentNullable.ChildrenList_Children.
+    /// ChildrenList_Child Constructor. If isStoring is true, adds ChildrenList_Child to DC.Data.ChildrenList_Children.
     /// </summary>
     public ChildrenList_Child(
       string text, 
@@ -118,7 +123,21 @@ namespace StorageDataContext  {
       ParentNullable = parentNullable;
       CreateOnlyParent = createOnlyParent;
       CreateOnlyParentNullable = createOnlyParentNullable;
+#if DEBUG
+      DC.Trace?.Invoke($"new ChildrenList_Child: {ToTraceString()}");
+#endif
+      Parent.AddToChildrenList_Children(this);
+      if (ParentNullable!=null) {
+        ParentNullable.AddToChildrenList_Children(this);
+      }
+      CreateOnlyParent.AddToChildrenList_Children(this);
+      if (CreateOnlyParentNullable!=null) {
+        CreateOnlyParentNullable.AddToChildrenList_Children(this);
+      }
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(15,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -225,34 +244,35 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds ChildrenList_Child to DC.Data.ChildrenList_Children, ChildrenList_Parent, ChildrenList_ParentNullable, ChildrenList_CreateOnlyParent and ChildrenList_CreateOnlyParentNullable. 
+    /// Adds ChildrenList_Child to DC.Data.ChildrenList_Children.<br/>
+    /// Throws an Exception when ChildrenList_Child is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ChildrenList_Child cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ChildrenList_Child cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
-      if (Parent.Key<0) {
-        throw new Exception($"ChildrenList_Child cannot be stored in DC.Data, Parent is missing or not stored yet." + Environment.NewLine + ToString());
-      }
-      if (ParentNullable!=null && ParentNullable.Key<0) {
-        throw new Exception($"ChildrenList_Child cannot be stored in DC.Data, ParentNullable is not stored yet." + Environment.NewLine + ToString());
-      }
-      if (CreateOnlyParent.Key<0) {
-        throw new Exception($"ChildrenList_Child cannot be stored in DC.Data, CreateOnlyParent is missing or not stored yet." + Environment.NewLine + ToString());
-      }
-      if (CreateOnlyParentNullable!=null && CreateOnlyParentNullable.Key<0) {
-        throw new Exception($"ChildrenList_Child cannot be stored in DC.Data, CreateOnlyParentNullable is not stored yet." + Environment.NewLine + ToString());
-      }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
+      if (Parent.Key<0) {
+        throw new Exception($"Cannot store child ChildrenList_Child '{this}'.Parent to ChildrenList_Parent '{Parent}' because parent is not stored yet.");
+      }
+      if (ParentNullable?.Key<0) {
+        throw new Exception($"Cannot store child ChildrenList_Child '{this}'.ParentNullable to ChildrenList_ParentNullable '{ParentNullable}' because parent is not stored yet.");
+      }
+      if (CreateOnlyParent.Key<0) {
+        throw new Exception($"Cannot store child ChildrenList_Child '{this}'.CreateOnlyParent to ChildrenList_CreateOnlyParent '{CreateOnlyParent}' because parent is not stored yet.");
+      }
+      if (CreateOnlyParentNullable?.Key<0) {
+        throw new Exception($"Cannot store child ChildrenList_Child '{this}'.CreateOnlyParentNullable to ChildrenList_CreateOnlyParentNullable '{CreateOnlyParentNullable}' because parent is not stored yet.");
+      }
       DC.Data.ChildrenList_Children.Add(this);
-      Parent.AddToChildrenList_Children(this);
-      ParentNullable?.AddToChildrenList_Children(this);
-      CreateOnlyParent.AddToChildrenList_Children(this);
-      CreateOnlyParentNullable?.AddToChildrenList_Children(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored ChildrenList_Child #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -304,24 +324,41 @@ namespace StorageDataContext  {
       ChildrenList_CreateOnlyParent createOnlyParent, 
       ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable)
     {
+      if (Key>=0){
+        if (parent.Key<0) {
+          throw new Exception($"ChildrenList_Child.Update(): It is illegal to add stored ChildrenList_Child '{this}'" + Environment.NewLine + 
+            $"to Parent '{parent}', which is not stored.");
+        }
+        if (parentNullable?.Key<0) {
+          throw new Exception($"ChildrenList_Child.Update(): It is illegal to add stored ChildrenList_Child '{this}'" + Environment.NewLine + 
+            $"to ParentNullable '{parentNullable}', which is not stored.");
+        }
+        if (createOnlyParent.Key<0) {
+          throw new Exception($"ChildrenList_Child.Update(): It is illegal to add stored ChildrenList_Child '{this}'" + Environment.NewLine + 
+            $"to CreateOnlyParent '{createOnlyParent}', which is not stored.");
+        }
+        if (createOnlyParentNullable?.Key<0) {
+          throw new Exception($"ChildrenList_Child.Update(): It is illegal to add stored ChildrenList_Child '{this}'" + Environment.NewLine + 
+            $"to CreateOnlyParentNullable '{createOnlyParentNullable}', which is not stored.");
+        }
+      }
       var clone = new ChildrenList_Child(this);
       var isCancelled = false;
       onUpdating(text, parent, parentNullable, createOnlyParent, createOnlyParentNullable, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating ChildrenList_Child: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
         isChangeDetected = true;
       }
       if (Parent!=parent) {
-        if (Key>=0) {
-          Parent.RemoveFromChildrenList_Children(this);
-        }
+        Parent.RemoveFromChildrenList_Children(this);
         Parent = parent;
-        if (Key>=0) {
-          Parent.AddToChildrenList_Children(this);
-        }
+        Parent.AddToChildrenList_Children(this);
         isChangeDetected = true;
       }
       if (ParentNullable is null) {
@@ -329,39 +366,27 @@ namespace StorageDataContext  {
           //nothing to do
         } else {
           ParentNullable = parentNullable;
-          if (Key>=0) {
-            ParentNullable.AddToChildrenList_Children(this);
-          }
+          ParentNullable.AddToChildrenList_Children(this);
           isChangeDetected = true;
         }
       } else {
         if (parentNullable is null) {
-          if (Key>=0) {
-            ParentNullable.RemoveFromChildrenList_Children(this);
-          }
+          ParentNullable.RemoveFromChildrenList_Children(this);
           ParentNullable = null;
           isChangeDetected = true;
         } else {
           if (ParentNullable!=parentNullable) {
-            if (Key>=0) {
-              ParentNullable.RemoveFromChildrenList_Children(this);
-            }
+            ParentNullable.RemoveFromChildrenList_Children(this);
             ParentNullable = parentNullable;
-            if (Key>=0) {
-              ParentNullable.AddToChildrenList_Children(this);
-            }
+            ParentNullable.AddToChildrenList_Children(this);
             isChangeDetected = true;
           }
         }
       }
       if (CreateOnlyParent!=createOnlyParent) {
-        if (Key>=0) {
-          CreateOnlyParent.RemoveFromChildrenList_Children(this);
-        }
+        CreateOnlyParent.RemoveFromChildrenList_Children(this);
         CreateOnlyParent = createOnlyParent;
-        if (Key>=0) {
-          CreateOnlyParent.AddToChildrenList_Children(this);
-        }
+        CreateOnlyParent.AddToChildrenList_Children(this);
         isChangeDetected = true;
       }
       if (CreateOnlyParentNullable is null) {
@@ -369,27 +394,19 @@ namespace StorageDataContext  {
           //nothing to do
         } else {
           CreateOnlyParentNullable = createOnlyParentNullable;
-          if (Key>=0) {
-            CreateOnlyParentNullable.AddToChildrenList_Children(this);
-          }
+          CreateOnlyParentNullable.AddToChildrenList_Children(this);
           isChangeDetected = true;
         }
       } else {
         if (createOnlyParentNullable is null) {
-          if (Key>=0) {
-            CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
-          }
+          CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
           CreateOnlyParentNullable = null;
           isChangeDetected = true;
         } else {
           if (CreateOnlyParentNullable!=createOnlyParentNullable) {
-            if (Key>=0) {
-              CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
-            }
+            CreateOnlyParentNullable.RemoveFromChildrenList_Children(this);
             CreateOnlyParentNullable = createOnlyParentNullable;
-            if (Key>=0) {
-              CreateOnlyParentNullable.AddToChildrenList_Children(this);
-            }
+            CreateOnlyParentNullable.AddToChildrenList_Children(this);
             isChangeDetected = true;
           }
         }
@@ -398,9 +415,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.ChildrenList_Children.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(15, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated ChildrenList_Child: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(
       string text, 
@@ -503,31 +525,29 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Removes ChildrenList_Child from DC.Data.ChildrenList_Children, 
-    /// disconnects ChildrenList_Child from ChildrenList_Parent because of Parent, 
-    /// disconnects ChildrenList_Child from ChildrenList_ParentNullable because of ParentNullable, 
-    /// disconnects ChildrenList_Child from ChildrenList_CreateOnlyParent because of CreateOnlyParent and 
-    /// disconnects ChildrenList_Child from ChildrenList_CreateOnlyParentNullable because of CreateOnlyParentNullable.
+    /// Removes ChildrenList_Child from DC.Data.ChildrenList_Children.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"ChildrenList_Child.Remove(): ChildrenList_Child 'Class ChildrenList_Child' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"ChildrenList_Child.Release(): ChildrenList_Child '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.ChildrenList_Children.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released ChildrenList_Child @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects ChildrenList_Child from ChildrenList_Parent because of Parent, 
-    /// disconnects ChildrenList_Child from ChildrenList_ParentNullable because of ParentNullable, 
-    /// disconnects ChildrenList_Child from ChildrenList_CreateOnlyParent because of CreateOnlyParent and 
-    /// disconnects ChildrenList_Child from ChildrenList_CreateOnlyParentNullable because of CreateOnlyParentNullable.
+    /// Removes ChildrenList_Child from parents as part of a transaction rollback of the new() statement.
     /// </summary>
-    internal static void Disconnect(ChildrenList_Child childrenList_Child) {
+    internal static void RollbackItemNew(IStorageItem item) {
+      var childrenList_Child = (ChildrenList_Child) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new ChildrenList_Child(): {childrenList_Child.ToTraceString()}");
+#endif
       if (childrenList_Child.Parent!=ChildrenList_Parent.NoChildrenList_Parent) {
         childrenList_Child.Parent.RemoveFromChildrenList_Children(childrenList_Child);
       }
@@ -540,50 +560,19 @@ namespace StorageDataContext  {
       if (childrenList_Child.CreateOnlyParentNullable!=null && childrenList_Child.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
         childrenList_Child.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_Child);
       }
+      childrenList_Child.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes childrenList_ParentNullable from ParentNullable
-    /// </summary>
-    internal void RemoveParentNullable(ChildrenList_ParentNullable childrenList_ParentNullable) {
-      if (childrenList_ParentNullable!=ParentNullable) throw new Exception();
-
-      var clone = new ChildrenList_Child(this);
-      ParentNullable = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes childrenList_CreateOnlyParentNullable from CreateOnlyParentNullable
-    /// </summary>
-    internal void RemoveCreateOnlyParentNullable(ChildrenList_CreateOnlyParentNullable childrenList_CreateOnlyParentNullable) {
-      if (childrenList_CreateOnlyParentNullable!=CreateOnlyParentNullable) throw new Exception();
-
-      var clone = new ChildrenList_Child(this);
-      CreateOnlyParentNullable = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes ChildrenList_Child from possible parents as part of a transaction rollback.
+    /// Releases ChildrenList_Child from DC.Data.ChildrenList_Children as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var childrenList_Child = (ChildrenList_Child) item;
-      if (childrenList_Child.Parent!=ChildrenList_Parent.NoChildrenList_Parent) {
-        childrenList_Child.Parent.RemoveFromChildrenList_Children(childrenList_Child);
-      }
-      if (childrenList_Child.ParentNullable!=null && childrenList_Child.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
-        childrenList_Child.ParentNullable.RemoveFromChildrenList_Children(childrenList_Child);
-      }
-      if (childrenList_Child.CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
-        childrenList_Child.CreateOnlyParent.RemoveFromChildrenList_Children(childrenList_Child);
-      }
-      if (childrenList_Child.CreateOnlyParentNullable!=null && childrenList_Child.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
-        childrenList_Child.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_Child);
-      }
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenList_Child.Store(): {childrenList_Child.ToTraceString()}");
+#endif
       childrenList_Child.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -592,83 +581,109 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the ChildrenList_Child item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var childrenList_ChildOld = (ChildrenList_Child) oldItem;
-      var childrenList_ChildNew = (ChildrenList_Child) newItem;
-      childrenList_ChildNew.Text = childrenList_ChildOld.Text;
-      if (childrenList_ChildNew.Parent!=childrenList_ChildOld.Parent) {
-        if (childrenList_ChildNew.Parent!=ChildrenList_Parent.NoChildrenList_Parent) {
-          childrenList_ChildNew.Parent.RemoveFromChildrenList_Children(childrenList_ChildNew);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (ChildrenList_Child) oldStorageItem;
+      var newItem = (ChildrenList_Child) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back ChildrenList_Child.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      if (newItem.Parent!=oldItem.Parent) {
+        if (newItem.Parent!=ChildrenList_Parent.NoChildrenList_Parent) {
+            newItem.Parent.RemoveFromChildrenList_Children(newItem);
         }
-        childrenList_ChildNew.Parent = childrenList_ChildOld.Parent;
-        childrenList_ChildNew.Parent.AddToChildrenList_Children(childrenList_ChildNew);
+        newItem.Parent = oldItem.Parent;
+        newItem.Parent.AddToChildrenList_Children(newItem);
       }
-      if (childrenList_ChildNew.ParentNullable is null) {
-        if (childrenList_ChildOld.ParentNullable is null) {
+      if (newItem.ParentNullable is null) {
+        if (oldItem.ParentNullable is null) {
           //nothing to do
         } else {
-          childrenList_ChildNew.ParentNullable = childrenList_ChildOld.ParentNullable;
-          childrenList_ChildNew.ParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+          newItem.ParentNullable = oldItem.ParentNullable;
+          newItem.ParentNullable.AddToChildrenList_Children(newItem);
         }
       } else {
-        if (childrenList_ChildOld.ParentNullable is null) {
-          if (childrenList_ChildNew.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
-            childrenList_ChildNew.ParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+        if (oldItem.ParentNullable is null) {
+          if (newItem.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
+            newItem.ParentNullable.RemoveFromChildrenList_Children(newItem);
           }
-          childrenList_ChildNew.ParentNullable = null;
+          newItem.ParentNullable = null;
         } else {
-          if (childrenList_ChildNew.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
-            childrenList_ChildNew.ParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+          if (oldItem.ParentNullable!=newItem.ParentNullable) {
+          if (newItem.ParentNullable!=ChildrenList_ParentNullable.NoChildrenList_ParentNullable) {
+            newItem.ParentNullable.RemoveFromChildrenList_Children(newItem);
           }
-          childrenList_ChildNew.ParentNullable = childrenList_ChildOld.ParentNullable;
-          childrenList_ChildNew.ParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+          newItem.ParentNullable = oldItem.ParentNullable;
+          newItem.ParentNullable.AddToChildrenList_Children(newItem);
+          }
         }
       }
-      if (childrenList_ChildNew.CreateOnlyParent!=childrenList_ChildOld.CreateOnlyParent) {
-        if (childrenList_ChildNew.CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
-          childrenList_ChildNew.CreateOnlyParent.RemoveFromChildrenList_Children(childrenList_ChildNew);
+      if (newItem.CreateOnlyParent!=oldItem.CreateOnlyParent) {
+        if (newItem.CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
+            newItem.CreateOnlyParent.RemoveFromChildrenList_Children(newItem);
         }
-        childrenList_ChildNew.CreateOnlyParent = childrenList_ChildOld.CreateOnlyParent;
-        childrenList_ChildNew.CreateOnlyParent.AddToChildrenList_Children(childrenList_ChildNew);
+        newItem.CreateOnlyParent = oldItem.CreateOnlyParent;
+        newItem.CreateOnlyParent.AddToChildrenList_Children(newItem);
       }
-      if (childrenList_ChildNew.CreateOnlyParentNullable is null) {
-        if (childrenList_ChildOld.CreateOnlyParentNullable is null) {
+      if (newItem.CreateOnlyParentNullable is null) {
+        if (oldItem.CreateOnlyParentNullable is null) {
           //nothing to do
         } else {
-          childrenList_ChildNew.CreateOnlyParentNullable = childrenList_ChildOld.CreateOnlyParentNullable;
-          childrenList_ChildNew.CreateOnlyParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+          newItem.CreateOnlyParentNullable = oldItem.CreateOnlyParentNullable;
+          newItem.CreateOnlyParentNullable.AddToChildrenList_Children(newItem);
         }
       } else {
-        if (childrenList_ChildOld.CreateOnlyParentNullable is null) {
-          if (childrenList_ChildNew.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
-            childrenList_ChildNew.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+        if (oldItem.CreateOnlyParentNullable is null) {
+          if (newItem.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
+            newItem.CreateOnlyParentNullable.RemoveFromChildrenList_Children(newItem);
           }
-          childrenList_ChildNew.CreateOnlyParentNullable = null;
+          newItem.CreateOnlyParentNullable = null;
         } else {
-          if (childrenList_ChildNew.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
-            childrenList_ChildNew.CreateOnlyParentNullable.RemoveFromChildrenList_Children(childrenList_ChildNew);
+          if (oldItem.CreateOnlyParentNullable!=newItem.CreateOnlyParentNullable) {
+          if (newItem.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
+            newItem.CreateOnlyParentNullable.RemoveFromChildrenList_Children(newItem);
           }
-          childrenList_ChildNew.CreateOnlyParentNullable = childrenList_ChildOld.CreateOnlyParentNullable;
-          childrenList_ChildNew.CreateOnlyParentNullable.AddToChildrenList_Children(childrenList_ChildNew);
+          newItem.CreateOnlyParentNullable = oldItem.CreateOnlyParentNullable;
+          newItem.CreateOnlyParentNullable.AddToChildrenList_Children(newItem);
+          }
         }
       }
-      childrenList_ChildNew.onRollbackItemUpdated(childrenList_ChildOld);
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back ChildrenList_Child.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(ChildrenList_Child oldChildrenList_Child);
 
 
     /// <summary>
-    /// Adds ChildrenList_Child item to possible parents again as part of a transaction rollback.
+    /// Adds ChildrenList_Child to DC.Data.ChildrenList_Children as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var childrenList_Child = (ChildrenList_Child) item;
-      childrenList_Child.Parent.AddToChildrenList_Children(childrenList_Child);
-      childrenList_Child.ParentNullable?.AddToChildrenList_Children(childrenList_Child);
-      childrenList_Child.CreateOnlyParent.AddToChildrenList_Children(childrenList_Child);
-      childrenList_Child.CreateOnlyParentNullable?.AddToChildrenList_Children(childrenList_Child);
-      childrenList_Child.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenList_Child.Release(): {childrenList_Child.ToTraceString()}");
+#endif
+      childrenList_Child.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}|" +
+        $" Parent {Parent.GetKeyOrHash()}|" +
+        $" ParentNullable {ParentNullable?.GetKeyOrHash()}|" +
+        $" CreateOnlyParent {CreateOnlyParent.GetKeyOrHash()}|" +
+        $" CreateOnlyParentNullable {CreateOnlyParentNullable?.GetKeyOrHash()}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -693,7 +708,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" Parent: {Parent.ToShortString()}," +
         $" ParentNullable: {ParentNullable?.ToShortString()}," +

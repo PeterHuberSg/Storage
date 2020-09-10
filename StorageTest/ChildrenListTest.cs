@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Storage;
 using StorageDataContext;
@@ -90,188 +91,163 @@ namespace StorageTest {
         directoryInfo.Create();
 
         csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
+        DC.Trace = dcTrace;
         initDC();
         assertData();
 
-        //create
-        var p0 = new ChildrenList_Parent("P0", isStoring: false);
-        var pn0 = new ChildrenList_ParentNullable("PN0", isStoring: false);
-        var cp0 = new ChildrenList_CreateOnlyParent("CP0", isStoring: false);
-        var cpn0 = new ChildrenList_CreateOnlyParentNullable("CPN0", isStoring: false);
-        var c0 = new  ChildrenList_Child("C0", p0, pn0, cp0, cpn0, isStoring: false);
-        var cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cpn0, isStoring: false);
+        traceHeader("--- construct and store parent P0, PN0, CP0, CPN0 ---");
         DC.Data.StartTransaction();
-        p0.Store();
-        pn0.Store();
-        cp0.Store();
-        cpn0.Store();
-        c0.Store();
-        cc0.Store();
+        var p0 = new ChildrenList_Parent("P0");
+        var pn0 = new ChildrenList_ParentNullable("PN0", isStoring: false);
+        var cp0 = new ChildrenList_CreateOnlyParent("CP0");
+        var cpn0 = new ChildrenList_CreateOnlyParentNullable("CPN0", isStoring: false);
         DC.Data.RollbackTransaction();
         assertData();
-
-        /*+
-        childrenAddedCount = 1;
-        parentsAddedCount = 1;
-        +*/
         DC.Data.StartTransaction();
         p0.Store();
+        var p0Key = p0.Key;
         pn0.Store();
+        var pn0Key = pn0.Key;
         cp0.Store();
+        var cp0Key = cp0.Key;
         cpn0.Store();
-        c0.Store();
-        cc0.Store();
+        var cpn0Key = cpn0.Key;
         DC.Data.CommitTransaction();
-        children.Items[c0.Key] = c0.ToString();
-        childrenTestString[c0.Key] = c0.ToTestString();
-        coChildren.Items[cc0.Key] = cc0.ToString();
-        parents.Items[p0.Key] = p0.ToString();
-        parentNullables.Items[pn0.Key] = pn0.ToString();
-        coParents.Items[cp0.Key] = cp0.ToString();
-        coParentNullables.Items[cpn0.Key] = cpn0.ToString();
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
-        coChildren.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        parents.Items[p0Key] = p0.ToString();
         parents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
-        parentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        coParents.Items[cp0Key] = cp0.ToString();
         coParents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        parentNullables.Items[pn0Key] = pn0.ToString();
+        parentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        coParentNullables.Items[cpn0Key] = cpn0.ToString();
         coParentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
         assertData();
 
-        //create with nulls
-        p0 = DC.Data.ChildrenList_Parents[p0.Key];
-        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key];
-        var c1 = new  ChildrenList_Child("C1", p0, null, cp0, null, isStoring: false);
-        var cc1 = new  ChildrenList_CreateOnlyChild("CC1", cp0, null, isStoring: false);
+        traceHeader("--- construct and store children C0 and CC0 ---");
+        p0 = DC.Data.ChildrenList_Parents[p0Key];
+        pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
         DC.Data.StartTransaction();
-        c1.Store();
-        cc1.Store();
+        var c0 = new  ChildrenList_Child("C0", p0, pn0, cp0, cpn0);
+        var cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cpn0);
         DC.Data.RollbackTransaction();
         assertData();
-
-        p0 = DC.Data.ChildrenList_Parents[p0.Key];
-        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key];
-        c1 = new ChildrenList_Child("C1", p0, null, cp0, null, isStoring: false);
-        cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, null, isStoring: false);
-        /*+
-        childrenAddedCount = 1;
-        +*/
+        p0 = DC.Data.ChildrenList_Parents[p0Key];
+        pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
         DC.Data.StartTransaction();
-        c1.Store();
-        cc1.Store();
+        c0 = new  ChildrenList_Child("C0", p0, pn0, cp0, cpn0);
+        var c0Key = c0.Key;
+        cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cpn0);
+        var cc0Key = cc0.Key;
         DC.Data.CommitTransaction();
-        children.Items[c1.Key] = c1.ToString();
-        childrenTestString[c1.Key] = c1.ToTestString();
-        coChildren.Items[cc1.Key] = cc1.ToString();
-        parents.Items[p0.Key] = p0.ToString();
-        coParents.Items[cp0.Key] = cp0.ToString();
+        parents.Items[p0Key] = p0.ToString();
+        coParents.Items[cp0Key] = cp0.ToString();
+        parentNullables.Items[pn0Key] = pn0.ToString();
+        coParentNullables.Items[cpn0Key] = cpn0.ToString();
+        children.Items[c0Key] = c0.ToString();
+        childrenTestString[c0Key] = c0.ToTestString();
+        coChildren.Items[cc0Key] = cc0.ToString();
+        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        coChildren.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        assertData();
+
+        traceHeader("--- update child C0 with null parents ---");
+        c0 = DC.Data.ChildrenList_Children[c0Key];
+        DC.Data.StartTransaction();
+        c0.Update("C0", c0.Parent, null, c0.CreateOnlyParent, null);
+        DC.Data.RollbackTransaction();
+        assertData();
+        c0 = DC.Data.ChildrenList_Children[c0Key];
+        DC.Data.StartTransaction();
+        c0.Update("C0", c0.Parent, null, c0.CreateOnlyParent, null);
+        DC.Data.CommitTransaction();
+        pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        parentNullables.Items[pn0Key] = pn0.ToString();
+        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
+        coParentNullables.Items[cpn0Key] = cpn0.ToString();
+        children.Items[c0Key] = c0.ToString();
+        childrenTestString[c0Key] = c0.ToTestString();
+        children.Set(isContinuous: true, isUpdated: true, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        assertData();
+        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+
+        traceHeader("--- update child C0 with parents 1 ---");
+        c0 = DC.Data.ChildrenList_Children[c0Key];
+        DC.Data.StartTransaction();
+        var p1 = new ChildrenList_Parent("P1");
+        var pn1 = new ChildrenList_ParentNullable("PN1");
+        var cp1 = new ChildrenList_CreateOnlyParent("CP1");
+        var cpn1 = new ChildrenList_CreateOnlyParentNullable("CPN1");
+        c0.Update("C0U", p1, pn1, cp1, cpn1);
+        DC.Data.RollbackTransaction();
+        assertData();
+        c0 = DC.Data.ChildrenList_Children[c0Key];
+        DC.Data.StartTransaction();
+        p1 = new ChildrenList_Parent("P1");
+        var p1Key = p1.Key;
+        pn1 = new ChildrenList_ParentNullable("PN1");
+        var pn1Key = pn1.Key;
+        cp1 = new ChildrenList_CreateOnlyParent("CP1");
+        var cp1Key = cp1.Key;
+        cpn1 = new ChildrenList_CreateOnlyParentNullable("CPN1");
+        var cpn1Key = cpn1.Key;
+        c0.Update("C0U", p1, pn1, cp1, cpn1);
+        DC.Data.CommitTransaction();
+        p0 = DC.Data.ChildrenList_Parents[p0Key];
+        parents.Items[p0Key] = p0.ToString();
+        parents.Items[p1Key] = p1.ToString();
+        parents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
+        pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        parentNullables.Items[pn0Key] = pn0.ToString();
+        parentNullables.Items[pn1Key] = pn1.ToString();
+        parentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
+        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        coParents.Items[cp0Key] = cp0.ToString();
+        coParents.Items[cp1Key] = cp1.ToString();
+        coParents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
+        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
+        coParentNullables.Items[cpn0Key] = cpn0.ToString();
+        coParentNullables.Items[cpn1Key] = cpn1.ToString();
+        coParentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
+        children.Items[c0Key] = c0.ToString();
+        childrenTestString[c0Key] = c0.ToTestString();
+        children.Set(isContinuous: true, isUpdated: true, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        assertData();
+        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+
+        traceHeader("--- add children C1, CC1 with parents 0 ---");
+        p0 = DC.Data.ChildrenList_Parents[p0Key];
+        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        DC.Data.StartTransaction();
+        var c1 = new ChildrenList_Child("C1", p0, null, cp0, null);
+        var c1Key = c1.Key;
+        var cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, null);
+        var cc1Key = cc1.Key;
+        DC.Data.RollbackTransaction();
+        assertData();
+        p0 = DC.Data.ChildrenList_Parents[p0Key];
+        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        DC.Data.StartTransaction();
+        c1 = new ChildrenList_Child("C1", p0, null, cp0, null);
+        cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, null);
+        DC.Data.CommitTransaction();
+        children.Items[c1Key] = c1.ToString();
+        childrenTestString[c1Key] = c1.ToTestString();
+        coChildren.Items[cc1Key] = cc1.ToString();
+        parents.Items[p0Key] = p0.ToString();
+        coParents.Items[cp0Key] = cp0.ToString();
         children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
         coChildren.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
         assertData();
 
-        //update child
-        var p1 = new ChildrenList_Parent("P1", isStoring: false);
-        var pn1 = new ChildrenList_ParentNullable("PN1", isStoring: false);
-        var cp1 = new ChildrenList_CreateOnlyParent("CP1", isStoring: false);
-        var cpn1 = new ChildrenList_CreateOnlyParentNullable("CPN1", isStoring: false);
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        DC.Data.StartTransaction();
-        p1.Store();
-        pn1.Store();
-        cp1.Store();
-        cpn1.Store();
-        c0.Update("C0U", p1, pn1, cp1, cpn1);
-        DC.Data.RollbackTransaction();
-        assertData();
-
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        /*+
-        childrenUpdatedCount = 1;
-        parentsAddedCount = 1;
-        +*/
-        DC.Data.StartTransaction();
-        p1.Store();
-        pn1.Store();
-        cp1.Store();
-        cpn1.Store();
-        c0.Update("C0U", p1, pn1, cp1, cpn1);
-        DC.Data.CommitTransaction();
-        children.Items[c0.Key] = c0.ToString();
-        childrenTestString[c0.Key] = c0.ToTestString();
-        parents.Items[p0.Key] = DC.Data.ChildrenList_Parents[p0.Key].ToString();
-        parentNullables.Items[pn0.Key] = DC.Data.ChildrenList_ParentNullables[pn0.Key].ToString();
-        coParents.Items[cp0.Key] = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key].ToString();
-        coParentNullables.Items[cpn0.Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key].ToString();
-        parents.Items[p1.Key] = p1.ToString();
-        parentNullables.Items[pn1.Key] = pn1.ToString();
-        coParents.Items[cp1.Key] = cp1.ToString();
-        coParentNullables.Items[cpn1.Key] = cpn1.ToString();
-        children.Set(isContinuous: true, isUpdated: true, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        parents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        parentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        coParents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        coParentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        assertData();
-
-        //update child with nulls
-        p1 = DC.Data.ChildrenList_Parents[p1.Key];
-        cp1 = DC.Data.ChildrenList_CreateOnlyParents[cp1.Key];
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        DC.Data.StartTransaction();
-        c0.Update("C0U", p1, null, cp1, null);
-        DC.Data.RollbackTransaction();
-        assertData();
-
-        p1 = DC.Data.ChildrenList_Parents[p1.Key];
-        cp1 = DC.Data.ChildrenList_CreateOnlyParents[cp1.Key];
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        children.Set(isContinuous: true, isUpdated: true, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        /*+
-        childrenUpdatedCount = 1;
-        +*/
-        DC.Data.StartTransaction();
-        c0.Update("C0U", p1, null, cp1, null);
-        DC.Data.CommitTransaction();
-        children.Items[c0.Key] = c0.ToString();
-        childrenTestString[c0.Key] = c0.ToTestString();
-        parentNullables.Items[pn1.Key] = DC.Data.ChildrenList_ParentNullables[pn1.Key].ToString();
-        coParentNullables.Items[cpn1.Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn1.Key].ToString();
-        assertData();
-
-        //update child remove nulls
-        p1 = DC.Data.ChildrenList_Parents[p1.Key];
-        pn0 = DC.Data.ChildrenList_ParentNullables[pn0.Key];
-        cp1 = DC.Data.ChildrenList_CreateOnlyParents[cp1.Key];
-        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key];
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        DC.Data.StartTransaction();
-        c0.Update("C0U.1", p1, pn0, cp1, cpn0);
-        DC.Data.RollbackTransaction();
-        assertData();
-
-        p1 = DC.Data.ChildrenList_Parents[p1.Key];
-        pn0 = DC.Data.ChildrenList_ParentNullables[pn0.Key];
-        cp1 = DC.Data.ChildrenList_CreateOnlyParents[cp1.Key];
-        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key];
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        children.Set(isContinuous: true, isUpdated: true, isDeleted: false, firstIndex: 0, lastIndex: 1);
-        /*+
-        childrenUpdatedCount = 1;
-        +*/
-        DC.Data.StartTransaction();
-        c0.Update("C0U.1", p1, pn0, cp1, cpn0);
-        DC.Data.CommitTransaction();
-        children.Items[c0.Key] = c0.ToString();
-        childrenTestString[c0.Key] = c0.ToTestString();
-        parentNullables.Items[pn0.Key] = DC.Data.ChildrenList_ParentNullables[pn0.Key].ToString();
-        coParentNullables.Items[cpn0.Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key].ToString();
-        assertData();
-
-        //test reader and writer
+        traceHeader("--- test reader and writer ---");
         DC.DisposeData();
         var fromFilePath = csvConfig.DirectoryPath + "\\ChildrenList_Child.csv";
         var toFilePath = csvConfig.DirectoryPath + "\\ChildrenList_Child.new";
+        var c2Key = 2;
         using (var reader = new ChildrenList_ChildReader(fromFilePath, csvConfig)) {
           using var writer = new ChildrenList_ChildWriter(toFilePath, csvConfig);
           var childIndex = 0;
@@ -280,7 +256,7 @@ namespace StorageTest {
             writer.Write(childRaw);
           }
           var newChildRaw = new ChildrenList_ChildRaw{
-            Key = 2,
+            Key = c2Key,
             Text = "C2",
             ParentKey = 0,
             ParentNullableKey = 0,
@@ -294,122 +270,74 @@ namespace StorageTest {
         File.Move(toFilePath, fromFilePath);
         initDC();
         children.Items[2] = DC.Data.ChildrenList_Children[2].ToString();
-        p0 = DC.Data.ChildrenList_Parents[p0.Key];
-        pn0 = DC.Data.ChildrenList_ParentNullables[pn0.Key];
-        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key];
-        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key];
-        parents.Items[p0.Key] = p0.ToString();
-        parentNullables.Items[pn0.Key] = pn0.ToString();
-        coParents.Items[cp0.Key] = cp0.ToString();
-        coParentNullables.Items[cpn0.Key] = cpn0.ToString();
+        p0 = DC.Data.ChildrenList_Parents[p0Key];
+        pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
+        parents.Items[p0Key] = p0.ToString();
+        parentNullables.Items[pn0Key] = pn0.ToString();
+        coParents.Items[cp0Key] = cp0.ToString();
+        coParentNullables.Items[cpn0Key] = cpn0.ToString();
         children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 2);
-
-        //delete child
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        DC.Data.StartTransaction();
-        c0.Remove();
-        DC.Data.RollbackTransaction();
-        assertData();
-
-        c0 = DC.Data.ChildrenList_Children[c0.Key];
-        children.Items.Remove(c0.Key);
-        childrenTestString.Remove(c0.Key);
-        /*+
-        childrenRemovedCount = 1;
-        +*/
-        DC.Data.StartTransaction();
-        c0.Remove();
-        DC.Data.CommitTransaction();
-        parents.Items[p1.Key] = DC.Data.ChildrenList_Parents[p1.Key].ToString();
-        parentNullables.Items[pn0.Key] = DC.Data.ChildrenList_ParentNullables[pn0.Key].ToString();
-        coParents.Items[cp1.Key] = DC.Data.ChildrenList_CreateOnlyParents[cp1.Key].ToString();
-        coParentNullables.Items[cpn0.Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key].ToString();
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: true, firstIndex: 1, lastIndex: 2);
-        assertData();
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 1);
-
-        //delete parent
-        p0 = DC.Data.ChildrenList_Parents[p0.Key];
-        DC.Data.StartTransaction();
-        p0.Remove();
-        DC.Data.RollbackTransaction();
-        assertData();
-
-        p0 = DC.Data.ChildrenList_Parents[p0.Key];
-        pn0 = DC.Data.ChildrenList_ParentNullables[pn0.Key];
-        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key];
-        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key];
-        c1 = DC.Data.ChildrenList_Children[c1.Key];
-        parents.Items.Remove(p0.Key);
-        children.Items.Remove(c1.Key);
-        childrenTestString.Remove(c1.Key);
-        children.Items.Remove(2);
-        childrenTestString.Remove(2);
-        /*+
-        childrenRemovedCount = 2;//C1, C2 get removed
-        parentsRemovedCount = 1;
-        +*/
-        DC.Data.StartTransaction();
-        p0.Remove();
-        DC.Data.CommitTransaction();
-        //removing p0 causes the removal of c1, which was a child of cp0 => cp0 has now 1 less child
-        parentNullables.Items[pn0.Key] = DC.Data.ChildrenList_ParentNullables[pn0.Key].ToString();
-        coParents.Items[cp0.Key] = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key].ToString();
-        coParentNullables.Items[cpn0.Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key].ToString();
-        parents.Set(isContinuous: true, isUpdated: false, isDeleted: true, firstIndex: 1, lastIndex: 1);
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: true, firstIndex: -1, lastIndex: -1);
         assertData();
 
         //some tests without disposing DC between tests
         //---------------------------------------------
 
-        //test added, updated and removed events without transaction
-        p1 = DC.Data.ChildrenList_Parents[p1.Key];
-        pn0 = DC.Data.ChildrenList_ParentNullables[pn0.Key];
-        cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0.Key];
-        cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0.Key];
-        /*+
-        childrenAddedCount = 1;
-        +*/
-        var c3 = new  ChildrenList_Child("C3", p1, pn0, cp0, cpn0);
-        children.Items[c3.Key] = c3.ToString();
-        childrenTestString[c3.Key] = c3.ToTestString();
-        parents.Items[p1.Key] = p1.ToString();
-        parentNullables.Items[pn0.Key] = pn0.ToString();
-        coParents.Items[cp0.Key] = cp0.ToString();
-        coParentNullables.Items[cpn0.Key] = cpn0.ToString();
-        parents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
-        children.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        traceHeader("--- release child C1 ---");
+        c1 = DC.Data.ChildrenList_Children[c1Key];
+        DC.Data.StartTransaction();
+        c1.Release();
+        DC.Data.RollbackTransaction();
+        assertData();
+        c1 = DC.Data.ChildrenList_Children[c1Key];
+        DC.Data.StartTransaction();
+        c1.Release();
+        DC.Data.CommitTransaction();
+        children.Items.Remove(c1Key);
+        childrenTestString.Remove(c1Key);
+        children.Set(isContinuous: false, isUpdated: false, isDeleted: true, firstIndex: 0, lastIndex: 2);
+        parents.Items[p0Key] = DC.Data.ChildrenList_Parents[p0Key].ToString();
+        coParents.Items[cp0Key] = DC.Data.ChildrenList_CreateOnlyParents[cp0Key].ToString();
+        //assertData(); doesn't work, because before closing the DC, the parent has still the released child in Children, but nor in new DC
         assertDC(isAfterDispose: false);
 
-        /*+
-        childrenUpdatedCount = 1;
-        +*/
-        c3.Update("C3U", p1, pn0, cp0, cpn0);
-        children.Items[c3.Key] = c3.ToString();
-        childrenTestString[c3.Key] = c3.ToTestString();
-        children.Set(isContinuous: true, isUpdated: true, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        traceHeader("--- release child C0 ---");
+        c0 = DC.Data.ChildrenList_Children[c0Key];
+        DC.Data.StartTransaction();
+        c0.Release();
+        DC.Data.RollbackTransaction();
+        assertDC(isAfterDispose: false);
+        c0 = DC.Data.ChildrenList_Children[c0Key];
+        DC.Data.StartTransaction();
+        c0.Release();
+        DC.Data.CommitTransaction();
+        children.Items.Remove(c0Key);
+        childrenTestString.Remove(c0Key);
+        children.Set(isContinuous: true, isUpdated: false, isDeleted: true, firstIndex: 2, lastIndex: 2);
+        parents.Items[p1Key] = DC.Data.ChildrenList_Parents[p1Key].ToString();
+        parentNullables.Items[pn1Key] = DC.Data.ChildrenList_ParentNullables[pn1Key].ToString();
+        coParents.Items[cp1Key] = DC.Data.ChildrenList_CreateOnlyParents[cp1Key].ToString();
+        coParentNullables.Items[cpn1Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn1Key].ToString();
         assertDC(isAfterDispose: false);
 
-        /*+
-        childrenAddedCount = 1;
-        +*/
-        var cDelete = new  ChildrenList_Child("cDelete", p1, pn0, cp0, cpn0);
-        /*+
-        childrenAddedCount = 1;
-        +*/
-        var c4 = new  ChildrenList_Child("C4", p1, pn0, cp0, cpn0);
-        /*+
-        childrenRemovedCount = 1;
-        +*/
-        cDelete.Remove();
-        children.Items[c4.Key] = c4.ToString();
-        childrenTestString[c4.Key] = c4.ToTestString();
-        parents.Items[p1.Key] = p1.ToString();
-        parentNullables.Items[pn0.Key] = pn0.ToString();
-        coParents.Items[cp0.Key] = cp0.ToString();
-        coParentNullables.Items[cpn0.Key] = cpn0.ToString();
-        children.Set(isContinuous: false, isUpdated: true, isDeleted: true, firstIndex: 0, lastIndex: 2);
+        traceHeader("--- release child C2 ---");
+        var c2 = DC.Data.ChildrenList_Children[2];
+        DC.Data.StartTransaction();
+        c2.Release();
+        DC.Data.RollbackTransaction();
+        assertDC(isAfterDispose: false);
+        c2 = DC.Data.ChildrenList_Children[c2.Key];
+        DC.Data.StartTransaction();
+        c2.Release();
+        DC.Data.CommitTransaction();
+        children.Items.Remove(c2Key);
+        childrenTestString.Remove(c2Key);
+        children.Set(isContinuous: true, isUpdated: false, isDeleted: true, firstIndex: -1, lastIndex: -1);
+        parents.Items[p0Key] = DC.Data.ChildrenList_Parents[p0Key].ToString();
+        parentNullables.Items[pn0Key] = DC.Data.ChildrenList_ParentNullables[pn0Key].ToString();
+        coParents.Items[cp0Key] = DC.Data.ChildrenList_CreateOnlyParents[cp0Key].ToString();
+        coParentNullables.Items[cpn0Key] = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key].ToString();
         assertDC(isAfterDispose: false);
 
       } finally {
@@ -418,50 +346,39 @@ namespace StorageTest {
     }
 
 
-    /*+
-    int childrenAddedCount = 0;
-    int childrenUpdatedCount = 0;
-    int childrenRemovedCount = 0;
-    int parentsAddedCount = 0;
-    int parentsUpdatedCount = 0;
-    int parentsRemovedCount = 0;
-    +*/
+    static readonly StringBuilder traceStrinBuilder = new StringBuilder();
 
-    /*+
-    private void childrenList_Children_Added(ChildrenList_Child _) {
-      Assert.AreNotEqual(0, childrenAddedCount);
-      childrenAddedCount--;
+    public static string TracesString { get {
+        return traceStrinBuilder.ToString();
+      } }
+
+
+    static bool isInitialisingDcTrace;
+
+
+    private static void traceHeader(string line) {
+      traceStrinBuilder.AppendLine();
+      traceStrinBuilder.AppendLine(line);
     }
 
 
-    private void childrenList_Children_Updated(ChildrenList_Child _, ChildrenList_Child dummy) {
-      Assert.AreNotEqual(0, childrenUpdatedCount);
-      childrenUpdatedCount--;
+    //private static void trace(string line) {
+    //  traceStrinBuilder.AppendLine(line);
+    //}
+
+
+    private static void dcTrace(string message) {
+      if (message=="Context DC initialised") {
+        isInitialisingDcTrace = false;
+      }
+      if (!isInitialisingDcTrace) {
+        traceStrinBuilder.AppendLine(message);
+      }
+      if (message=="Context DC initialising") {
+        isInitialisingDcTrace = true;
+      }
     }
 
-
-    private void childrenList_Children_Removed(ChildrenList_Child _) {
-      Assert.AreNotEqual(0, childrenRemovedCount);
-      childrenRemovedCount--;
-    }
-
-
-    private void childrenList_Parents_Added(ChildrenList_Parent _) {
-      Assert.AreNotEqual(0, parentsAddedCount);
-      parentsAddedCount--;
-    }
-
-
-    private void childrenList_Parents_Updated(ChildrenList_Parent _, ChildrenList_Parent dummy) {
-      Assert.AreNotEqual(0, parentsUpdatedCount);
-      parentsUpdatedCount--;
-    }
-
-    private void childrenList_Parents_Removed(ChildrenList_Parent _) {
-      Assert.AreNotEqual(0, parentsRemovedCount);
-      parentsRemovedCount--;
-    }
-    +*/
 
     private void reportException(Exception obj) {
       System.Diagnostics.Debug.WriteLine(obj);
@@ -485,7 +402,6 @@ namespace StorageTest {
 
 
     private void assertDC(bool isAfterDispose, bool skipChildren = false) {
-
       var store = DC.Data.ChildrenList_Parents;
       assertStore(parents, store, isAfterDispose);
       foreach (var parent in DC.Data.ChildrenList_Parents) {
@@ -523,20 +439,11 @@ namespace StorageTest {
       }
       assertStore(children, store4, isAfterDispose, skipCount: skipChildren);
 
-      var store6 = DC.Data.ChildrenList_CreateOnlyChildren;
-      assertStore(coChildren, store6, isAfterDispose);
+      var store5 = DC.Data.ChildrenList_CreateOnlyChildren;
+      assertStore(coChildren, store5, isAfterDispose);
       foreach (var child in DC.Data.ChildrenList_CreateOnlyChildren) {
         Assert.AreEqual(coChildren.Items[child.Key], child.ToString());
       }
-
-      /*+
-      Assert.AreEqual(0, childrenAddedCount);
-      Assert.AreEqual(0, childrenUpdatedCount);
-      Assert.AreEqual(0, childrenRemovedCount);
-      Assert.AreEqual(0, parentsAddedCount);
-      Assert.AreEqual(0, parentsUpdatedCount);
-      Assert.AreEqual(0, parentsRemovedCount);
-      +*/
     }
 
 
@@ -575,6 +482,46 @@ namespace StorageTest {
     //      ---------------------------
 
     /*
+14.9.2020 (add none stored children to any parent, no more adding children to parents during item.Store()
+without tracing:
+
+with tracing:
+100000 activitiesCount
+10 childrenPerParent
+00:00:03.3604996 Create, commit
+00:00:02.0213678 Update, commit
+00:00:01.4107277 Remove, commit
+00:00:03.4889682 Create, rollback
+00:00:02.1190361 Update, rollback
+00:00:01.3925021 Remove, rollback
+00:00:04.0611886 Create, noTransaction
+00:00:01.7274017 Update, noTransaction
+00:00:01.2361274 Remove, noTransaction
+
+10000 activitiesCount
+10 childrenPerParent
+00:00:00.7318281 Create, commit
+00:00:00.3340424 Update, commit
+00:00:00.2507061 Remove, commit
+00:00:00.6656693 Create, rollback
+00:00:00.2050103 Update, rollback
+00:00:00.1498911 Remove, rollback
+00:00:00.3366192 Create, noTransaction
+00:00:00.2113934 Update, noTransaction
+00:00:00.1450116 Remove, noTransaction
+
+1000 activitiesCount
+10 childrenPerParent
+00:00:00.0452840 Create, commit
+00:00:00.0263526 Update, commit
+00:00:00.0232695 Remove, commit
+00:00:00.1137588 Create, rollback
+00:00:00.0382345 Update, rollback
+00:00:00.0282973 Remove, rollback
+00:00:00.0560378 Create, noTransaction
+00:00:00.0124336 Update, noTransaction
+00:00:00.0252250 Remove, noTransaction
+
 30.7.2020
 100000 activitiesCount
 10 childrenPerParent
@@ -667,7 +614,7 @@ namespace StorageTest {
         GC.Collect(); //in case garbage collector would run soon because of previous tests
         GC.WaitForPendingFinalizers();
         csvConfig = new CsvConfig(directoryInfo.FullName, reportException: reportException);
-        var activitiesCount = 1000;
+        var activitiesCount = 1_000;
         var childrenPerParent = 10;
         var sw = new Stopwatch();
         Debug.WriteLine($"{activitiesCount} activitiesCount");
@@ -719,7 +666,7 @@ namespace StorageTest {
 
       sw.Restart();
       for (int i = 0; i < cIndex; i++) {
-        childrenP[i].Remove();
+        childrenP[i].Release();
       }
       DC.Data.ChildrenList_Parents.Flush();
       DC.Data.ChildrenList_CreateOnlyParents.Flush();
@@ -761,7 +708,7 @@ namespace StorageTest {
       sw.Restart();
       DC.Data.StartTransaction();
       for (int i = 0; i < cIndex; i++) {
-        childrenP[i].Remove();
+        childrenP[i].Release();
       }
       DC.Data.RollbackTransaction();
       DC.Data.ChildrenList_Parents.Flush();
@@ -803,7 +750,7 @@ namespace StorageTest {
       sw.Restart();
       DC.Data.StartTransaction();
       for (int i = 0; i < cIndex; i++) {
-        childrenP[i].Remove();
+        childrenP[i].Release();
       }
       DC.Data.CommitTransaction();
       DC.Data.ChildrenList_Parents.Flush();

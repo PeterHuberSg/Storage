@@ -64,10 +64,12 @@ namespace StorageTest {
         TestItemCsv.SetKey,
         TestItemCsv.Create,
         null,
+        null,
         TestItemCsv.Write,
+        TestItem.RollbackItemNew,
         TestItem.RollbackItemStore,
         TestItem.RollbackItemUpdate,
-        TestItem.RollbackItemRemove);
+        TestItem.RollbackItemRelease);
       Assert.IsTrue(dataStore.IsReadOnly);
       /*+
       dataStore.Added += dataStore_Added;
@@ -176,10 +178,10 @@ namespace StorageTest {
         null,
         TestItemCsv.Update,
         TestItemCsv.Write,
+        TestItem.RollbackItemNew,
         TestItem.RollbackItemStore,
         TestItem.RollbackItemUpdate,
-        TestItem.RollbackItemRemove,
-        TestItemCsv.Disconnect,
+        TestItem.RollbackItemRelease,
         areInstancesUpdatable: true,
         areInstancesDeletable: true);
       Assert.IsFalse(dataStore.IsReadOnly);

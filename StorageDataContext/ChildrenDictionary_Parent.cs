@@ -55,75 +55,82 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after ChildrenDictionary_Parent.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before ChildrenDictionary_Parent gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenDictionary_Parent are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string text, ref bool isCancelled){
    }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenDictionary_Parent are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(ChildrenDictionary_Parent old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for ChildrenDictionary_Parent is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after ChildrenDictionary_Parent.Release() got executed
     /// </summary>
-    partial void onRemove() {
+    partial void onReleased() {
     }
 
 
+    /// <summary>
+    /// Called after 'new ChildrenDictionary_Parent()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after ChildrenDictionary_Parent.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after ChildrenDictionary_Parent.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(ChildrenDictionary_Parent oldChildrenDictionary_Parent) {
     }
 
 
     /// <summary>
-    /// Called after item.Remove() transaction is rolled back
+    /// Called after ChildrenDictionary_Parent.Release() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemRemoved() {
+    partial void onRollbackItemRelease() {
     }
+
+
     /// <summary>
     /// Called after a childrenDictionary_Child gets added to ChildrenDictionary_Children.
     /// </summary>

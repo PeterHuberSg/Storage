@@ -56,75 +56,82 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after ChildrenList_ParentNullable.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before ChildrenList_ParentNullable gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenList_ParentNullable are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string text, ref bool isCancelled){
    }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenList_ParentNullable are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(ChildrenList_ParentNullable old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for ChildrenList_ParentNullable is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after ChildrenList_ParentNullable.Release() got executed
     /// </summary>
-    partial void onRemove() {
+    partial void onReleased() {
     }
 
 
+    /// <summary>
+    /// Called after 'new ChildrenList_ParentNullable()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after ChildrenList_ParentNullable.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after ChildrenList_ParentNullable.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(ChildrenList_ParentNullable oldChildrenList_ParentNullable) {
     }
 
 
     /// <summary>
-    /// Called after item.Remove() transaction is rolled back
+    /// Called after ChildrenList_ParentNullable.Release() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemRemoved() {
+    partial void onRollbackItemRelease() {
     }
+
+
     /// <summary>
     /// Called after a childrenList_Child gets added to ChildrenList_Children.
     /// </summary>

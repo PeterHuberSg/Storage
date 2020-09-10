@@ -28,7 +28,16 @@ namespace StorageDataContext  {
     /// Unique identifier for SampleDetail. Gets set once SampleDetail gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem sampleDetail, int key) {
+    internal static void SetKey(IStorageItem sampleDetail, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release SampleDetail key @{sampleDetail.Key} #{sampleDetail.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store SampleDetail key @{key} #{sampleDetail.GetHashCode()}");
+        }
+      }
+#endif
       ((SampleDetail)sampleDetail).Key = key;
     }
 
@@ -72,14 +81,20 @@ namespace StorageDataContext  {
     //      ------------
 
     /// <summary>
-    /// SampleDetail Constructor. If isStoring is true, adds SampleDetail to DC.Data.SampleDetails
-    /// and adds SampleDetail to sample.SampleDetails.
+    /// SampleDetail Constructor. If isStoring is true, adds SampleDetail to DC.Data.SampleDetails.
     /// </summary>
     public SampleDetail(string text, Sample sample, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
       Text = text;
       Sample = sample;
+#if DEBUG
+      DC.Trace?.Invoke($"new SampleDetail: {ToTraceString()}");
+#endif
+      Sample.AddToSampleDetails(this);
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(3,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -145,22 +160,26 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds SampleDetail to DC.Data.SampleDetails and Sample. 
+    /// Adds SampleDetail to DC.Data.SampleDetails.<br/>
+    /// Throws an Exception when SampleDetail is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SampleDetail cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"SampleDetail cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
-      if (Sample.Key<0) {
-        throw new Exception($"SampleDetail cannot be stored in DC.Data, Sample is missing or not stored yet." + Environment.NewLine + ToString());
-      }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
+      if (Sample.Key<0) {
+        throw new Exception($"Cannot store child SampleDetail '{this}'.Sample to Sample '{Sample}' because parent is not stored yet.");
+      }
       DC.Data.SampleDetails.Add(this);
-      Sample.AddToSampleDetails(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored SampleDetail #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -189,33 +208,43 @@ namespace StorageDataContext  {
     /// Updates SampleDetail with the provided values
     /// </summary>
     public void Update(string text, Sample sample) {
+      if (Key>=0){
+        if (sample.Key<0) {
+          throw new Exception($"SampleDetail.Update(): It is illegal to add stored SampleDetail '{this}'" + Environment.NewLine + 
+            $"to Sample '{sample}', which is not stored.");
+        }
+      }
       var clone = new SampleDetail(this);
       var isCancelled = false;
       onUpdating(text, sample, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating SampleDetail: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
         isChangeDetected = true;
       }
       if (Sample!=sample) {
-        if (Key>=0) {
-          Sample.RemoveFromSampleDetails(this);
-        }
+        Sample.RemoveFromSampleDetails(this);
         Sample = sample;
-        if (Key>=0) {
-          Sample.AddToSampleDetails(this);
-        }
+        Sample.AddToSampleDetails(this);
         isChangeDetected = true;
       }
       if (isChangeDetected) {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.SampleDetails.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(3, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated SampleDetail: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(string text, Sample sample, ref bool isCancelled);
     partial void onUpdated(SampleDetail old);
@@ -242,39 +271,45 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Removes SampleDetail from DC.Data.SampleDetails and 
-    /// disconnects SampleDetail from Sample because of Sample.
+    /// Removes SampleDetail from DC.Data.SampleDetails.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"SampleDetail.Remove(): SampleDetail 'Class SampleDetail' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"SampleDetail.Release(): SampleDetail '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.SampleDetails.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released SampleDetail @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects SampleDetail from Sample because of Sample.
+    /// Removes SampleDetail from parents as part of a transaction rollback of the new() statement.
     /// </summary>
-    internal static void Disconnect(SampleDetail sampleDetail) {
+    internal static void RollbackItemNew(IStorageItem item) {
+      var sampleDetail = (SampleDetail) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new SampleDetail(): {sampleDetail.ToTraceString()}");
+#endif
       if (sampleDetail.Sample!=Sample.NoSample) {
         sampleDetail.Sample.RemoveFromSampleDetails(sampleDetail);
       }
+      sampleDetail.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes SampleDetail from possible parents as part of a transaction rollback.
+    /// Releases SampleDetail from DC.Data.SampleDetails as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var sampleDetail = (SampleDetail) item;
-      if (sampleDetail.Sample!=Sample.NoSample) {
-        sampleDetail.Sample.RemoveFromSampleDetails(sampleDetail);
-      }
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback SampleDetail.Store(): {sampleDetail.ToTraceString()}");
+#endif
       sampleDetail.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -283,31 +318,53 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the SampleDetail item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var sampleDetailOld = (SampleDetail) oldItem;
-      var sampleDetailNew = (SampleDetail) newItem;
-      sampleDetailNew.Text = sampleDetailOld.Text;
-      if (sampleDetailNew.Sample!=sampleDetailOld.Sample) {
-        if (sampleDetailNew.Sample!=Sample.NoSample) {
-          sampleDetailNew.Sample.RemoveFromSampleDetails(sampleDetailNew);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (SampleDetail) oldStorageItem;
+      var newItem = (SampleDetail) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back SampleDetail.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      if (newItem.Sample!=oldItem.Sample) {
+        if (newItem.Sample!=Sample.NoSample) {
+            newItem.Sample.RemoveFromSampleDetails(newItem);
         }
-        sampleDetailNew.Sample = sampleDetailOld.Sample;
-        sampleDetailNew.Sample.AddToSampleDetails(sampleDetailNew);
+        newItem.Sample = oldItem.Sample;
+        newItem.Sample.AddToSampleDetails(newItem);
       }
-      sampleDetailNew.onRollbackItemUpdated(sampleDetailOld);
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back SampleDetail.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(SampleDetail oldSampleDetail);
 
 
     /// <summary>
-    /// Adds SampleDetail item to possible parents again as part of a transaction rollback.
+    /// Adds SampleDetail to DC.Data.SampleDetails as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var sampleDetail = (SampleDetail) item;
-      sampleDetail.Sample.AddToSampleDetails(sampleDetail);
-      sampleDetail.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback SampleDetail.Release(): {sampleDetail.ToTraceString()}");
+#endif
+      sampleDetail.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}|" +
+        $" Sample {Sample.GetKeyOrHash()}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -329,7 +386,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" Sample: {Sample.ToShortString()};";
       onToString(ref returnString);

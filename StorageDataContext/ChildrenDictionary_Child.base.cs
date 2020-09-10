@@ -29,7 +29,16 @@ namespace StorageDataContext  {
     /// Unique identifier for ChildrenDictionary_Child. Gets set once ChildrenDictionary_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem childrenDictionary_Child, int key) {
+    internal static void SetKey(IStorageItem childrenDictionary_Child, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release ChildrenDictionary_Child key @{childrenDictionary_Child.Key} #{childrenDictionary_Child.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store ChildrenDictionary_Child key @{key} #{childrenDictionary_Child.GetHashCode()}");
+        }
+      }
+#endif
       ((ChildrenDictionary_Child)childrenDictionary_Child).Key = key;
     }
 
@@ -87,9 +96,7 @@ namespace StorageDataContext  {
     //      ------------
 
     /// <summary>
-    /// ChildrenDictionary_Child Constructor. If isStoring is true, adds ChildrenDictionary_Child to DC.Data.ChildrenDictionary_Children, 
-    /// adds ChildrenDictionary_Child to childrenDictionary_Parent.ChildrenDictionary_Children
-    /// and if there is a ParentWithDictionaryNullable adds ChildrenDictionary_Child to childrenDictionary_ParentNullable.ChildrenDictionary_Children.
+    /// ChildrenDictionary_Child Constructor. If isStoring is true, adds ChildrenDictionary_Child to DC.Data.ChildrenDictionary_Children.
     /// </summary>
     public ChildrenDictionary_Child(
       DateTime dateKey, 
@@ -103,7 +110,17 @@ namespace StorageDataContext  {
       Text = text;
       ParentWithDictionary = parentWithDictionary;
       ParentWithDictionaryNullable = parentWithDictionaryNullable;
+#if DEBUG
+      DC.Trace?.Invoke($"new ChildrenDictionary_Child: {ToTraceString()}");
+#endif
+      ParentWithDictionary.AddToChildrenDictionary_Children(this);
+      if (ParentWithDictionaryNullable!=null) {
+        ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
+      }
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(19,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -185,26 +202,29 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds ChildrenDictionary_Child to DC.Data.ChildrenDictionary_Children, ChildrenDictionary_Parent and ChildrenDictionary_ParentNullable. 
+    /// Adds ChildrenDictionary_Child to DC.Data.ChildrenDictionary_Children.<br/>
+    /// Throws an Exception when ChildrenDictionary_Child is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ChildrenDictionary_Child cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ChildrenDictionary_Child cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
-      if (ParentWithDictionary.Key<0) {
-        throw new Exception($"ChildrenDictionary_Child cannot be stored in DC.Data, ParentWithDictionary is missing or not stored yet." + Environment.NewLine + ToString());
-      }
-      if (ParentWithDictionaryNullable!=null && ParentWithDictionaryNullable.Key<0) {
-        throw new Exception($"ChildrenDictionary_Child cannot be stored in DC.Data, ParentWithDictionaryNullable is not stored yet." + Environment.NewLine + ToString());
-      }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
+      if (ParentWithDictionary.Key<0) {
+        throw new Exception($"Cannot store child ChildrenDictionary_Child '{this}'.ParentWithDictionary to ChildrenDictionary_Parent '{ParentWithDictionary}' because parent is not stored yet.");
+      }
+      if (ParentWithDictionaryNullable?.Key<0) {
+        throw new Exception($"Cannot store child ChildrenDictionary_Child '{this}'.ParentWithDictionaryNullable to ChildrenDictionary_ParentNullable '{ParentWithDictionaryNullable}' because parent is not stored yet.");
+      }
       DC.Data.ChildrenDictionary_Children.Add(this);
-      ParentWithDictionary.AddToChildrenDictionary_Children(this);
-      ParentWithDictionaryNullable?.AddToChildrenDictionary_Children(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored ChildrenDictionary_Child #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -241,11 +261,24 @@ namespace StorageDataContext  {
     /// Updates ChildrenDictionary_Child with the provided values
     /// </summary>
     public void Update(DateTime dateKey, string text, ChildrenDictionary_Parent parentWithDictionary, ChildrenDictionary_ParentNullable? parentWithDictionaryNullable) {
+      if (Key>=0){
+        if (parentWithDictionary.Key<0) {
+          throw new Exception($"ChildrenDictionary_Child.Update(): It is illegal to add stored ChildrenDictionary_Child '{this}'" + Environment.NewLine + 
+            $"to ParentWithDictionary '{parentWithDictionary}', which is not stored.");
+        }
+        if (parentWithDictionaryNullable?.Key<0) {
+          throw new Exception($"ChildrenDictionary_Child.Update(): It is illegal to add stored ChildrenDictionary_Child '{this}'" + Environment.NewLine + 
+            $"to ParentWithDictionaryNullable '{parentWithDictionaryNullable}', which is not stored.");
+        }
+      }
       var clone = new ChildrenDictionary_Child(this);
       var isCancelled = false;
       onUpdating(dateKey, text, parentWithDictionary, parentWithDictionaryNullable, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating ChildrenDictionary_Child: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       var dateKeyRounded = dateKey.Floor(Rounding.Days);
       if (DateKey!=dateKeyRounded) {
@@ -256,14 +289,10 @@ namespace StorageDataContext  {
         Text = text;
         isChangeDetected = true;
       }
-      if (ParentWithDictionary!=parentWithDictionary) {
-        if (Key>=0) {
-          ParentWithDictionary.RemoveFromChildrenDictionary_Children(this);
-        }
+      if (ParentWithDictionary!=parentWithDictionary || clone.DateKey!=DateKey) {
+        ParentWithDictionary.RemoveFromChildrenDictionary_Children(clone);
         ParentWithDictionary = parentWithDictionary;
-        if (Key>=0) {
-          ParentWithDictionary.AddToChildrenDictionary_Children(this);
-        }
+        ParentWithDictionary.AddToChildrenDictionary_Children(this);
         isChangeDetected = true;
       }
       if (ParentWithDictionaryNullable is null) {
@@ -271,27 +300,19 @@ namespace StorageDataContext  {
           //nothing to do
         } else {
           ParentWithDictionaryNullable = parentWithDictionaryNullable;
-          if (Key>=0) {
-            ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
-          }
+          ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
           isChangeDetected = true;
         }
       } else {
         if (parentWithDictionaryNullable is null) {
-          if (Key>=0) {
-            ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(this);
-          }
+          ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(clone);
           ParentWithDictionaryNullable = null;
           isChangeDetected = true;
         } else {
-          if (ParentWithDictionaryNullable!=parentWithDictionaryNullable) {
-            if (Key>=0) {
-              ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(this);
-            }
+          if (ParentWithDictionaryNullable!=parentWithDictionaryNullable || clone.DateKey != DateKey) {
+            ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(clone);
             ParentWithDictionaryNullable = parentWithDictionaryNullable;
-            if (Key>=0) {
-              ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
-            }
+            ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
             isChangeDetected = true;
           }
         }
@@ -300,9 +321,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.ChildrenDictionary_Children.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(19, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated ChildrenDictionary_Child: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(
       DateTime dateKey, 
@@ -365,59 +391,48 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Removes ChildrenDictionary_Child from DC.Data.ChildrenDictionary_Children, 
-    /// disconnects ChildrenDictionary_Child from ChildrenDictionary_Parent because of ParentWithDictionary and 
-    /// disconnects ChildrenDictionary_Child from ChildrenDictionary_ParentNullable because of ParentWithDictionaryNullable.
+    /// Removes ChildrenDictionary_Child from DC.Data.ChildrenDictionary_Children.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"ChildrenDictionary_Child.Remove(): ChildrenDictionary_Child 'Class ChildrenDictionary_Child' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"ChildrenDictionary_Child.Release(): ChildrenDictionary_Child '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.ChildrenDictionary_Children.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released ChildrenDictionary_Child @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects ChildrenDictionary_Child from ChildrenDictionary_Parent because of ParentWithDictionary and 
-    /// disconnects ChildrenDictionary_Child from ChildrenDictionary_ParentNullable because of ParentWithDictionaryNullable.
+    /// Removes ChildrenDictionary_Child from parents as part of a transaction rollback of the new() statement.
     /// </summary>
-    internal static void Disconnect(ChildrenDictionary_Child childrenDictionary_Child) {
+    internal static void RollbackItemNew(IStorageItem item) {
+      var childrenDictionary_Child = (ChildrenDictionary_Child) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new ChildrenDictionary_Child(): {childrenDictionary_Child.ToTraceString()}");
+#endif
       if (childrenDictionary_Child.ParentWithDictionary!=ChildrenDictionary_Parent.NoChildrenDictionary_Parent) {
         childrenDictionary_Child.ParentWithDictionary.RemoveFromChildrenDictionary_Children(childrenDictionary_Child);
       }
       if (childrenDictionary_Child.ParentWithDictionaryNullable!=null && childrenDictionary_Child.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
         childrenDictionary_Child.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_Child);
       }
+      childrenDictionary_Child.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes childrenDictionary_ParentNullable from ParentWithDictionaryNullable
-    /// </summary>
-    internal void RemoveParentWithDictionaryNullable(ChildrenDictionary_ParentNullable childrenDictionary_ParentNullable) {
-      if (childrenDictionary_ParentNullable!=ParentWithDictionaryNullable) throw new Exception();
-
-      var clone = new ChildrenDictionary_Child(this);
-      ParentWithDictionaryNullable = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes ChildrenDictionary_Child from possible parents as part of a transaction rollback.
+    /// Releases ChildrenDictionary_Child from DC.Data.ChildrenDictionary_Children as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var childrenDictionary_Child = (ChildrenDictionary_Child) item;
-      if (childrenDictionary_Child.ParentWithDictionary!=ChildrenDictionary_Parent.NoChildrenDictionary_Parent) {
-        childrenDictionary_Child.ParentWithDictionary.RemoveFromChildrenDictionary_Children(childrenDictionary_Child);
-      }
-      if (childrenDictionary_Child.ParentWithDictionaryNullable!=null && childrenDictionary_Child.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
-        childrenDictionary_Child.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_Child);
-      }
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenDictionary_Child.Store(): {childrenDictionary_Child.ToTraceString()}");
+#endif
       childrenDictionary_Child.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -426,54 +441,79 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the ChildrenDictionary_Child item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var childrenDictionary_ChildOld = (ChildrenDictionary_Child) oldItem;
-      var childrenDictionary_ChildNew = (ChildrenDictionary_Child) newItem;
-      childrenDictionary_ChildNew.DateKey = childrenDictionary_ChildOld.DateKey;
-      childrenDictionary_ChildNew.Text = childrenDictionary_ChildOld.Text;
-      if (childrenDictionary_ChildNew.ParentWithDictionary!=childrenDictionary_ChildOld.ParentWithDictionary) {
-        if (childrenDictionary_ChildNew.ParentWithDictionary!=ChildrenDictionary_Parent.NoChildrenDictionary_Parent) {
-          childrenDictionary_ChildNew.ParentWithDictionary.RemoveFromChildrenDictionary_Children(childrenDictionary_ChildNew);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (ChildrenDictionary_Child) oldStorageItem;
+      var newItem = (ChildrenDictionary_Child) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back ChildrenDictionary_Child.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.DateKey = oldItem.DateKey;
+      newItem.Text = oldItem.Text;
+      if (newItem.ParentWithDictionary!=oldItem.ParentWithDictionary) {
+        if (newItem.ParentWithDictionary!=ChildrenDictionary_Parent.NoChildrenDictionary_Parent) {
+            newItem.ParentWithDictionary.RemoveFromChildrenDictionary_Children(oldItem);
         }
-        childrenDictionary_ChildNew.ParentWithDictionary = childrenDictionary_ChildOld.ParentWithDictionary;
-        childrenDictionary_ChildNew.ParentWithDictionary.AddToChildrenDictionary_Children(childrenDictionary_ChildNew);
+        newItem.ParentWithDictionary = oldItem.ParentWithDictionary;
+        newItem.ParentWithDictionary.AddToChildrenDictionary_Children(newItem);
       }
-      if (childrenDictionary_ChildNew.ParentWithDictionaryNullable is null) {
-        if (childrenDictionary_ChildOld.ParentWithDictionaryNullable is null) {
+      if (newItem.ParentWithDictionaryNullable is null) {
+        if (oldItem.ParentWithDictionaryNullable is null) {
           //nothing to do
         } else {
-          childrenDictionary_ChildNew.ParentWithDictionaryNullable = childrenDictionary_ChildOld.ParentWithDictionaryNullable;
-          childrenDictionary_ChildNew.ParentWithDictionaryNullable.AddToChildrenDictionary_Children(childrenDictionary_ChildNew);
+          newItem.ParentWithDictionaryNullable = oldItem.ParentWithDictionaryNullable;
+          newItem.ParentWithDictionaryNullable.AddToChildrenDictionary_Children(newItem);
         }
       } else {
-        if (childrenDictionary_ChildOld.ParentWithDictionaryNullable is null) {
-          if (childrenDictionary_ChildNew.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
-            childrenDictionary_ChildNew.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_ChildNew);
+        if (oldItem.ParentWithDictionaryNullable is null) {
+          if (newItem.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
+            newItem.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(oldItem);
           }
-          childrenDictionary_ChildNew.ParentWithDictionaryNullable = null;
+          newItem.ParentWithDictionaryNullable = null;
         } else {
-          if (childrenDictionary_ChildNew.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
-            childrenDictionary_ChildNew.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(childrenDictionary_ChildNew);
+          if (oldItem.ParentWithDictionaryNullable!=newItem.ParentWithDictionaryNullable || oldItem.DateKey != newItem.DateKey) {
+          if (newItem.ParentWithDictionaryNullable!=ChildrenDictionary_ParentNullable.NoChildrenDictionary_ParentNullable) {
+            newItem.ParentWithDictionaryNullable.RemoveFromChildrenDictionary_Children(oldItem);
           }
-          childrenDictionary_ChildNew.ParentWithDictionaryNullable = childrenDictionary_ChildOld.ParentWithDictionaryNullable;
-          childrenDictionary_ChildNew.ParentWithDictionaryNullable.AddToChildrenDictionary_Children(childrenDictionary_ChildNew);
+          newItem.ParentWithDictionaryNullable = oldItem.ParentWithDictionaryNullable;
+          newItem.ParentWithDictionaryNullable.AddToChildrenDictionary_Children(newItem);
+          }
         }
       }
-      childrenDictionary_ChildNew.onRollbackItemUpdated(childrenDictionary_ChildOld);
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back ChildrenDictionary_Child.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(ChildrenDictionary_Child oldChildrenDictionary_Child);
 
 
     /// <summary>
-    /// Adds ChildrenDictionary_Child item to possible parents again as part of a transaction rollback.
+    /// Adds ChildrenDictionary_Child to DC.Data.ChildrenDictionary_Children as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var childrenDictionary_Child = (ChildrenDictionary_Child) item;
-      childrenDictionary_Child.ParentWithDictionary.AddToChildrenDictionary_Children(childrenDictionary_Child);
-      childrenDictionary_Child.ParentWithDictionaryNullable?.AddToChildrenDictionary_Children(childrenDictionary_Child);
-      childrenDictionary_Child.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenDictionary_Child.Release(): {childrenDictionary_Child.ToTraceString()}");
+#endif
+      childrenDictionary_Child.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {DateKey.ToShortDateString()}|" +
+        $" {Text}|" +
+        $" ParentWithDictionary {ParentWithDictionary.GetKeyOrHash()}|" +
+        $" ParentWithDictionaryNullable {ParentWithDictionaryNullable?.GetKeyOrHash()}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -497,7 +537,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" DateKey: {DateKey.ToShortDateString()}," +
         $" Text: {Text}," +
         $" ParentWithDictionary: {ParentWithDictionary.ToShortString()}," +

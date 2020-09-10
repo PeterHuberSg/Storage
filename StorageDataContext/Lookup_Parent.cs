@@ -56,61 +56,68 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after Lookup_Parent.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before Lookup_Parent gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of Lookup_Parent are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(DateTime date, decimal someValue, ref bool isCancelled){
    }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of Lookup_Parent are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(Lookup_Parent old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for Lookup_Parent is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
+    /// <summary>
+    /// Called after 'new Lookup_Parent()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after Lookup_Parent.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after Lookup_Parent.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(Lookup_Parent oldLookup_Parent) {
     }
+
+
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>

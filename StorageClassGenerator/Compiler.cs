@@ -38,8 +38,22 @@ namespace Storage {
     //Step 2 AnalyzeDependencies()(): Find which class (=parents) has collections of other classes (=children). Parents
     //       must be created (read from files) before their children. Also ensure that every parent child relationship
     //       is correctly defined (no orphans).
+    //Step 3 Write code:
+    //       Write class.cs files is missing and class.base.cs files
+    //       Write context class
+    //       write file with enumerations
 
-    public readonly bool IsFullyCommented; 
+    #region Properties
+    //      ----------
+
+    public readonly bool IsFullyCommented; //if the class.cs file does not exist, one gets created. Should all
+                                           //code in it be commented out. Default: true
+    public readonly TracingEnum IsTracing; //Should tracing code be generated ?
+    #endregion
+
+
+    #region Constructor
+    //      -----------
 
     readonly Dictionary<string, ClassInfo> classes;
     readonly List<ClassInfo> parentChildTree;
@@ -48,14 +62,18 @@ namespace Storage {
     bool isUsingDictionary = false; // is statement 'using System.Collections.Generic' needed in data context source file ? 
 
 
-    public Compiler(bool isFullyCommented = true) {
+    public Compiler(TracingEnum isTracing, bool isFullyCommented = true) {
+      IsTracing = isTracing;
       IsFullyCommented = isFullyCommented;
       classes = new Dictionary<string, ClassInfo>();
       parentChildTree = new List<ClassInfo>();
       enums = new Dictionary<string, EnumInfo>();
     }
+    #endregion
 
 
+    #region Parse
+    //      -----
     string? nameSpaceString;
     const string onlyAcceptableConsts = "should only contain properties and configuration constants for " +
             "MaxLineLenght, AreInstancesUpdatable and AreInstancesDeletable, but not";
@@ -280,7 +298,11 @@ namespace Storage {
       }
       return comment;
     }
+    #endregion
 
+
+    #region Analyze Dependencies
+    //      --------------------
 
     public void AnalyzeDependencies() {
       var topClasses = classes.Values.ToDictionary(c=>c.ClassName);
@@ -300,10 +322,7 @@ namespace Storage {
                 }
                 isFound = true;
                 member.ToLowerTarget = mi;
-                mi.IsNullable = member.IsNullable;
-                if (mi.IsNullable) {
-                  mi.TypeString += '?';
-                }
+                mi.SetIsNullable(member.IsNullable);
                 mi.IsReadOnly = member.IsReadOnly;
                 break;
               }
@@ -503,6 +522,7 @@ namespace Storage {
     private void addParentChildTree(ClassInfo classInfo) {
       if (!classInfo.IsAddedToParentChildTree && allParentsAreAddedToParentChildTree(classInfo)) {
         classInfo.IsAddedToParentChildTree = true;
+        classInfo.StoreKey = parentChildTree.Count;
         parentChildTree.Add(classInfo);
         foreach (var child in classInfo.Children) {
           addParentChildTree(child);
@@ -519,18 +539,11 @@ namespace Storage {
       }
       return true;
     }
+    #endregion
 
 
-    public void WriteContentToConsole() {
-      foreach (var classInfo in classes.Values) {
-        Console.WriteLine(classInfo);
-        foreach (var memberInfo in classInfo.Members.Values) {
-          Console.WriteLine("  " + memberInfo);
-        }
-        Console.WriteLine();
-      }
-    }
-
+    #region Write Code
+    //      ----------
 
     public void WriteClassFiles(DirectoryInfo targetDirectory, string context) {
       foreach (var classInfo in classes.Values) {
@@ -544,7 +557,7 @@ namespace Storage {
           Console.Write(classInfo.ClassName + ".base.cs");
           classInfo.EstimatedMaxByteSize = Math.Max(classInfo.EstimatedMaxByteSize, classInfo.HeaderLength);
           Console.WriteLine($"  Estimated bytes to store 1 instance: {classInfo.EstimatedMaxByteSize}, default");
-          classInfo.WriteBaseClassFile(streamWriter, nameSpaceString!, context);
+          classInfo.WriteBaseClassFile(streamWriter, nameSpaceString!, context, IsTracing);
         }
 
         var fileNameAndPath = targetDirectory!.FullName + '\\' + classInfo.ClassName + ".cs";
@@ -603,6 +616,15 @@ namespace Storage {
       sw.WriteLine($"    private static {context}? data; //data is needed for Interlocked.Exchange(ref data, null) in DisposeData()");
       sw.WriteLine();
       sw.WriteLine();
+      if (IsTracing>TracingEnum.noTracing) {
+        var debugOnly = IsTracing==TracingEnum.debugOnlyTracing ? " if DEBUG is defined" : "";
+        sw.WriteLine("    /// <summary>");
+        sw.WriteLine($"    /// Trace gets called when an item gets created, stored, updated or removed{debugOnly}");
+        sw.WriteLine("    /// </summary>");
+        sw.WriteLine("    public static Action<string>? Trace;");
+        sw.WriteLine();
+        sw.WriteLine();
+      }
       sw.WriteLine("    /// <summary>");
       sw.WriteLine("    /// Flushes all data to permanent storage location if permanent data storage is active. Compacts data storage");
       sw.WriteLine("    /// by applying all updates and removing all instances marked as deleted.");
@@ -665,10 +687,18 @@ namespace Storage {
       sw.WriteLine($"    public {context}(CsvConfig? csvConfig): base(DataStoresCount: {classes.Count}) {{");
       sw.WriteLine("      data = this;");
       sw.WriteLine("      IsInitialised = false;");
+      WriteLinesTracing(sw, IsTracing,
+                   $"      Trace?.Invoke($\"Context {context} initialising\");",
+                    "      var trace = Trace;",
+                    "      Trace = null;");
       sw.WriteLine();
       sw.WriteLine("      string? backupResult = null;");
       sw.WriteLine("      if (csvConfig!=null) {");
       sw.WriteLine("        backupResult = Csv.Backup(csvConfig, DateTime.Now);");
+      WriteLinesTracing(sw, IsTracing,
+                   "        if (backupResult.Length>0) {",
+                   "           Trace?.Invoke(\"Backup: \" + backupResult);",
+                   "        }");
       sw.WriteLine("      }");
       sw.WriteLine();
       sw.WriteLine("      CsvConfig = csvConfig;");
@@ -683,13 +713,13 @@ namespace Storage {
         }
       }
 
-      sw.WriteLine("      var storeKey = 0;");
       sw.WriteLine("      if (csvConfig==null) {");
       foreach (var classInfo in parentChildTree) {
         sw.WriteLine($"        {classInfo.PluralName} = new DataStore<{classInfo.ClassName}>(");
         sw.WriteLine("          this,");
-        sw.WriteLine("          storeKey,");
+        sw.WriteLine($"          {classInfo.StoreKey},");
         sw.WriteLine($"          {classInfo.ClassName}.SetKey,");
+        sw.WriteLine($"          {classInfo.ClassName}.RollbackItemNew,");
         sw.WriteLine($"          {classInfo.ClassName}.RollbackItemStore,");
         if (classInfo.AreInstancesUpdatable) {
           sw.WriteLine($"          {classInfo.ClassName}.RollbackItemUpdate,");
@@ -697,25 +727,28 @@ namespace Storage {
           sw.WriteLine($"          null,");
         }
         if (classInfo.AreInstancesDeletable) {
-          sw.WriteLine($"          {classInfo.ClassName}.RollbackItemRemove,");
+          sw.WriteLine($"          {classInfo.ClassName}.RollbackItemRelease,");
         } else {
           sw.WriteLine($"          null,");
         }
-        if (classInfo.AreInstancesDeletable && classInfo.IsDisconnectNeeded) {
-          sw.WriteLine($"          {classInfo.ClassName}.Disconnect,");
-        } else {
-          sw.WriteLine($"          null,");
-        }
+        //if (classInfo.AreInstancesDeletable) {
+        //  sw.WriteLine($"          {classInfo.ClassName}.PerformRelease,");
+        //} else {
+        //  sw.WriteLine($"          null,");
+        //}
         sw.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
         sw.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
-        sw.WriteLine($"        DataStores[storeKey++] = {classInfo.PluralName};");
+        sw.WriteLine($"        DataStores[{classInfo.StoreKey}] = {classInfo.PluralName};");
         sw.WriteLine($"        on{classInfo.PluralName}Filled();");
+        //WriteLinesTracing(sw, IsTracing,
+        //             $"        Trace?.Invoke($\"{context}.Data.{classInfo.PluralName} initialised\");");
+        sw.WriteLine();
       }
       sw.WriteLine("      } else {");
       foreach (var classInfo in parentChildTree) {
         sw.WriteLine($"        {classInfo.PluralName} = new DataStoreCSV<{classInfo.ClassName}>(");
         sw.WriteLine("          this,");
-        sw.WriteLine("          storeKey,");
+        sw.WriteLine($"          {classInfo.StoreKey},");
         sw.WriteLine("          csvConfig!,");
         sw.WriteLine($"          {classInfo.ClassName}.EstimatedLineLength,");
         sw.WriteLine($"          {classInfo.ClassName}.Headers,");
@@ -733,6 +766,7 @@ namespace Storage {
           sw.WriteLine($"          null,");
         }
         sw.WriteLine($"          {classInfo.ClassName}.Write,");
+        sw.WriteLine($"          {classInfo.ClassName}.RollbackItemNew,");
         sw.WriteLine($"          {classInfo.ClassName}.RollbackItemStore,");
         if (classInfo.AreInstancesUpdatable) {
           sw.WriteLine($"          {classInfo.ClassName}.RollbackItemUpdate,");
@@ -740,23 +774,29 @@ namespace Storage {
           sw.WriteLine($"          null,");
         }
         if (classInfo.AreInstancesDeletable) {
-          sw.WriteLine($"          {classInfo.ClassName}.RollbackItemRemove,");
+          sw.WriteLine($"          {classInfo.ClassName}.RollbackItemRelease,");
         } else {
           sw.WriteLine($"          null,");
         }
-        if (classInfo.AreInstancesDeletable && classInfo.IsDisconnectNeeded) {
-          sw.WriteLine($"          {classInfo.ClassName}.Disconnect,");
-        } else {
-          sw.WriteLine($"          null,");
-        }
+        //if (classInfo.AreInstancesDeletable) {
+        //  sw.WriteLine($"          {classInfo.ClassName}.PerformRelease,");
+        //} else {
+        //  sw.WriteLine($"          null,");
+        //}
         sw.WriteLine($"          areInstancesUpdatable: {classInfo.AreInstancesUpdatable.ToString().ToLowerInvariant()},");
         sw.WriteLine($"          areInstancesDeletable: {classInfo.AreInstancesDeletable.ToString().ToLowerInvariant()});");
-        sw.WriteLine($"        DataStores[storeKey++] = {classInfo.PluralName};");
+        sw.WriteLine($"        DataStores[{classInfo.StoreKey}] = {classInfo.PluralName};");
         sw.WriteLine($"        on{classInfo.PluralName}Filled();");
+        //WriteLinesTracing(sw, IsTracing,
+        //             $"        Trace?.Invoke($\"{context}.Data.{classInfo.PluralName} initialised\");");
+        sw.WriteLine();
       }
       sw.WriteLine("      }");
       sw.WriteLine("      onConstructed();");
       sw.WriteLine("      IsInitialised = true;");
+      WriteLinesTracing(sw, IsTracing,
+                    "      Trace = trace;",
+                   $"      Trace?.Invoke($\"Context {context} initialised\");");
       sw.WriteLine("    }");
       sw.WriteLine();
       sw.WriteLine("    /// <summary>}");
@@ -778,8 +818,36 @@ namespace Storage {
       sw.WriteLine("    #endregion");
       sw.WriteLine();
       sw.WriteLine();
-      sw.WriteLine("    #region IDisposable Support");
-      sw.WriteLine("    //      -------------------");
+      sw.WriteLine("    #region Overrides");
+      sw.WriteLine("    //      ---------");
+      sw.WriteLine();
+      if (IsTracing>TracingEnum.noTracing) {
+        if (IsTracing==TracingEnum.debugOnlyTracing) {
+          sw.WriteLine("#if DEBUG");
+        }
+        sw.WriteLine("    protected override void TraceFromBase(TraceMessageEnum traceMessageEnum) {");
+        sw.WriteLine("      string message;");
+        sw.WriteLine("      switch (traceMessageEnum) {");
+        sw.WriteLine("      case TraceMessageEnum.none: return;");
+        sw.WriteLine("      case TraceMessageEnum.StartTransaction: message = \"Start transaction\"; break;");
+        sw.WriteLine("      case TraceMessageEnum.CommitTransaction: message = \"Commit transaction\"; break;");
+        sw.WriteLine("      case TraceMessageEnum.RollingbackTransaction: message = \"Rolling back transaction\"; break;");
+        sw.WriteLine("      case TraceMessageEnum.RolledbackTransaction: message = \"Rolled back transaction\"; break;");
+        sw.WriteLine("      default:");
+        sw.WriteLine("        throw new NotSupportedException();");
+        sw.WriteLine("      }");
+        sw.WriteLine("      Trace?.Invoke(message);");
+        sw.WriteLine("    }");
+        if (IsTracing==TracingEnum.debugOnlyTracing) {
+          sw.WriteLine("#endif");
+        }
+        sw.WriteLine();
+        sw.WriteLine();
+      }
+      sw.WriteLine("    internal new void AddTransaction(TransactionItem transactionItem) {");
+      sw.WriteLine("      base.AddTransaction(transactionItem);");
+      sw.WriteLine("    }");
+      sw.WriteLine();
       sw.WriteLine();
       sw.WriteLine("    protected override void Dispose(bool disposing) {");
       sw.WriteLine("      if (disposing) {");
@@ -816,7 +884,21 @@ namespace Storage {
     }
 
 
-    internal void WriteEnumsFile(DirectoryInfo targetDirectory) {
+    public static void WriteLinesTracing(StreamWriter sw, TracingEnum isTracing, params string[] lines) {
+      if (isTracing==TracingEnum.noTracing) return;
+
+      if (isTracing==TracingEnum.debugOnlyTracing) {
+        sw.WriteLine("#if DEBUG");
+      }
+      foreach (var line in lines) {
+        sw.WriteLine(line);
+      }
+      if (isTracing==TracingEnum.debugOnlyTracing) {
+        sw.WriteLine("#endif");
+      }
+    }
+
+    public void WriteEnumsFile(DirectoryInfo targetDirectory) {
       var baseFileNameAndPath = targetDirectory!.FullName + '\\' + "Enums.base.cs";
       try {
         File.Delete(baseFileNameAndPath);
@@ -837,5 +919,17 @@ namespace Storage {
       }
       sw.WriteLine("}");
     }
+
+
+    public void WriteContentToConsole() {
+      foreach (var classInfo in classes.Values) {
+        Console.WriteLine(classInfo);
+        foreach (var memberInfo in classInfo.Members.Values) {
+          Console.WriteLine("  " + memberInfo);
+        }
+        Console.WriteLine();
+      }
+    }
+    #endregion
   }
 }

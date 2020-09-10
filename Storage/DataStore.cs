@@ -371,11 +371,12 @@ namespace Storage {
     consumption. Therefore, interfaces cannot be used for these internal methods. Instead, they are passed in the Constructor
     of DataStore.
     */
-    Action<IStorageItem, int> setKey;
+    Action<IStorageItem, int, /*isRollback*/bool> setKey;
+    Action<IStorageItem> rollbackItemNew;
     Action<IStorageItem> rollbackItemStore;
     Action</*old*/IStorageItem, /*new*/IStorageItem>? rollbackItemUpdate;
-    Action<IStorageItem>? rollbackItemRemove;
-    Action<TItem>? disconnect;
+    Action<IStorageItem>? rollbackItemRelease;
+    //Action<TItem>? disconnect;
 
     TItem?[] items;
     static readonly TItem?[] emptyItems = new TItem[0];
@@ -384,26 +385,28 @@ namespace Storage {
     int version;
 
 
-    /// <summary>
-    /// Constructs a readonly DataStore with a given initial capacity. It is initially empty, but will have room for 
-    /// the given number of items. When too many items get added, the capacity gets increased.
-    /// </summary>
-    /// <param name="dataContext">DataContext creating this DataStore</param>
-    /// <param name="storeKey">Unique number to identify DataStore</param>
-    /// <param name="setKey">Called when an item gets added to set its Key</param>
-    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
-    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
-    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
-    /// <param name="capacity">How many items should DataStore by able to hold initially ?</param>
-    public DataStore(
-      DataContextBase? dataContext,
-      int storeKey,
-      Action<IStorageItem, int> setKey,
-      Action<IStorageItem> rollbackItemStore,
-      Action</*old*/IStorageItem, /*new*/IStorageItem>? rollbackItemUpdate,
-      Action<IStorageItem>? rollbackItemRemove,
-      int capacity = 0): this(dataContext, storeKey, setKey, rollbackItemStore, rollbackItemUpdate, rollbackItemRemove, 
-        null, false, false, capacity) {}
+    ///// <summary>
+    ///// Constructs an add-only DataStore with a given initial capacity. It is initially empty, but will have room for 
+    ///// the given number of items. When too many items get added, the capacity gets increased.
+    ///// </summary>
+    ///// <param name="dataContext">DataContext creating this DataStore</param>
+    ///// <param name="storeKey">Unique number to identify DataStore</param>
+    ///// <param name="setKey">Called when an item gets added to set its Key</param>
+    ///// <param name="rollbackItemNew">Undo of data change in item during transaction due to constructor</param>
+    ///// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
+    ///// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
+    ///// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
+    ///// <param name="capacity">How many items should DataStore by able to hold initially ?</param>
+    //public DataStore(
+    //  DataContextBase? dataContext,
+    //  int storeKey,
+    //  Action<IStorageItem, int, /*isRollback*/bool> setKey,
+    //  Action<IStorageItem> rollbackItemNew,
+    //  Action<IStorageItem> rollbackItemStore,
+    //  Action</*old*/IStorageItem, /*new*/IStorageItem>? rollbackItemUpdate,
+    //  Action<IStorageItem>? rollbackItemRemove,
+    //  int capacity = 0): this(dataContext, storeKey, setKey, rollbackItemNew, rollbackItemStore, rollbackItemUpdate, 
+    //    rollbackItemRemove, null, false, false, capacity) {}
 
 
     /// <summary>
@@ -413,32 +416,35 @@ namespace Storage {
     /// <param name="dataContext">DataContext creating this DataStore</param>
     /// <param name="storeKey">Unique number to identify DataStore</param>
     /// <param name="setKey">Called when an item gets added to set its Key</param>
-    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
-    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
-    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
-    /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
-    /// items linked to this item and/or to remove item from parent(s)</param>
+    /// <param name="rollbackItemNew">Undo of data change in item during transaction due to item constructor</param>
+    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to item.Store()</param>
+    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to item.Update()</param>
+    /// <param name="rollbackItemRelease">Undo of data change in item during transaction due to item.Release()</param>
+    ///// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
+    ///// items linked to this item and/or to remove item from parent(s)</param>
     /// <param name="areInstancesUpdatable">Can the property of an item change ?</param>
     /// <param name="areInstancesDeletable">Can an item be removed from DataStore</param>
     /// <param name="capacity">How many items should DataStore by able to hold initially ?</param>
     public DataStore(
       DataContextBase? dataContext,
       int storeKey,
-      Action<IStorageItem, int> setKey,
+      Action<IStorageItem, int, /*isRollback*/bool> setKey,
+      Action<IStorageItem> rollbackItemNew,
       Action<IStorageItem> rollbackItemStore,
       Action</*old*/IStorageItem, /*new*/IStorageItem>? rollbackItemUpdate,
-      Action<IStorageItem>? rollbackItemRemove,
-      Action<TItem>? disconnect,
+      Action<IStorageItem>? rollbackItemRelease,
+      //Action<TItem>? disconnect,
       bool areInstancesUpdatable = false,
       bool areInstancesDeletable = false,
       int capacity = 0) 
     :base(dataContext, storeKey, areInstancesUpdatable, areInstancesDeletable)
     {
       this.setKey = setKey;
+      this.rollbackItemNew = rollbackItemNew;
       this.rollbackItemStore = rollbackItemStore;
       this.rollbackItemUpdate = rollbackItemUpdate;
-      this.rollbackItemRemove = rollbackItemRemove;
-      this.disconnect = disconnect;
+      this.rollbackItemRelease = rollbackItemRelease;
+      //this.disconnect = disconnect;
       if (capacity < 0) throw new ArgumentOutOfRangeException("Capacity must be equal or grater , but was '" + capacity + "'.");
 
       if (capacity==0) {
@@ -631,13 +637,13 @@ namespace Storage {
             IsTransactionRunning = true;
             OnStartTransaction();
           }
-          DataContextBase.TransactionItems.Add(new TransactionItem(StoreKey, TransactionActivityEnum.Remove, item.Key, item, index));
+          DataContextBase.TransactionItems.Add(new TransactionItem(StoreKey, TransactionActivityEnum.Release, item.Key, item, index));
           DataContextBase.TransactionStoreFlags[(int)StoreKey] = true;
         }
         OnItemRemoved(item);
       }
-      disconnect!(item);
-      setKey(item, StorageExtensions.NoKey);//remove key only once  disconnect() and OnItemRemoved() have executed.
+      //disconnect!(item);
+      setKey(item, StorageExtensions.NoKey, /*isRollback*/false);//remove key only once  disconnect() and OnItemRemoved() have executed.
       /*+if (!IsTransactionRunning) {
         Removed?.Invoke(item);
       }+*/
@@ -694,12 +700,14 @@ namespace Storage {
     #region Disposable Interface
     //     ---------------------
 
+    //Todo: DataStore.Dispose(); Rollback transaction if dispose. Probably better if DC.Dispose() would detect and handle uncommited transaction.
     protected override void Dispose(bool disposing) {
       setKey = null!;
+      rollbackItemNew = null!;
       rollbackItemStore = null!;
       rollbackItemUpdate = null;
-      rollbackItemRemove = null;
-      disconnect = null;
+      rollbackItemRelease = null;
+      //disconnect = null;
       items = null!;
 
       base.Dispose(disposing);
@@ -731,7 +739,7 @@ namespace Storage {
       lock (items) {
         var lastItemKey = LastItemIndex==-1 ? -1 : items[LastItemIndex]!.Key;//throws exception if indexed item is null
         if (item.Key==StorageExtensions.NoKey) {
-          setKey(item, ++lastItemKey);
+          setKey(item, ++lastItemKey, /*isRollback*/false);
         } else {
           if (item.Key<=lastItemKey) throw new Exception($"Cannot add {typeof(TItem).Name} '{item}' to DataStore, because its key should be greater than lastItemKey {lastItemKey}.");
         }
@@ -769,7 +777,7 @@ namespace Storage {
             IsTransactionRunning = true;
             OnStartTransaction();
           }
-          DataContextBase.TransactionItems.Add(new TransactionItem(StoreKey, TransactionActivityEnum.Add, item.Key, item, LastItemIndex));
+          DataContextBase.TransactionItems.Add(new TransactionItem(StoreKey, TransactionActivityEnum.Store, item.Key, item, LastItemIndex));
           DataContextBase.TransactionStoreFlags[(int)StoreKey] = true;
         }
         OnItemAdded(item);
@@ -871,25 +879,31 @@ namespace Storage {
 
     override internal void RollbackItem(in TransactionItem transactionItem) {
       switch (transactionItem.TransactionActivity) {
-      case TransactionActivityEnum.Add:
+      case TransactionActivityEnum.New:
+        rollbackItemNew?.Invoke(transactionItem.Item);
+        break;
+
+      case TransactionActivityEnum.Store:
+        rollbackItemStore(transactionItem.Item);//execute rollbackItemStore as long item.Key is still defined, helps tracing
         rollbackStoreAdd(transactionItem.Index, transactionItem.Item);
-        rollbackItemStore(transactionItem.Item);
         break;
 
       case TransactionActivityEnum.Update:
 #if DEBUG
         if (!AreInstancesUpdatable) throw new Exception();
 #endif
-        rollbackStoreUpdate();
+        if (transactionItem.Item.Key>=0) {
+          rollbackStoreUpdate();
+        }
         rollbackItemUpdate?.Invoke(transactionItem.OldItem!, transactionItem.Item);
         break;
 
-      case TransactionActivityEnum.Remove:
+      case TransactionActivityEnum.Release:
 #if DEBUG
         if (!AreInstancesDeletable) throw new Exception();
 #endif
         rollbackStoreRemove(transactionItem.Index, transactionItem.Key, transactionItem.Item);
-        rollbackItemRemove?.Invoke(transactionItem.Item);
+        rollbackItemRelease?.Invoke(transactionItem.Item);
         break;
       default: throw new NotSupportedException();
       }
@@ -904,7 +918,7 @@ namespace Storage {
           $"LastItemIndex: {LastItemIndex}; keys[index]: {KeysArray[index]}; items[index]: {items[index]};");
 #endif
       items[index] = null;
-      setKey(item, StorageExtensions.NoKey);
+      setKey(item, StorageExtensions.NoKey, /*isRollback*/true);
       //((TItem)item).HasChanged -= item_HasChanged;
       //no need to change keys[]. The next item added will get the same number and in the meantime keys[index] does 
       //not give a problem to binarySearch()
@@ -947,7 +961,7 @@ namespace Storage {
       items[index] = tItem;
       //keys has still the correct key for this item
       //AreItemsDeleted stays true. Easier than figuring out if it is still true.
-      setKey(tItem, key);
+      setKey(tItem, key, /*isRollback*/true);
       //((TItem)item).HasChanged += item_HasChanged;
       Count++;
       version--;

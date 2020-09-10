@@ -29,10 +29,10 @@ namespace StorageTest {
         null,
         1,
         TestItem.SetKey,
+        TestItem.RollbackItemNew,
         TestItem.RollbackItemStore,
         TestItem.RollbackItemUpdate,
-        TestItem.RollbackItemRemove,
-        TestItem.Disconnect, 
+        TestItem.RollbackItemRelease,
         areInstancesUpdatable: true, 
         areInstancesDeletable: true);
       /*+

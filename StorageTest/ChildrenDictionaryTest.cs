@@ -34,7 +34,6 @@ namespace StorageTest {
         assertDL();
 
         //stored immediately
-        DC.Data.StartTransaction();
         var now = DateTime.Now.Date;
         var dayIndex = 1;
         var parent1Key = addParent("1", isStoring: true).Key;
@@ -46,9 +45,8 @@ namespace StorageTest {
         var parent2NullableKey = addParentNullable("2N", isStoring: true).Key;
         var child2Key = addChild(parent2Key, parent2NullableKey, now.AddDays(dayIndex++), "21", isStoring: true).Key;
         var child3Key = addChild(parent2Key, parent2NullableKey, now.AddDays(dayIndex++), "22", isStoring: true).Key;
-        DC.Data.CommitTransaction();
 
-        //not stored
+        //constructed and stored later
         var parent3 = addParent("3", isStoring: false);
         var parent3Nullable = addParentNullable("3N", isStoring: false);
         var child4 = addChild(parent3, null, now.AddDays(dayIndex++), "31", isStoring: false);
@@ -91,22 +89,24 @@ namespace StorageTest {
         updateChild(child1Key, parent1Key, null, now.AddDays(-1), "11.U4");
         updateChild(child1Key, parent1Key, parent1NullableKey, now.AddDays(-1), "11.U5");
 
-        //updating a not stored child should not lead to any change in the parents
+        removeChild(child1Key);
+
+        //updating a not stored child
         parent3 = DC.Data.ChildrenDictionary_Parents[parent3.Key];
         parent4 = DC.Data.ChildrenDictionary_Parents[parent4.Key];
         parent4Nullable = DC.Data.ChildrenDictionary_ParentNullables[parent4Nullable.Key];
-        var parent3Expected = parent3.ToString();
-        var parent4Expected = parent4.ToString();
-        var parent4NullableExpected = parent4Nullable.ToString();
         var child7 = addChild(parent4, parent4Nullable, now.AddDays(dayIndex++), "43", isStoring: false);
+        Assert.IsTrue(parent4.ChildrenDictionary_Children.ContainsKey(child7.DateKey));
+        Assert.IsTrue(parent4Nullable.ChildrenDictionary_Children.ContainsKey(child7.DateKey));
+        var oldDate = child7.DateKey;
         child7.Update(now.AddDays(dayIndex++), "33U", parent3, null);
-        Assert.AreEqual(parent3Expected, parent3.ToString());
-        Assert.AreEqual(parent4Expected, parent4.ToString());
-        Assert.AreEqual(parent4NullableExpected, parent4Nullable.ToString());
-
-        //removeParentDictionary(0);
-
-        removeChild(child1Key);
+        Assert.IsFalse(parent4.ChildrenDictionary_Children.ContainsKey(oldDate));
+        Assert.IsFalse(parent4Nullable.ChildrenDictionary_Children.ContainsKey(oldDate));
+        Assert.IsTrue(parent3.ChildrenDictionary_Children.ContainsKey(child7.DateKey));
+        oldDate = child7.DateKey;
+        child7.Update(now.AddDays(dayIndex++), "33U", parent3, null);
+        Assert.IsFalse(parent3.ChildrenDictionary_Children.ContainsKey(oldDate));
+        Assert.IsTrue(parent3.ChildrenDictionary_Children.ContainsKey(child7.DateKey));
 
       } finally {
         DC.DisposeData();
@@ -145,12 +145,21 @@ namespace StorageTest {
 
 
     private ChildrenDictionary_Parent addParent(string someText, bool isStoring) {
-      var newParent = new ChildrenDictionary_Parent(someText, isStoring);
       if (isStoring) {
+        DC.Data.StartTransaction();
+        new ChildrenDictionary_Parent(someText, isStoring);
+        DC.Data.RollbackTransaction();
+        assertData();
+
+        DC.Data.StartTransaction();
+        var newParent = new ChildrenDictionary_Parent(someText, isStoring);
+        DC.Data.CommitTransaction();
         expectedParents.Add(newParent.Key, newParent.ToString());
         assertData();
+        return newParent;
+      } else {
+        return new ChildrenDictionary_Parent(someText, isStoring);
       }
-      return newParent;
     }
 
 
@@ -161,12 +170,21 @@ namespace StorageTest {
 
 
     private ChildrenDictionary_ParentNullable addParentNullable(string someText, bool isStoring) {
-      var newParentNullable = new ChildrenDictionary_ParentNullable(someText, isStoring);
       if (isStoring) {
+        DC.Data.StartTransaction();
+        new ChildrenDictionary_ParentNullable(someText, isStoring);
+        DC.Data.RollbackTransaction();
+        assertData();
+
+        DC.Data.StartTransaction();
+        var newParentNullable = new ChildrenDictionary_ParentNullable(someText, isStoring);
+        DC.Data.CommitTransaction();
         expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
         assertData();
+        return newParentNullable;
+      } else {
+        return new ChildrenDictionary_ParentNullable(someText, isStoring);
       }
-      return newParentNullable;
     }
 
 
@@ -177,37 +195,69 @@ namespace StorageTest {
 
 
     private ChildrenDictionary_Child addChild(int parentKey, int? parentNullableKey, DateTime date, string text, bool isStoring) {
+      /*
+            var parent = DC.Data.ChildrenDictionary_Parents[parentKey];
+            ChildrenDictionary_ParentNullable? parentNullable = null;
+            if (parentNullableKey.HasValue) {
+              parentNullable = DC.Data.ChildrenDictionary_ParentNullables[parentNullableKey.Value];
+            }
+            var newChild = new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring: true);
+            if (isStoring) {
+              expectedChildren.Add(newChild.Key, newChild.ToString());
+              expectedParents[parent.Key] = parent.ToString();
+              if (parentNullable!=null) {
+                expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+              }
+              assertData();
+            }
+            return newChild;
+      */
       var parent = DC.Data.ChildrenDictionary_Parents[parentKey];
       ChildrenDictionary_ParentNullable? parentNullable = null;
       if (parentNullableKey.HasValue) {
         parentNullable = DC.Data.ChildrenDictionary_ParentNullables[parentNullableKey.Value];
       }
-      var newChild = new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring: true);
-      if (isStoring) {
-        expectedChildren.Add(newChild.Key, newChild.ToString());
-        expectedParents[parent.Key] = parent.ToString();
-        if (parentNullable!=null) {
-          expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
-        }
-        assertData();
-      }
-      return newChild;
+
+      return addChild(parent, parentNullable, date, text, isStoring);
     }
 
 
     private ChildrenDictionary_Child addChild(ChildrenDictionary_Parent parent, ChildrenDictionary_ParentNullable? parentNullable,
       DateTime date, string text, bool isStoring) 
     {
-      var newChild = new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring);
+      //var newChild = new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring);
+      //if (isStoring) {
+      //  expectedChildren.Add(newChild.Key, newChild.ToString());
+      //  expectedParents[parent.Key] = parent.ToString();
+      //  if (parentNullable!=null) {
+      //    expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+      //  }
+      //  assertData();
+      //}
+      //return newChild;
       if (isStoring) {
+        DC.Data.StartTransaction();
+        new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring: true);
+        DC.Data.RollbackTransaction();
+        assertData();
+
+        parent = DC.Data.ChildrenDictionary_Parents[parent.Key];
+        if (parentNullable!=null) {
+          parentNullable = DC.Data.ChildrenDictionary_ParentNullables[parentNullable.Key];
+        }
+        DC.Data.StartTransaction();
+        var newChild = new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring: true);
+        DC.Data.CommitTransaction();
         expectedChildren.Add(newChild.Key, newChild.ToString());
         expectedParents[parent.Key] = parent.ToString();
         if (parentNullable!=null) {
           expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
         }
         assertData();
+        return newChild;
+      } else {
+        return new ChildrenDictionary_Child(date, text, parent, parentNullable, isStoring: false);
       }
-      return newChild;
     }
 
 
@@ -328,13 +378,13 @@ namespace StorageTest {
     private void removeChild(int childKey) {
       var child = DC.Data.ChildrenDictionary_Children[childKey];
       DC.Data.StartTransaction();
-      child.Remove();
+      child.Release();
       DC.Data.RollbackTransaction();
       assertData();
       child = DC.Data.ChildrenDictionary_Children[childKey];
       expectedChildren.Remove(child.Key);
       DC.Data.StartTransaction();
-      child.Remove();
+      child.Release();
       DC.Data.CommitTransaction();
       var parent = child.ParentWithDictionary;
       var parentNullable = child.ParentWithDictionaryNullable;
@@ -342,7 +392,8 @@ namespace StorageTest {
       if (parentNullable!=null) {
         expectedParentsNullable[parentNullable!.Key] = parentNullable.ToString();
       }
-      assertData();
+      //assertData(); doesn't work, because parent in new data context have lost not stored children.
+      assertDL();
     }
 
 

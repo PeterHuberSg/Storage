@@ -56,61 +56,68 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after SampleMaster.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before SampleMaster gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of SampleMaster are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string text, int numberWithDefault, ref bool isCancelled){
    }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of SampleMaster are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(SampleMaster old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for SampleMaster is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
+    /// <summary>
+    /// Called after 'new SampleMaster()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after SampleMaster.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after SampleMaster.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(SampleMaster oldSampleMaster) {
     }
+
+
     /// <summary>
     /// Called after a sample gets added to SampleX.
     /// </summary>

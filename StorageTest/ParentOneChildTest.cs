@@ -40,6 +40,11 @@ namespace StorageTest {
         //create child
         DC.Data.StartTransaction();
         parent = DC.Data.ParentOneChild_Parents[parent.Key];
+        new ParentOneChild_Child("C0", parent, null);
+        DC.Data.RollbackTransaction();
+        assertData();
+        DC.Data.StartTransaction();
+        parent = DC.Data.ParentOneChild_Parents[parent.Key];
         var child = new ParentOneChild_Child("C0", parent, null);
         expectedChildren[child.Key] = child.ToString();
         expectedParents[parent.Key] = parent.ToString();
@@ -97,14 +102,14 @@ namespace StorageTest {
         //delete children
         child = DC.Data.ParentOneChild_Children[child.Key];
         DC.Data.StartTransaction();
-        child.Remove();
+        child.Release();
         DC.Data.RollbackTransaction();
         assertData();
         parent = DC.Data.ParentOneChild_Parents[parent.Key];
         parentNullable1 = DC.Data.ParentOneChild_ParentNullables[parentNullable1.Key];
         child = DC.Data.ParentOneChild_Children[child.Key];
         DC.Data.StartTransaction();
-        child.Remove();
+        child.Release();
         DC.Data.CommitTransaction();
         expectedChildren.Remove(child.Key);
         expectedParents[parent.Key] = parent.ToString();

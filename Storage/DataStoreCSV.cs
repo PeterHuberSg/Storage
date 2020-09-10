@@ -89,41 +89,41 @@ namespace Storage {
     //Timer? flushTimer;
 
 
-    /// <summary>
-    /// Constructs a readonly DataStoreCSV. If a CSV file exists already, its content gets read at startup. If no CSV
-    /// file exists, an empty one gets created with a header line.
-    /// </summary>
-    /// <param name="dataContext">DataContext creating this DataStore</param>
-    /// <param name="storeKey">Unique number to identify DataStore</param>
-    /// <param name="csvConfig">File name and other parameters for CSV file</param>
-    /// <param name="maxLineLenght">Maximal number of bytes needed to write one line</param>
-    /// <param name="headers">Name for each item property</param>
-    /// <param name="setKey">Called when an item gets added to set its Key</param>
-    /// <param name="create">Creates a new item with one line read from the CSV file</param>
-    /// <param name="verify">Verifies item, for example it parent(s) exist</param>
-    /// <param name="write">Writes item to CSV file</param>
-    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
-    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
-    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
-    /// <param name="capacity">How many items should DataStoreCSV by able to hold initially ?</param>
-    /// <param name="flushDelay">When the items in DataStoreCSV are not changed for flushDelay milliseconds, the internal
-    /// buffer gets written to the CSV file.</param>
-    public DataStoreCSV(
-      DataContextBase? dataContext,
-      int storeKey,
-      CsvConfig csvConfig,
-      int maxLineLenght,
-      string[] headers,
-      Action<IStorageItem, int> setKey,
-      Func<int, CsvReader, TItemCSV> create,
-      Func<TItemCSV, bool>? verify,
-      Action<TItemCSV, CsvWriter> write,
-      Action<IStorageItem> rollbackItemStore,
-      Action</*old*/IStorageItem, /*new*/IStorageItem> rollbackItemUpdate,
-      Action<IStorageItem> rollbackItemRemove,
-      int capacity = 0,
-      int flushDelay = 200) : this(dataContext, storeKey, csvConfig, maxLineLenght, headers, setKey, create, verify, null, 
-        write, rollbackItemStore, rollbackItemUpdate, rollbackItemRemove, null, false, false, capacity, flushDelay) {}
+    ///// <summary>
+    ///// Constructs a readonly DataStoreCSV. If a CSV file exists already, its content gets read at startup. If no CSV
+    ///// file exists, an empty one gets created with a header line.
+    ///// </summary>
+    ///// <param name="dataContext">DataContext creating this DataStore</param>
+    ///// <param name="storeKey">Unique number to identify DataStore</param>
+    ///// <param name="csvConfig">File name and other parameters for CSV file</param>
+    ///// <param name="maxLineLenght">Maximal number of bytes needed to write one line</param>
+    ///// <param name="headers">Name for each item property</param>
+    ///// <param name="setKey">Called when an item gets added to set its Key</param>
+    ///// <param name="create">Creates a new item with one line read from the CSV file</param>
+    ///// <param name="verify">Verifies item, for example it parent(s) exist</param>
+    ///// <param name="write">Writes item to CSV file</param>
+    ///// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
+    ///// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
+    ///// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
+    ///// <param name="capacity">How many items should DataStoreCSV by able to hold initially ?</param>
+    ///// <param name="flushDelay">When the items in DataStoreCSV are not changed for flushDelay milliseconds, the internal
+    ///// buffer gets written to the CSV file.</param>
+    //public DataStoreCSV(
+    //  DataContextBase? dataContext,
+    //  int storeKey,
+    //  CsvConfig csvConfig,
+    //  int maxLineLenght,
+    //  string[] headers,
+    //  Action<IStorageItem, int, /*isRollback*/bool> setKey,
+    //  Func<int, CsvReader, TItemCSV> create,
+    //  Func<TItemCSV, bool>? verify,
+    //  Action<TItemCSV, CsvWriter> write,
+    //  Action<IStorageItem> rollbackItemStore,
+    //  Action</*old*/IStorageItem, /*new*/IStorageItem> rollbackItemUpdate,
+    //  Action<IStorageItem> rollbackItemRemove,
+    //  int capacity = 0,
+    //  int flushDelay = 200) : this(dataContext, storeKey, csvConfig, maxLineLenght, headers, setKey, create, verify, null, 
+    //    write, rollbackItemStore, rollbackItemUpdate, rollbackItemRemove, null, false, false, capacity, flushDelay) {}
 
 
     /// <summary>
@@ -140,10 +140,11 @@ namespace Storage {
     /// <param name="verify">Verifies item, for example it parent(s) exist</param>
     /// <param name="update">Updates an item if an line with updates is read</param>
     /// <param name="write">Writes item to CSV file</param>
-    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to Store()</param>
-    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to Update()</param>
-    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to Remove()</param>
-    /// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
+    /// <param name="rollbackItemNew">Undo of data change in item during transaction due to item constructor()</param>
+    /// <param name="rollbackItemStore">Undo of data change in item during transaction due to item.Store()</param>
+    /// <param name="rollbackItemUpdate">Undo of data change in item during transaction due to item.Update()</param>
+    /// <param name="rollbackItemRemove">Undo of data change in item during transaction due to item.Remove()</param>
+    ///// <param name="disconnect">Called when an item gets removed (deleted). It might be necessary to disconnect also child
     /// items linked to this item and/or to remove item from parent(s)</param>
     /// <param name="areInstancesUpdatable">Can the property of an item change ?</param>
     /// <param name="areInstancesDeletable">Can an item be removed from DataStoreCSV</param>
@@ -156,20 +157,21 @@ namespace Storage {
       CsvConfig csvConfig,
       int maxLineLenght,
       string[] headers,
-      Action<IStorageItem, int> setKey,
+      Action<IStorageItem, int, /*isRollback*/bool> setKey,
       Func<int, CsvReader, TItemCSV> create,
       Func<TItemCSV, bool>? verify,
       Action<TItemCSV, CsvReader>? update,
       Action<TItemCSV, CsvWriter> write,
+      Action<IStorageItem> rollbackItemNew,
       Action<IStorageItem> rollbackItemStore,
       Action</*old*/IStorageItem, /*new*/IStorageItem>? rollbackItemUpdate,
       Action<IStorageItem>? rollbackItemRemove,
-      Action<TItemCSV>? disconnect,
+      //Action<TItemCSV>? disconnect,
       bool areInstancesUpdatable = false,
       bool areInstancesDeletable = false,
       int capacity = 0,
-      int flushDelay = 200) : base(dataContext, storeKey, setKey, rollbackItemStore, rollbackItemUpdate, rollbackItemRemove, 
-        disconnect, areInstancesUpdatable, areInstancesDeletable, capacity) 
+      int flushDelay = 200) : base(dataContext, storeKey, setKey, rollbackItemNew, rollbackItemStore, 
+        rollbackItemUpdate, rollbackItemRemove, areInstancesUpdatable, areInstancesDeletable, capacity) 
     {
       CsvConfig = csvConfig;
       MaxLineLenght = maxLineLenght;

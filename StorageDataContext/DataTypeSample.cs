@@ -55,28 +55,28 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after DataTypeSample.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before DataTypeSample gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of DataTypeSample are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(
       DateTime aDate, 
@@ -117,47 +117,54 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of DataTypeSample are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(DataTypeSample old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for DataTypeSample is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after DataTypeSample.Release() got executed
     /// </summary>
-    partial void onRemove() {
+    partial void onReleased() {
     }
 
 
+    /// <summary>
+    /// Called after 'new DataTypeSample()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after DataTypeSample.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after DataTypeSample.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(DataTypeSample oldDataTypeSample) {
     }
 
 
     /// <summary>
-    /// Called after item.Remove() transaction is rolled back
+    /// Called after DataTypeSample.Release() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemRemoved() {
+    partial void onRollbackItemRelease() {
     }
+
+
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>

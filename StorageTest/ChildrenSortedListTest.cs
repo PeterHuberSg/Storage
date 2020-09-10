@@ -33,7 +33,6 @@ namespace StorageTest {
         assertDL();
 
         //stored immediately
-        DC.Data.StartTransaction();
         var now = DateTime.Now.Date;
         var dayIndex = 1;
         var parent1Key = addParent("1", "1.0", isStoring: true).Key;
@@ -44,9 +43,8 @@ namespace StorageTest {
         var parent2NullableKey = addParentNullable("2N", "2N.0", isStoring: true).Key;
         var child2Key = addChild(parent2Key, parent2NullableKey, now.AddDays(dayIndex++), "21", isStoring: true).Key;
         var child3Key = addChild(parent2Key, parent2NullableKey, now.AddDays(dayIndex++), "22", isStoring: true).Key;
-        DC.Data.CommitTransaction();
 
-        //not stored
+        //constructed and stored later
         var parent3 = addParent("3", "3.0", isStoring: false);
         var child4 = addChild(parent3, null, now.AddDays(dayIndex++), "31", isStoring: false);
         DC.Data.StartTransaction();
@@ -86,36 +84,36 @@ namespace StorageTest {
         updateChild(child1Key, parent1Key, null, now.AddDays(-1), "11.U4");
         updateChild(child1Key, parent1Key, parent1NullableKey, now.AddDays(-1), "11.U5");
 
-        //updating a not stored child should not lead to any change in the parents
+        removeChild(child1Key);
+
+        //updating a not stored child
         parent3 = DC.Data.ChildrenSortedList_Parents[parent3.Key];
         parent4 = DC.Data.ChildrenSortedList_Parents[parent4.Key];
         parent4Nullable = DC.Data.ChildrenSortedList_ParentNullables[parent4Nullable.Key];
-        var parent3Expected = parent3.ToString();
-        var parent4Expected = parent4.ToString();
-        var parent4NullableExpected = parent4Nullable.ToString();
+        //var parent3Expected = parent3.ToString();
+        //var parent4Expected = parent4.ToString();
+        //var parent4NullableExpected = parent4Nullable.ToString();
+        //var child7 = addChild(parent4, parent4Nullable, now.AddDays(dayIndex++), "43", isStoring: false);
+        //child7.Update(now.AddDays(dayIndex++), "33U", parent3, null);
+        //Assert.AreEqual(parent3Expected, parent3.ToString());
+        //Assert.AreEqual(parent4Expected, parent4.ToString());
+        //Assert.AreEqual(parent4NullableExpected, parent4Nullable.ToString());
         var child7 = addChild(parent4, parent4Nullable, now.AddDays(dayIndex++), "43", isStoring: false);
+        Assert.IsTrue(parent4.ChildrenSortedList_Children.ContainsKey(child7.DateKey));
+        Assert.IsTrue(parent4Nullable.ChildrenSortedList_Children.ContainsKey(child7.DateKey));
+        var oldDate = child7.DateKey;
         child7.Update(now.AddDays(dayIndex++), "33U", parent3, null);
-        Assert.AreEqual(parent3Expected, parent3.ToString());
-        Assert.AreEqual(parent4Expected, parent4.ToString());
-        Assert.AreEqual(parent4NullableExpected, parent4Nullable.ToString());
+        Assert.IsFalse(parent4.ChildrenSortedList_Children.ContainsKey(oldDate));
+        Assert.IsFalse(parent4Nullable.ChildrenSortedList_Children.ContainsKey(oldDate));
+        Assert.IsTrue(parent3.ChildrenSortedList_Children.ContainsKey(child7.DateKey));
+        oldDate = child7.DateKey;
+        child7.Update(now.AddDays(dayIndex++), "33U", parent3, null);
+        Assert.IsFalse(parent3.ChildrenSortedList_Children.ContainsKey(oldDate));
+        Assert.IsTrue(parent3.ChildrenSortedList_Children.ContainsKey(child7.DateKey));
 
-        //////////////////////////////////////////////////////////////
-        // Todo: Improve Remove for List, SortedList, Dictionary
-        //
-        // if child.Parent is nullable and the parent gets removed, set child.Parent to null
-        // if child.Parent is not nullable and the parent should get removed, throw an exception. Just
-        // deleting all children and their children and removing them from other parents is too complicated and
-        // far reaching
-        //
-        // Lookups should only be allowed for undeletable parents. Otherwise it's too complicated what to
-        // do when the parent gets deleted. Idea: Lookup could copy the actual values into the child, so when the
-        // lookup parent gets deleted, the value is still valid in the child
-        //////////////////////////////////////////////////////////////
 
         //removeParent(parent1Key);
         //removeParentNullable(parent1NullableKey);
-
-        removeChild(child1Key);
 
       } finally {
         DC.DisposeData();
@@ -154,12 +152,26 @@ namespace StorageTest {
 
 
     private ChildrenSortedList_Parent addParent(string readOnlyText, string updateableText, bool isStoring) {
-      var newParent = new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
+      //var newParent = new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
+      //if (isStoring) {
+      //  expectedParents.Add(newParent.Key, newParent.ToString());
+      //  assertData();
+      //}
       if (isStoring) {
+        DC.Data.StartTransaction();
+        new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
+        DC.Data.RollbackTransaction();
+        assertData();
+
+        DC.Data.StartTransaction();
+        var newParent = new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
+        DC.Data.CommitTransaction();
         expectedParents.Add(newParent.Key, newParent.ToString());
         assertData();
+        return newParent;
+      } else {
+        return new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
       }
-      return newParent;
     }
 
 
@@ -170,12 +182,27 @@ namespace StorageTest {
 
 
     private ChildrenSortedList_ParentNullable addParentNullable(string readOnlyText, string updateableText, bool isStoring) {
-      var newParentNullable = new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
+      //var newParentNullable = new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
+      //if (isStoring) {
+      //  expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
+      //  assertData();
+      //}
+      //return newParentNullable;
       if (isStoring) {
+        DC.Data.StartTransaction();
+        new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
+        DC.Data.RollbackTransaction();
+        assertData();
+
+        DC.Data.StartTransaction();
+        var newParentNullable = new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
+        DC.Data.CommitTransaction();
         expectedParentsNullable.Add(newParentNullable.Key, newParentNullable.ToString());
         assertData();
+        return newParentNullable;
+      } else {
+        return new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
       }
-      return newParentNullable;
     }
 
 
@@ -186,37 +213,67 @@ namespace StorageTest {
 
 
     private ChildrenSortedList_Child addChild(int parentKey, int? parentNullableKey, DateTime date, string text, bool isStoring) {
+      //var parent = DC.Data.ChildrenSortedList_Parents[parentKey];
+      //ChildrenSortedList_ParentNullable? parentNullable = null;
+      //if (parentNullableKey.HasValue) {
+      //  parentNullable = DC.Data.ChildrenSortedList_ParentNullables[parentNullableKey.Value];
+      //}
+      //var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
+      //if (isStoring) {
+      //  expectedChildren.Add(newChild.Key, newChild.ToString());
+      //  expectedParents[parent.Key] = parent.ToString();
+      //  if (parentNullable!=null) {
+      //    expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+      //  }
+      //  assertData();
+      //}
+      //return newChild;
       var parent = DC.Data.ChildrenSortedList_Parents[parentKey];
       ChildrenSortedList_ParentNullable? parentNullable = null;
       if (parentNullableKey.HasValue) {
         parentNullable = DC.Data.ChildrenSortedList_ParentNullables[parentNullableKey.Value];
       }
-      var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
-      if (isStoring) {
-        expectedChildren.Add(newChild.Key, newChild.ToString());
-        expectedParents[parent.Key] = parent.ToString();
-        if (parentNullable!=null) {
-          expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
-        }
-        assertData();
-      }
-      return newChild;
+
+      return addChild(parent, parentNullable, date, text, isStoring);
     }
 
 
     private ChildrenSortedList_Child addChild(ChildrenSortedList_Parent parent, ChildrenSortedList_ParentNullable? parentNullable, 
       DateTime date, string text, bool isStoring) 
     {
-      var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
+      //var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring);
+      //if (isStoring) {
+      //  expectedChildren.Add(newChild.Key, newChild.ToString());
+      //  expectedParents[parent.Key] = parent.ToString();
+      //  if (parentNullable!=null) {
+      //    expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
+      //  }
+      //  assertData();
+      //}
+      //return newChild;
       if (isStoring) {
+        DC.Data.StartTransaction();
+        new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring: true);
+        DC.Data.RollbackTransaction();
+        assertData();
+
+        parent = DC.Data.ChildrenSortedList_Parents[parent.Key];
+        if (parentNullable!=null) {
+          parentNullable = DC.Data.ChildrenSortedList_ParentNullables[parentNullable.Key];
+        }
+        DC.Data.StartTransaction();
+        var newChild = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring: true);
+        DC.Data.CommitTransaction();
         expectedChildren.Add(newChild.Key, newChild.ToString());
         expectedParents[parent.Key] = parent.ToString();
         if (parentNullable!=null) {
           expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
         }
         assertData();
+        return newChild;
+      } else {
+        return new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring: false);
       }
-      return newChild;
     }
 
 
@@ -348,13 +405,13 @@ namespace StorageTest {
     private void removeChild(int childKey) {
       var child = DC.Data.ChildrenSortedList_Children[childKey];
       DC.Data.StartTransaction();
-      child.Remove();
+      child.Release();
       DC.Data.RollbackTransaction();
       assertData();
       child = DC.Data.ChildrenSortedList_Children[childKey];
       expectedChildren.Remove(child.Key);
       DC.Data.StartTransaction();
-      child.Remove();
+      child.Release();
       DC.Data.CommitTransaction();
       var parent = child.ParentWithSortedList;
       var parentNullable = child.ParentWithSortedListNullable;
@@ -362,7 +419,8 @@ namespace StorageTest {
       if (parentNullable!=null) {
         expectedParentsNullable[parentNullable!.Key] = parentNullable.ToString();
       }
-      assertData();
+      //assertData(); doesn't work, because parent in new data context have lost not stored children.
+      assertDL();
     }
 
 

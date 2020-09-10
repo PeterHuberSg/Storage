@@ -29,7 +29,16 @@ namespace StorageDataContext  {
     /// Unique identifier for ChildrenSortedList_Child. Gets set once ChildrenSortedList_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem childrenSortedList_Child, int key) {
+    internal static void SetKey(IStorageItem childrenSortedList_Child, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release ChildrenSortedList_Child key @{childrenSortedList_Child.Key} #{childrenSortedList_Child.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store ChildrenSortedList_Child key @{key} #{childrenSortedList_Child.GetHashCode()}");
+        }
+      }
+#endif
       ((ChildrenSortedList_Child)childrenSortedList_Child).Key = key;
     }
 
@@ -86,9 +95,7 @@ namespace StorageDataContext  {
     //      ------------
 
     /// <summary>
-    /// ChildrenSortedList_Child Constructor. If isStoring is true, adds ChildrenSortedList_Child to DC.Data.ChildrenSortedList_Children, 
-    /// adds ChildrenSortedList_Child to childrenSortedList_Parent.ChildrenSortedList_Children
-    /// and if there is a ParentWithSortedListNullable adds ChildrenSortedList_Child to childrenSortedList_ParentNullable.ChildrenSortedList_Children.
+    /// ChildrenSortedList_Child Constructor. If isStoring is true, adds ChildrenSortedList_Child to DC.Data.ChildrenSortedList_Children.
     /// </summary>
     public ChildrenSortedList_Child(
       DateTime dateKey, 
@@ -102,7 +109,17 @@ namespace StorageDataContext  {
       Text = text;
       ParentWithSortedList = parentWithSortedList;
       ParentWithSortedListNullable = parentWithSortedListNullable;
+#if DEBUG
+      DC.Trace?.Invoke($"new ChildrenSortedList_Child: {ToTraceString()}");
+#endif
+      ParentWithSortedList.AddToChildrenSortedList_Children(this);
+      if (ParentWithSortedListNullable!=null) {
+        ParentWithSortedListNullable.AddToChildrenSortedList_Children(this);
+      }
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(22,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -184,26 +201,29 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds ChildrenSortedList_Child to DC.Data.ChildrenSortedList_Children, ChildrenSortedList_Parent and ChildrenSortedList_ParentNullable. 
+    /// Adds ChildrenSortedList_Child to DC.Data.ChildrenSortedList_Children.<br/>
+    /// Throws an Exception when ChildrenSortedList_Child is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ChildrenSortedList_Child cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ChildrenSortedList_Child cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
-      if (ParentWithSortedList.Key<0) {
-        throw new Exception($"ChildrenSortedList_Child cannot be stored in DC.Data, ParentWithSortedList is missing or not stored yet." + Environment.NewLine + ToString());
-      }
-      if (ParentWithSortedListNullable!=null && ParentWithSortedListNullable.Key<0) {
-        throw new Exception($"ChildrenSortedList_Child cannot be stored in DC.Data, ParentWithSortedListNullable is not stored yet." + Environment.NewLine + ToString());
-      }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
+      if (ParentWithSortedList.Key<0) {
+        throw new Exception($"Cannot store child ChildrenSortedList_Child '{this}'.ParentWithSortedList to ChildrenSortedList_Parent '{ParentWithSortedList}' because parent is not stored yet.");
+      }
+      if (ParentWithSortedListNullable?.Key<0) {
+        throw new Exception($"Cannot store child ChildrenSortedList_Child '{this}'.ParentWithSortedListNullable to ChildrenSortedList_ParentNullable '{ParentWithSortedListNullable}' because parent is not stored yet.");
+      }
       DC.Data.ChildrenSortedList_Children.Add(this);
-      ParentWithSortedList.AddToChildrenSortedList_Children(this);
-      ParentWithSortedListNullable?.AddToChildrenSortedList_Children(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored ChildrenSortedList_Child #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -240,11 +260,24 @@ namespace StorageDataContext  {
     /// Updates ChildrenSortedList_Child with the provided values
     /// </summary>
     public void Update(DateTime dateKey, string text, ChildrenSortedList_Parent parentWithSortedList, ChildrenSortedList_ParentNullable? parentWithSortedListNullable) {
+      if (Key>=0){
+        if (parentWithSortedList.Key<0) {
+          throw new Exception($"ChildrenSortedList_Child.Update(): It is illegal to add stored ChildrenSortedList_Child '{this}'" + Environment.NewLine + 
+            $"to ParentWithSortedList '{parentWithSortedList}', which is not stored.");
+        }
+        if (parentWithSortedListNullable?.Key<0) {
+          throw new Exception($"ChildrenSortedList_Child.Update(): It is illegal to add stored ChildrenSortedList_Child '{this}'" + Environment.NewLine + 
+            $"to ParentWithSortedListNullable '{parentWithSortedListNullable}', which is not stored.");
+        }
+      }
       var clone = new ChildrenSortedList_Child(this);
       var isCancelled = false;
       onUpdating(dateKey, text, parentWithSortedList, parentWithSortedListNullable, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating ChildrenSortedList_Child: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       var dateKeyRounded = dateKey.Floor(Rounding.Days);
       if (DateKey!=dateKeyRounded) {
@@ -255,14 +288,10 @@ namespace StorageDataContext  {
         Text = text;
         isChangeDetected = true;
       }
-      if (ParentWithSortedList!=parentWithSortedList) {
-        if (Key>=0) {
-          ParentWithSortedList.RemoveFromChildrenSortedList_Children(this);
-        }
+      if (ParentWithSortedList!=parentWithSortedList || clone.DateKey!=DateKey) {
+        ParentWithSortedList.RemoveFromChildrenSortedList_Children(clone);
         ParentWithSortedList = parentWithSortedList;
-        if (Key>=0) {
-          ParentWithSortedList.AddToChildrenSortedList_Children(this);
-        }
+        ParentWithSortedList.AddToChildrenSortedList_Children(this);
         isChangeDetected = true;
       }
       if (ParentWithSortedListNullable is null) {
@@ -270,27 +299,19 @@ namespace StorageDataContext  {
           //nothing to do
         } else {
           ParentWithSortedListNullable = parentWithSortedListNullable;
-          if (Key>=0) {
-            ParentWithSortedListNullable.AddToChildrenSortedList_Children(this);
-          }
+          ParentWithSortedListNullable.AddToChildrenSortedList_Children(this);
           isChangeDetected = true;
         }
       } else {
         if (parentWithSortedListNullable is null) {
-          if (Key>=0) {
-            ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(this);
-          }
+          ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(clone);
           ParentWithSortedListNullable = null;
           isChangeDetected = true;
         } else {
-          if (ParentWithSortedListNullable!=parentWithSortedListNullable) {
-            if (Key>=0) {
-              ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(this);
-            }
+          if (ParentWithSortedListNullable!=parentWithSortedListNullable || clone.DateKey != DateKey) {
+            ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(clone);
             ParentWithSortedListNullable = parentWithSortedListNullable;
-            if (Key>=0) {
-              ParentWithSortedListNullable.AddToChildrenSortedList_Children(this);
-            }
+            ParentWithSortedListNullable.AddToChildrenSortedList_Children(this);
             isChangeDetected = true;
           }
         }
@@ -299,9 +320,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.ChildrenSortedList_Children.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(22, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated ChildrenSortedList_Child: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(
       DateTime dateKey, 
@@ -364,59 +390,48 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Removes ChildrenSortedList_Child from DC.Data.ChildrenSortedList_Children, 
-    /// disconnects ChildrenSortedList_Child from ChildrenSortedList_Parent because of ParentWithSortedList and 
-    /// disconnects ChildrenSortedList_Child from ChildrenSortedList_ParentNullable because of ParentWithSortedListNullable.
+    /// Removes ChildrenSortedList_Child from DC.Data.ChildrenSortedList_Children.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"ChildrenSortedList_Child.Remove(): ChildrenSortedList_Child 'Class ChildrenSortedList_Child' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"ChildrenSortedList_Child.Release(): ChildrenSortedList_Child '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.ChildrenSortedList_Children.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released ChildrenSortedList_Child @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects ChildrenSortedList_Child from ChildrenSortedList_Parent because of ParentWithSortedList and 
-    /// disconnects ChildrenSortedList_Child from ChildrenSortedList_ParentNullable because of ParentWithSortedListNullable.
+    /// Removes ChildrenSortedList_Child from parents as part of a transaction rollback of the new() statement.
     /// </summary>
-    internal static void Disconnect(ChildrenSortedList_Child childrenSortedList_Child) {
+    internal static void RollbackItemNew(IStorageItem item) {
+      var childrenSortedList_Child = (ChildrenSortedList_Child) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new ChildrenSortedList_Child(): {childrenSortedList_Child.ToTraceString()}");
+#endif
       if (childrenSortedList_Child.ParentWithSortedList!=ChildrenSortedList_Parent.NoChildrenSortedList_Parent) {
         childrenSortedList_Child.ParentWithSortedList.RemoveFromChildrenSortedList_Children(childrenSortedList_Child);
       }
       if (childrenSortedList_Child.ParentWithSortedListNullable!=null && childrenSortedList_Child.ParentWithSortedListNullable!=ChildrenSortedList_ParentNullable.NoChildrenSortedList_ParentNullable) {
         childrenSortedList_Child.ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(childrenSortedList_Child);
       }
+      childrenSortedList_Child.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes childrenSortedList_ParentNullable from ParentWithSortedListNullable
-    /// </summary>
-    internal void RemoveParentWithSortedListNullable(ChildrenSortedList_ParentNullable childrenSortedList_ParentNullable) {
-      if (childrenSortedList_ParentNullable!=ParentWithSortedListNullable) throw new Exception();
-
-      var clone = new ChildrenSortedList_Child(this);
-      ParentWithSortedListNullable = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes ChildrenSortedList_Child from possible parents as part of a transaction rollback.
+    /// Releases ChildrenSortedList_Child from DC.Data.ChildrenSortedList_Children as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var childrenSortedList_Child = (ChildrenSortedList_Child) item;
-      if (childrenSortedList_Child.ParentWithSortedList!=ChildrenSortedList_Parent.NoChildrenSortedList_Parent) {
-        childrenSortedList_Child.ParentWithSortedList.RemoveFromChildrenSortedList_Children(childrenSortedList_Child);
-      }
-      if (childrenSortedList_Child.ParentWithSortedListNullable!=null && childrenSortedList_Child.ParentWithSortedListNullable!=ChildrenSortedList_ParentNullable.NoChildrenSortedList_ParentNullable) {
-        childrenSortedList_Child.ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(childrenSortedList_Child);
-      }
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenSortedList_Child.Store(): {childrenSortedList_Child.ToTraceString()}");
+#endif
       childrenSortedList_Child.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -425,54 +440,79 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the ChildrenSortedList_Child item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var childrenSortedList_ChildOld = (ChildrenSortedList_Child) oldItem;
-      var childrenSortedList_ChildNew = (ChildrenSortedList_Child) newItem;
-      childrenSortedList_ChildNew.DateKey = childrenSortedList_ChildOld.DateKey;
-      childrenSortedList_ChildNew.Text = childrenSortedList_ChildOld.Text;
-      if (childrenSortedList_ChildNew.ParentWithSortedList!=childrenSortedList_ChildOld.ParentWithSortedList) {
-        if (childrenSortedList_ChildNew.ParentWithSortedList!=ChildrenSortedList_Parent.NoChildrenSortedList_Parent) {
-          childrenSortedList_ChildNew.ParentWithSortedList.RemoveFromChildrenSortedList_Children(childrenSortedList_ChildNew);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (ChildrenSortedList_Child) oldStorageItem;
+      var newItem = (ChildrenSortedList_Child) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back ChildrenSortedList_Child.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.DateKey = oldItem.DateKey;
+      newItem.Text = oldItem.Text;
+      if (newItem.ParentWithSortedList!=oldItem.ParentWithSortedList) {
+        if (newItem.ParentWithSortedList!=ChildrenSortedList_Parent.NoChildrenSortedList_Parent) {
+            newItem.ParentWithSortedList.RemoveFromChildrenSortedList_Children(oldItem);
         }
-        childrenSortedList_ChildNew.ParentWithSortedList = childrenSortedList_ChildOld.ParentWithSortedList;
-        childrenSortedList_ChildNew.ParentWithSortedList.AddToChildrenSortedList_Children(childrenSortedList_ChildNew);
+        newItem.ParentWithSortedList = oldItem.ParentWithSortedList;
+        newItem.ParentWithSortedList.AddToChildrenSortedList_Children(newItem);
       }
-      if (childrenSortedList_ChildNew.ParentWithSortedListNullable is null) {
-        if (childrenSortedList_ChildOld.ParentWithSortedListNullable is null) {
+      if (newItem.ParentWithSortedListNullable is null) {
+        if (oldItem.ParentWithSortedListNullable is null) {
           //nothing to do
         } else {
-          childrenSortedList_ChildNew.ParentWithSortedListNullable = childrenSortedList_ChildOld.ParentWithSortedListNullable;
-          childrenSortedList_ChildNew.ParentWithSortedListNullable.AddToChildrenSortedList_Children(childrenSortedList_ChildNew);
+          newItem.ParentWithSortedListNullable = oldItem.ParentWithSortedListNullable;
+          newItem.ParentWithSortedListNullable.AddToChildrenSortedList_Children(newItem);
         }
       } else {
-        if (childrenSortedList_ChildOld.ParentWithSortedListNullable is null) {
-          if (childrenSortedList_ChildNew.ParentWithSortedListNullable!=ChildrenSortedList_ParentNullable.NoChildrenSortedList_ParentNullable) {
-            childrenSortedList_ChildNew.ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(childrenSortedList_ChildNew);
+        if (oldItem.ParentWithSortedListNullable is null) {
+          if (newItem.ParentWithSortedListNullable!=ChildrenSortedList_ParentNullable.NoChildrenSortedList_ParentNullable) {
+            newItem.ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(oldItem);
           }
-          childrenSortedList_ChildNew.ParentWithSortedListNullable = null;
+          newItem.ParentWithSortedListNullable = null;
         } else {
-          if (childrenSortedList_ChildNew.ParentWithSortedListNullable!=ChildrenSortedList_ParentNullable.NoChildrenSortedList_ParentNullable) {
-            childrenSortedList_ChildNew.ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(childrenSortedList_ChildNew);
+          if (oldItem.ParentWithSortedListNullable!=newItem.ParentWithSortedListNullable || oldItem.DateKey != newItem.DateKey) {
+          if (newItem.ParentWithSortedListNullable!=ChildrenSortedList_ParentNullable.NoChildrenSortedList_ParentNullable) {
+            newItem.ParentWithSortedListNullable.RemoveFromChildrenSortedList_Children(oldItem);
           }
-          childrenSortedList_ChildNew.ParentWithSortedListNullable = childrenSortedList_ChildOld.ParentWithSortedListNullable;
-          childrenSortedList_ChildNew.ParentWithSortedListNullable.AddToChildrenSortedList_Children(childrenSortedList_ChildNew);
+          newItem.ParentWithSortedListNullable = oldItem.ParentWithSortedListNullable;
+          newItem.ParentWithSortedListNullable.AddToChildrenSortedList_Children(newItem);
+          }
         }
       }
-      childrenSortedList_ChildNew.onRollbackItemUpdated(childrenSortedList_ChildOld);
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back ChildrenSortedList_Child.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(ChildrenSortedList_Child oldChildrenSortedList_Child);
 
 
     /// <summary>
-    /// Adds ChildrenSortedList_Child item to possible parents again as part of a transaction rollback.
+    /// Adds ChildrenSortedList_Child to DC.Data.ChildrenSortedList_Children as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var childrenSortedList_Child = (ChildrenSortedList_Child) item;
-      childrenSortedList_Child.ParentWithSortedList.AddToChildrenSortedList_Children(childrenSortedList_Child);
-      childrenSortedList_Child.ParentWithSortedListNullable?.AddToChildrenSortedList_Children(childrenSortedList_Child);
-      childrenSortedList_Child.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenSortedList_Child.Release(): {childrenSortedList_Child.ToTraceString()}");
+#endif
+      childrenSortedList_Child.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {DateKey.ToShortDateString()}|" +
+        $" {Text}|" +
+        $" ParentWithSortedList {ParentWithSortedList.GetKeyOrHash()}|" +
+        $" ParentWithSortedListNullable {ParentWithSortedListNullable?.GetKeyOrHash()}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -496,7 +536,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" DateKey: {DateKey.ToShortDateString()}," +
         $" Text: {Text}," +
         $" ParentWithSortedList: {ParentWithSortedList.ToShortString()}," +

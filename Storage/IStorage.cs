@@ -61,16 +61,21 @@ namespace Storage {
     +*/
 
     /// <summary>
-    /// Item.Store() adds the item to its DataStore items. It can also be added to the DataStore by setting the construction
-    /// parameter isStoring to true.
+    /// Item.Store() adds the item to the data context. 
     /// </summary>
     public void Store();
 
 
     /// <summary>
-    /// Removes item from DataStore and parent collections, deletes all children.
+    /// Removes item from DataStore.
     /// </summary>
-    public void Remove();
+    public void Release();
+
+
+    /// <summary>
+    /// Returns a string for tracing, parents are shown only with their Key number
+    /// </summary>
+    public string ToTraceString();
 
 
     /// <summary>

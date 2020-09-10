@@ -65,12 +65,12 @@ namespace StorageTest {
 
     private int addData(int idInt, string? idString, string text, string? textNullable, string textReadonly) {
       DC.Data.StartTransaction();
-      _ = new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly, isStoring: false);
+      new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly, isStoring: false);
       DC.Data.RollbackTransaction();
       assertData();
 
       DC.Data.StartTransaction();
-      _ = new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly);
+      new PropertyNeedsDictionaryClass(idInt, idString, text, textNullable, textReadonly);
       DC.Data.RollbackTransaction();
       assertData();
 
@@ -136,7 +136,7 @@ namespace StorageTest {
     private void delete(int key) {
       var sample = DC.Data.PropertyNeedsDictionaryClasses[key];
       DC.Data.StartTransaction();
-      sample.Remove();
+      sample.Release();
       DC.Data.RollbackTransaction();
       assertData();
 
@@ -152,7 +152,7 @@ namespace StorageTest {
       }
       expectedTextReadonlyLowers.Remove(sample.TextReadonlyLower);
       DC.Data.StartTransaction();
-      sample.Remove();
+      sample.Release();
       DC.Data.CommitTransaction();
       assertData();
     }

@@ -57,33 +57,40 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after CreateOnly_Child.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before CreateOnly_Child gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
+    /// <summary>
+    /// Called after 'new CreateOnly_Child()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after CreateOnly_Child.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
+
+
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>

@@ -28,7 +28,16 @@ namespace StorageDataContext  {
     /// Unique identifier for Sample. Gets set once Sample gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem sample, int key) {
+    internal static void SetKey(IStorageItem sample, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release Sample key @{sample.Key} #{sample.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store Sample key @{key} #{sample.GetHashCode()}");
+        }
+      }
+#endif
       ((Sample)sample).Key = key;
     }
 
@@ -73,7 +82,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// PreciseDecimal with about 20 digits precision, takes a lot of storage space
+    /// PreciseDecimal with about 20 digits precision, takes more storage space then the other Decimalx types.
     /// Stores date and time with maximum precision.
     /// </summary>
     public decimal PreciseDecimal { get; private set; }
@@ -93,28 +102,28 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Stores times (24 hour timespan) but not date
+    /// Stores times (24 hour timespan) but not date.
     /// Stores less than 24 hours with second precision.
     /// </summary>
     public TimeSpan TimeOnly { get; private set; }
 
 
     /// <summary>
-    /// Stores date and time precisely to a tick
+    /// Stores date and time precisely to a tick.
     /// Stores date and time with tick precision.
     /// </summary>
     public DateTime DateTimeTicks { get; private set; }
 
 
     /// <summary>
-    /// Stores date and time precisely to a minute
+    /// Stores date and time precisely to a minute.
     /// Stores date and time with minute preclusion.
     /// </summary>
     public DateTime DateTimeMinute { get; private set; }
 
 
     /// <summary>
-    /// Stores date and time precisely to a second
+    /// Stores date and time precisely to a second.
     /// Stores date and time with seconds precision.
     /// </summary>
     public DateTime DateTimeSecond { get; private set; }
@@ -190,9 +199,7 @@ namespace StorageDataContext  {
     //      ------------
 
     /// <summary>
-    /// Sample Constructor. If isStoring is true, adds Sample to DC.Data.SampleX, 
-    /// if there is a OneMaster adds Sample to sampleMaster.SampleX
-    /// and if there is a OtherMaster adds Sample to sampleMaster.SampleX.
+    /// Sample Constructor. If isStoring is true, adds Sample to DC.Data.SampleX.
     /// </summary>
     public Sample(
       string text, 
@@ -231,7 +238,19 @@ namespace StorageDataContext  {
       OtherMaster = otherMaster;
       Optional = optional;
       sampleDetails = new List<SampleDetail>();
+#if DEBUG
+      DC.Trace?.Invoke($"new Sample: {ToTraceString()}");
+#endif
+      if (OneMaster!=null) {
+        OneMaster.AddToSampleX(this);
+      }
+      if (OtherMaster!=null) {
+        OtherMaster.AddToSampleX(this);
+      }
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(2,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -339,26 +358,29 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds Sample to DC.Data.SampleX and SampleMaster. 
+    /// Adds Sample to DC.Data.SampleX.<br/>
+    /// Throws an Exception when Sample is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"Sample cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"Sample cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
-      if (OneMaster!=null && OneMaster.Key<0) {
-        throw new Exception($"Sample cannot be stored in DC.Data, OneMaster is not stored yet." + Environment.NewLine + ToString());
-      }
-      if (OtherMaster!=null && OtherMaster.Key<0) {
-        throw new Exception($"Sample cannot be stored in DC.Data, OtherMaster is not stored yet." + Environment.NewLine + ToString());
-      }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
+      if (OneMaster?.Key<0) {
+        throw new Exception($"Cannot store child Sample '{this}'.OneMaster to SampleMaster '{OneMaster}' because parent is not stored yet.");
+      }
+      if (OtherMaster?.Key<0) {
+        throw new Exception($"Cannot store child Sample '{this}'.OtherMaster to SampleMaster '{OtherMaster}' because parent is not stored yet.");
+      }
       DC.Data.SampleX.Add(this);
-      OneMaster?.AddToSampleX(this);
-      OtherMaster?.AddToSampleX(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored Sample #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -428,6 +450,16 @@ namespace StorageDataContext  {
       SampleMaster? otherMaster, 
       string? optional)
     {
+      if (Key>=0){
+        if (oneMaster?.Key<0) {
+          throw new Exception($"Sample.Update(): It is illegal to add stored Sample '{this}'" + Environment.NewLine + 
+            $"to OneMaster '{oneMaster}', which is not stored.");
+        }
+        if (otherMaster?.Key<0) {
+          throw new Exception($"Sample.Update(): It is illegal to add stored Sample '{this}'" + Environment.NewLine + 
+            $"to OtherMaster '{otherMaster}', which is not stored.");
+        }
+      }
       var clone = new Sample(this);
       var isCancelled = false;
       onUpdating(
@@ -450,6 +482,9 @@ namespace StorageDataContext  {
         ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating Sample: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -515,27 +550,19 @@ namespace StorageDataContext  {
           //nothing to do
         } else {
           OneMaster = oneMaster;
-          if (Key>=0) {
-            OneMaster.AddToSampleX(this);
-          }
+          OneMaster.AddToSampleX(this);
           isChangeDetected = true;
         }
       } else {
         if (oneMaster is null) {
-          if (Key>=0) {
-            OneMaster.RemoveFromSampleX(this);
-          }
+          OneMaster.RemoveFromSampleX(this);
           OneMaster = null;
           isChangeDetected = true;
         } else {
           if (OneMaster!=oneMaster) {
-            if (Key>=0) {
-              OneMaster.RemoveFromSampleX(this);
-            }
+            OneMaster.RemoveFromSampleX(this);
             OneMaster = oneMaster;
-            if (Key>=0) {
-              OneMaster.AddToSampleX(this);
-            }
+            OneMaster.AddToSampleX(this);
             isChangeDetected = true;
           }
         }
@@ -545,27 +572,19 @@ namespace StorageDataContext  {
           //nothing to do
         } else {
           OtherMaster = otherMaster;
-          if (Key>=0) {
-            OtherMaster.AddToSampleX(this);
-          }
+          OtherMaster.AddToSampleX(this);
           isChangeDetected = true;
         }
       } else {
         if (otherMaster is null) {
-          if (Key>=0) {
-            OtherMaster.RemoveFromSampleX(this);
-          }
+          OtherMaster.RemoveFromSampleX(this);
           OtherMaster = null;
           isChangeDetected = true;
         } else {
           if (OtherMaster!=otherMaster) {
-            if (Key>=0) {
-              OtherMaster.RemoveFromSampleX(this);
-            }
+            OtherMaster.RemoveFromSampleX(this);
             OtherMaster = otherMaster;
-            if (Key>=0) {
-              OtherMaster.AddToSampleX(this);
-            }
+            OtherMaster.AddToSampleX(this);
             isChangeDetected = true;
           }
         }
@@ -578,9 +597,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.SampleX.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(2, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated Sample: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(
       string text, 
@@ -692,9 +716,15 @@ namespace StorageDataContext  {
     internal void AddToSampleDetails(SampleDetail sampleDetail) {
 #if DEBUG
       if (sampleDetail==SampleDetail.NoSampleDetail) throw new Exception();
+      if ((sampleDetail.Key>=0)&&(Key<0)) throw new Exception();
+      if (sampleDetails.Contains(sampleDetail)) throw new Exception();
 #endif
       sampleDetails.Add(sampleDetail);
       onAddedToSampleDetails(sampleDetail);
+#if DEBUG
+      DC.Trace?.Invoke($"Add SampleDetail {sampleDetail.GetKeyOrHash()} to " +
+        $"{this.GetKeyOrHash()} Sample.SampleDetails");
+#endif
     }
     partial void onAddedToSampleDetails(SampleDetail sampleDetail);
 
@@ -709,84 +739,63 @@ namespace StorageDataContext  {
         sampleDetails.Remove(sampleDetail);
 #endif
       onRemovedFromSampleDetails(sampleDetail);
+#if DEBUG
+      DC.Trace?.Invoke($"Remove SampleDetail {sampleDetail.GetKeyOrHash()} from " +
+        $"{this.GetKeyOrHash()} Sample.SampleDetails");
+#endif
     }
     partial void onRemovedFromSampleDetails(SampleDetail sampleDetail);
 
 
     /// <summary>
-    /// Removes Sample from DC.Data.SampleX, 
-    /// disconnects Sample from SampleMaster because of OneMaster, 
-    /// disconnects Sample from SampleMaster because of OtherMaster and 
-    /// deletes any SampleDetail where SampleDetail.Sample links to this Sample.
+    /// Removes Sample from DC.Data.SampleX.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"Sample.Remove(): Sample 'Class Sample' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"Sample.Release(): Sample '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      foreach (var sampleDetail in SampleDetails) {
+        if (sampleDetail?.Key>=0) {
+          throw new Exception($"Cannot release Sample '{this}' " + Environment.NewLine + 
+            $"because '{sampleDetail}' in Sample.SampleDetails is still stored.");
+        }
+      }
+      onReleased();
       DC.Data.SampleX.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released Sample @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects Sample from SampleMaster because of OneMaster, 
-    /// disconnects Sample from SampleMaster because of OtherMaster and 
-    /// deletes any SampleDetail where SampleDetail.Sample links to this Sample.
+    /// Removes Sample from parents as part of a transaction rollback of the new() statement.
     /// </summary>
-    internal static void Disconnect(Sample sample) {
+    internal static void RollbackItemNew(IStorageItem item) {
+      var sample = (Sample) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new Sample(): {sample.ToTraceString()}");
+#endif
       if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {
         sample.OneMaster.RemoveFromSampleX(sample);
       }
       if (sample.OtherMaster!=null && sample.OtherMaster!=SampleMaster.NoSampleMaster) {
         sample.OtherMaster.RemoveFromSampleX(sample);
       }
-      for (int sampleDetailIndex = sample.SampleDetails.Count-1; sampleDetailIndex>= 0; sampleDetailIndex--) {
-        var sampleDetail = sample.SampleDetails[sampleDetailIndex];
-         if (sampleDetail.Key>=0) {
-           sampleDetail.Remove();
-         }
-      }
+      sample.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes sampleMaster from OneMaster
-    /// </summary>
-    internal void RemoveOneMaster(SampleMaster sampleMaster) {
-      if (sampleMaster!=OneMaster) throw new Exception();
-
-      var clone = new Sample(this);
-      OneMaster = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes sampleMaster from OtherMaster
-    /// </summary>
-    internal void RemoveOtherMaster(SampleMaster sampleMaster) {
-      if (sampleMaster!=OtherMaster) throw new Exception();
-
-      var clone = new Sample(this);
-      OtherMaster = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes Sample from possible parents as part of a transaction rollback.
+    /// Releases Sample from DC.Data.SampleX as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var sample = (Sample) item;
-      if (sample.OneMaster!=null && sample.OneMaster!=SampleMaster.NoSampleMaster) {
-        sample.OneMaster.RemoveFromSampleX(sample);
-      }
-      if (sample.OtherMaster!=null && sample.OtherMaster!=SampleMaster.NoSampleMaster) {
-        sample.OtherMaster.RemoveFromSampleX(sample);
-      }
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback Sample.Store(): {sample.ToTraceString()}");
+#endif
       sample.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -795,80 +804,119 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the Sample item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var sampleOld = (Sample) oldItem;
-      var sampleNew = (Sample) newItem;
-      sampleNew.Text = sampleOld.Text;
-      sampleNew.Flag = sampleOld.Flag;
-      sampleNew.Number = sampleOld.Number;
-      sampleNew.Amount = sampleOld.Amount;
-      sampleNew.Amount4 = sampleOld.Amount4;
-      sampleNew.Amount5 = sampleOld.Amount5;
-      sampleNew.PreciseDecimal = sampleOld.PreciseDecimal;
-      sampleNew.SampleState = sampleOld.SampleState;
-      sampleNew.DateOnly = sampleOld.DateOnly;
-      sampleNew.TimeOnly = sampleOld.TimeOnly;
-      sampleNew.DateTimeTicks = sampleOld.DateTimeTicks;
-      sampleNew.DateTimeMinute = sampleOld.DateTimeMinute;
-      sampleNew.DateTimeSecond = sampleOld.DateTimeSecond;
-      if (sampleNew.OneMaster is null) {
-        if (sampleOld.OneMaster is null) {
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (Sample) oldStorageItem;
+      var newItem = (Sample) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back Sample.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      newItem.Flag = oldItem.Flag;
+      newItem.Number = oldItem.Number;
+      newItem.Amount = oldItem.Amount;
+      newItem.Amount4 = oldItem.Amount4;
+      newItem.Amount5 = oldItem.Amount5;
+      newItem.PreciseDecimal = oldItem.PreciseDecimal;
+      newItem.SampleState = oldItem.SampleState;
+      newItem.DateOnly = oldItem.DateOnly;
+      newItem.TimeOnly = oldItem.TimeOnly;
+      newItem.DateTimeTicks = oldItem.DateTimeTicks;
+      newItem.DateTimeMinute = oldItem.DateTimeMinute;
+      newItem.DateTimeSecond = oldItem.DateTimeSecond;
+      if (newItem.OneMaster is null) {
+        if (oldItem.OneMaster is null) {
           //nothing to do
         } else {
-          sampleNew.OneMaster = sampleOld.OneMaster;
-          sampleNew.OneMaster.AddToSampleX(sampleNew);
+          newItem.OneMaster = oldItem.OneMaster;
+          newItem.OneMaster.AddToSampleX(newItem);
         }
       } else {
-        if (sampleOld.OneMaster is null) {
-          if (sampleNew.OneMaster!=SampleMaster.NoSampleMaster) {
-            sampleNew.OneMaster.RemoveFromSampleX(sampleNew);
+        if (oldItem.OneMaster is null) {
+          if (newItem.OneMaster!=SampleMaster.NoSampleMaster) {
+            newItem.OneMaster.RemoveFromSampleX(newItem);
           }
-          sampleNew.OneMaster = null;
+          newItem.OneMaster = null;
         } else {
-          if (sampleNew.OneMaster!=SampleMaster.NoSampleMaster) {
-            sampleNew.OneMaster.RemoveFromSampleX(sampleNew);
+          if (oldItem.OneMaster!=newItem.OneMaster) {
+          if (newItem.OneMaster!=SampleMaster.NoSampleMaster) {
+            newItem.OneMaster.RemoveFromSampleX(newItem);
           }
-          sampleNew.OneMaster = sampleOld.OneMaster;
-          sampleNew.OneMaster.AddToSampleX(sampleNew);
+          newItem.OneMaster = oldItem.OneMaster;
+          newItem.OneMaster.AddToSampleX(newItem);
+          }
         }
       }
-      if (sampleNew.OtherMaster is null) {
-        if (sampleOld.OtherMaster is null) {
+      if (newItem.OtherMaster is null) {
+        if (oldItem.OtherMaster is null) {
           //nothing to do
         } else {
-          sampleNew.OtherMaster = sampleOld.OtherMaster;
-          sampleNew.OtherMaster.AddToSampleX(sampleNew);
+          newItem.OtherMaster = oldItem.OtherMaster;
+          newItem.OtherMaster.AddToSampleX(newItem);
         }
       } else {
-        if (sampleOld.OtherMaster is null) {
-          if (sampleNew.OtherMaster!=SampleMaster.NoSampleMaster) {
-            sampleNew.OtherMaster.RemoveFromSampleX(sampleNew);
+        if (oldItem.OtherMaster is null) {
+          if (newItem.OtherMaster!=SampleMaster.NoSampleMaster) {
+            newItem.OtherMaster.RemoveFromSampleX(newItem);
           }
-          sampleNew.OtherMaster = null;
+          newItem.OtherMaster = null;
         } else {
-          if (sampleNew.OtherMaster!=SampleMaster.NoSampleMaster) {
-            sampleNew.OtherMaster.RemoveFromSampleX(sampleNew);
+          if (oldItem.OtherMaster!=newItem.OtherMaster) {
+          if (newItem.OtherMaster!=SampleMaster.NoSampleMaster) {
+            newItem.OtherMaster.RemoveFromSampleX(newItem);
           }
-          sampleNew.OtherMaster = sampleOld.OtherMaster;
-          sampleNew.OtherMaster.AddToSampleX(sampleNew);
+          newItem.OtherMaster = oldItem.OtherMaster;
+          newItem.OtherMaster.AddToSampleX(newItem);
+          }
         }
       }
-      sampleNew.Optional = sampleOld.Optional;
-      sampleNew.onRollbackItemUpdated(sampleOld);
+      newItem.Optional = oldItem.Optional;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back Sample.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(Sample oldSample);
 
 
     /// <summary>
-    /// Adds Sample item to possible parents again as part of a transaction rollback.
+    /// Adds Sample to DC.Data.SampleX as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var sample = (Sample) item;
-      sample.OneMaster?.AddToSampleX(sample);
-      sample.OtherMaster?.AddToSampleX(sample);
-      sample.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback Sample.Release(): {sample.ToTraceString()}");
+#endif
+      sample.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}|" +
+        $" {Flag}|" +
+        $" {Number}|" +
+        $" {Amount}|" +
+        $" {Amount4}|" +
+        $" {Amount5}|" +
+        $" {PreciseDecimal}|" +
+        $" {SampleState}|" +
+        $" {DateOnly.ToShortDateString()}|" +
+        $" {TimeOnly}|" +
+        $" {DateTimeTicks}|" +
+        $" {DateTimeMinute}|" +
+        $" {DateTimeSecond}|" +
+        $" OneMaster {OneMaster?.GetKeyOrHash()}|" +
+        $" OtherMaster {OtherMaster?.GetKeyOrHash()}|" +
+        $" {Optional}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -904,7 +952,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" Flag: {Flag}," +
         $" Number: {Number}," +

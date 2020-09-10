@@ -29,7 +29,16 @@ namespace StorageDataContext  {
     /// Unique identifier for Lookup_ParentNullable. Gets set once Lookup_ParentNullable gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem lookup_ParentNullable, int key) {
+    internal static void SetKey(IStorageItem lookup_ParentNullable, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release Lookup_ParentNullable key @{lookup_ParentNullable.Key} #{lookup_ParentNullable.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store Lookup_ParentNullable key @{key} #{lookup_ParentNullable.GetHashCode()}");
+        }
+      }
+#endif
       ((Lookup_ParentNullable)lookup_ParentNullable).Key = key;
     }
 
@@ -79,7 +88,13 @@ namespace StorageDataContext  {
       Key = StorageExtensions.NoKey;
       Date = date.Floor(Rounding.Days);
       SomeValue = someValue.Round(2);
+#if DEBUG
+      DC.Trace?.Invoke($"new Lookup_ParentNullable: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(9,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -127,18 +142,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds Lookup_ParentNullable to DC.Data.Lookup_ParentNullables. 
+    /// Adds Lookup_ParentNullable to DC.Data.Lookup_ParentNullables.<br/>
+    /// Throws an Exception when Lookup_ParentNullable is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"Lookup_ParentNullable cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"Lookup_ParentNullable cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.Lookup_ParentNullables.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored Lookup_ParentNullable #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -170,6 +190,9 @@ namespace StorageDataContext  {
       onUpdating(date, someValue, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating Lookup_ParentNullable: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       var dateRounded = date.Floor(Rounding.Days);
       if (Date!=dateRounded) {
@@ -185,9 +208,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.Lookup_ParentNullables.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(9, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated Lookup_ParentNullable: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(DateTime date, decimal someValue, ref bool isCancelled);
     partial void onUpdated(Lookup_ParentNullable old);
@@ -205,18 +233,34 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Removing Lookup_ParentNullable from DC.Data.Lookup_ParentNullables is not supported.
+    /// Releasing Lookup_ParentNullable from DC.Data.Lookup_ParentNullables is not supported.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 
     /// <summary>
-    /// Removes Lookup_ParentNullable from possible parents as part of a transaction rollback.
+    /// Undoes the new() statement as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemNew(IStorageItem item) {
+      var lookup_ParentNullable = (Lookup_ParentNullable) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new Lookup_ParentNullable(): {lookup_ParentNullable.ToTraceString()}");
+#endif
+      lookup_ParentNullable.onRollbackItemNew();
+    }
+    partial void onRollbackItemNew();
+
+
+    /// <summary>
+    /// Releases Lookup_ParentNullable from DC.Data.Lookup_ParentNullables as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var lookup_ParentNullable = (Lookup_ParentNullable) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback Lookup_ParentNullable.Store(): {lookup_ParentNullable.ToTraceString()}");
+#endif
       lookup_ParentNullable.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -225,24 +269,47 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the Lookup_ParentNullable item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var lookup_ParentNullableOld = (Lookup_ParentNullable) oldItem;
-      var lookup_ParentNullableNew = (Lookup_ParentNullable) newItem;
-      lookup_ParentNullableNew.Date = lookup_ParentNullableOld.Date;
-      lookup_ParentNullableNew.SomeValue = lookup_ParentNullableOld.SomeValue;
-      lookup_ParentNullableNew.onRollbackItemUpdated(lookup_ParentNullableOld);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (Lookup_ParentNullable) oldStorageItem;
+      var newItem = (Lookup_ParentNullable) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back Lookup_ParentNullable.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Date = oldItem.Date;
+      newItem.SomeValue = oldItem.SomeValue;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back Lookup_ParentNullable.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(Lookup_ParentNullable oldLookup_ParentNullable);
 
 
     /// <summary>
-    /// Adds Lookup_ParentNullable item to possible parents again as part of a transaction rollback.
+    /// Adds Lookup_ParentNullable to DC.Data.Lookup_ParentNullables as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var lookup_ParentNullable = (Lookup_ParentNullable) item;
-      lookup_ParentNullable.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback Lookup_ParentNullable.Release(): {lookup_ParentNullable.ToTraceString()}");
+#endif
+      lookup_ParentNullable.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Date.ToShortDateString()}|" +
+        $" {SomeValue}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -264,7 +331,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Date: {Date.ToShortDateString()}," +
         $" SomeValue: {SomeValue};";
       onToString(ref returnString);

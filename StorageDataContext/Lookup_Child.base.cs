@@ -29,7 +29,16 @@ namespace StorageDataContext  {
     /// Unique identifier for Lookup_Child. Gets set once Lookup_Child gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem lookup_Child, int key) {
+    internal static void SetKey(IStorageItem lookup_Child, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release Lookup_Child key @{lookup_Child.Key} #{lookup_Child.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store Lookup_Child key @{key} #{lookup_Child.GetHashCode()}");
+        }
+      }
+#endif
       ((Lookup_Child)lookup_Child).Key = key;
     }
 
@@ -81,16 +90,20 @@ namespace StorageDataContext  {
     //      ------------
 
     /// <summary>
-    /// Lookup_Child Constructor. If isStoring is true, adds Lookup_Child to DC.Data.Lookup_Children, 
-    /// adds Lookup_Child to lookup_Parent.Lookup_Children
-    /// and if there is a LookupParentNullable adds Lookup_Child to lookup_ParentNullable.Lookup_Children.
+    /// Lookup_Child Constructor. If isStoring is true, adds Lookup_Child to DC.Data.Lookup_Children.
     /// </summary>
     public Lookup_Child(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
       Text = text;
       LookupParent = lookupParent;
       LookupParentNullable = lookupParentNullable;
+#if DEBUG
+      DC.Trace?.Invoke($"new Lookup_Child: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(10,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -164,18 +177,29 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds Lookup_Child to DC.Data.Lookup_Children, Lookup_Parent and Lookup_ParentNullable. 
+    /// Adds Lookup_Child to DC.Data.Lookup_Children.<br/>
+    /// Throws an Exception when Lookup_Child is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"Lookup_Child cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"Lookup_Child cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
+      if (LookupParent.Key<0) {
+        throw new Exception($"Cannot store child Lookup_Child '{this}'.LookupParent to Lookup_Parent '{LookupParent}' because parent is not stored yet.");
+      }
+      if (LookupParentNullable?.Key<0) {
+        throw new Exception($"Cannot store child Lookup_Child '{this}'.LookupParentNullable to Lookup_ParentNullable '{LookupParentNullable}' because parent is not stored yet.");
+      }
       DC.Data.Lookup_Children.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored Lookup_Child #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -211,11 +235,24 @@ namespace StorageDataContext  {
     /// Updates Lookup_Child with the provided values
     /// </summary>
     public void Update(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable) {
+      if (Key>=0){
+        if (lookupParent.Key<0) {
+          throw new Exception($"Lookup_Child.Update(): It is illegal to add stored Lookup_Child '{this}'" + Environment.NewLine + 
+            $"to LookupParent '{lookupParent}', which is not stored.");
+        }
+        if (lookupParentNullable?.Key<0) {
+          throw new Exception($"Lookup_Child.Update(): It is illegal to add stored Lookup_Child '{this}'" + Environment.NewLine + 
+            $"to LookupParentNullable '{lookupParentNullable}', which is not stored.");
+        }
+      }
       var clone = new Lookup_Child(this);
       var isCancelled = false;
       onUpdating(text, lookupParent, lookupParentNullable, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating Lookup_Child: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -247,9 +284,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.Lookup_Children.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(10, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated Lookup_Child: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable, ref bool isCancelled);
     partial void onUpdated(Lookup_Child old);
@@ -294,47 +336,42 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Removes Lookup_Child from DC.Data.Lookup_Children, 
-    /// disconnects Lookup_Child from Lookup_Parent because of LookupParent and 
-    /// disconnects Lookup_Child from Lookup_ParentNullable because of LookupParentNullable.
+    /// Removes Lookup_Child from DC.Data.Lookup_Children.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"Lookup_Child.Remove(): Lookup_Child 'Class Lookup_Child' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"Lookup_Child.Release(): Lookup_Child '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.Lookup_Children.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released Lookup_Child @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects Lookup_Child from Lookup_Parent because of LookupParent and 
-    /// disconnects Lookup_Child from Lookup_ParentNullable because of LookupParentNullable.
+    /// Removes Lookup_Child from parents as part of a transaction rollback of the new() statement.
     /// </summary>
-    internal static void Disconnect(Lookup_Child lookup_Child) {
+    internal static void RollbackItemNew(IStorageItem item) {
+      var lookup_Child = (Lookup_Child) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new Lookup_Child(): {lookup_Child.ToTraceString()}");
+#endif
+      lookup_Child.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes lookup_ParentNullable from LookupParentNullable
-    /// </summary>
-    internal void RemoveLookupParentNullable(Lookup_ParentNullable lookup_ParentNullable) {
-      if (lookup_ParentNullable!=LookupParentNullable) throw new Exception();
-
-      var clone = new Lookup_Child(this);
-      LookupParentNullable = null;
-      HasChanged?.Invoke(clone, this);
-    }
-
-
-    /// <summary>
-    /// Removes Lookup_Child from possible parents as part of a transaction rollback.
+    /// Releases Lookup_Child from DC.Data.Lookup_Children as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var lookup_Child = (Lookup_Child) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback Lookup_Child.Store(): {lookup_Child.ToTraceString()}");
+#endif
       lookup_Child.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -343,39 +380,65 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the Lookup_Child item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var lookup_ChildOld = (Lookup_Child) oldItem;
-      var lookup_ChildNew = (Lookup_Child) newItem;
-      lookup_ChildNew.Text = lookup_ChildOld.Text;
-      if (lookup_ChildNew.LookupParent!=lookup_ChildOld.LookupParent) {
-        lookup_ChildNew.LookupParent = lookup_ChildOld.LookupParent;
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (Lookup_Child) oldStorageItem;
+      var newItem = (Lookup_Child) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back Lookup_Child.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      if (newItem.LookupParent!=oldItem.LookupParent) {
+        newItem.LookupParent = oldItem.LookupParent;
       }
-      if (lookup_ChildNew.LookupParentNullable is null) {
-        if (lookup_ChildOld.LookupParentNullable is null) {
+      if (newItem.LookupParentNullable is null) {
+        if (oldItem.LookupParentNullable is null) {
           //nothing to do
         } else {
-          lookup_ChildNew.LookupParentNullable = lookup_ChildOld.LookupParentNullable;
+          newItem.LookupParentNullable = oldItem.LookupParentNullable;
         }
       } else {
-        if (lookup_ChildOld.LookupParentNullable is null) {
-          lookup_ChildNew.LookupParentNullable = null;
+        if (oldItem.LookupParentNullable is null) {
+          newItem.LookupParentNullable = null;
         } else {
-          lookup_ChildNew.LookupParentNullable = lookup_ChildOld.LookupParentNullable;
+          if (oldItem.LookupParentNullable!=newItem.LookupParentNullable) {
+          newItem.LookupParentNullable = oldItem.LookupParentNullable;
+          }
         }
       }
-      lookup_ChildNew.onRollbackItemUpdated(lookup_ChildOld);
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back Lookup_Child.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(Lookup_Child oldLookup_Child);
 
 
     /// <summary>
-    /// Adds Lookup_Child item to possible parents again as part of a transaction rollback.
+    /// Adds Lookup_Child to DC.Data.Lookup_Children as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var lookup_Child = (Lookup_Child) item;
-      lookup_Child.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback Lookup_Child.Release(): {lookup_Child.ToTraceString()}");
+#endif
+      lookup_Child.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}|" +
+        $" LookupParent {LookupParent.GetKeyOrHash()}|" +
+        $" LookupParentNullable {LookupParentNullable?.GetKeyOrHash()}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -398,7 +461,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" LookupParent: {LookupParent.ToShortString()}," +
         $" LookupParentNullable: {LookupParentNullable?.ToShortString()};";

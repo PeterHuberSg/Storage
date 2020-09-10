@@ -28,7 +28,16 @@ namespace StorageDataContext  {
     /// Unique identifier for PrivateConstructor. Gets set once PrivateConstructor gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem privateConstructor, int key) {
+    internal static void SetKey(IStorageItem privateConstructor, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release PrivateConstructor key @{privateConstructor.Key} #{privateConstructor.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store PrivateConstructor key @{key} #{privateConstructor.GetHashCode()}");
+        }
+      }
+#endif
       ((PrivateConstructor)privateConstructor).Key = key;
     }
 
@@ -71,7 +80,13 @@ namespace StorageDataContext  {
     private PrivateConstructor(string text, bool isStoring = true) {
       Key = StorageExtensions.NoKey;
       Text = text;
+#if DEBUG
+      DC.Trace?.Invoke($"new PrivateConstructor: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(29,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -117,18 +132,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds PrivateConstructor to DC.Data.PrivateConstructors. 
+    /// Adds PrivateConstructor to DC.Data.PrivateConstructors.<br/>
+    /// Throws an Exception when PrivateConstructor is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"PrivateConstructor cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"PrivateConstructor cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.PrivateConstructors.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored PrivateConstructor #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -159,6 +179,9 @@ namespace StorageDataContext  {
       onUpdating(text, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating PrivateConstructor: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -168,9 +191,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.PrivateConstructors.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(29, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated PrivateConstructor: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(string text, ref bool isCancelled);
     partial void onUpdated(PrivateConstructor old);
@@ -189,23 +217,40 @@ namespace StorageDataContext  {
     /// <summary>
     /// Removes PrivateConstructor from DC.Data.PrivateConstructors.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"PrivateConstructor.Remove(): PrivateConstructor 'Class PrivateConstructor' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"PrivateConstructor.Release(): PrivateConstructor '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.PrivateConstructors.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released PrivateConstructor @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Removes PrivateConstructor from possible parents as part of a transaction rollback.
+    /// Undoes the new() statement as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemNew(IStorageItem item) {
+      var privateConstructor = (PrivateConstructor) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new PrivateConstructor(): {privateConstructor.ToTraceString()}");
+#endif
+      privateConstructor.onRollbackItemNew();
+    }
+    partial void onRollbackItemNew();
+
+
+    /// <summary>
+    /// Releases PrivateConstructor from DC.Data.PrivateConstructors as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var privateConstructor = (PrivateConstructor) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback PrivateConstructor.Store(): {privateConstructor.ToTraceString()}");
+#endif
       privateConstructor.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -214,23 +259,45 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the PrivateConstructor item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var privateConstructorOld = (PrivateConstructor) oldItem;
-      var privateConstructorNew = (PrivateConstructor) newItem;
-      privateConstructorNew.Text = privateConstructorOld.Text;
-      privateConstructorNew.onRollbackItemUpdated(privateConstructorOld);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (PrivateConstructor) oldStorageItem;
+      var newItem = (PrivateConstructor) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back PrivateConstructor.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back PrivateConstructor.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(PrivateConstructor oldPrivateConstructor);
 
 
     /// <summary>
-    /// Adds PrivateConstructor item to possible parents again as part of a transaction rollback.
+    /// Adds PrivateConstructor to DC.Data.PrivateConstructors as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var privateConstructor = (PrivateConstructor) item;
-      privateConstructor.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback PrivateConstructor.Release(): {privateConstructor.ToTraceString()}");
+#endif
+      privateConstructor.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -251,7 +318,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text};";
       onToString(ref returnString);
       return returnString;

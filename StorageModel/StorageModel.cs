@@ -289,7 +289,7 @@ namespace StorageDataContext {
     public Decimal5? Amount5;
 
     /// <summary>
-    /// PreciseDecimal with about 20 digits precision, takes a lot of storage space
+    /// PreciseDecimal with about 20 digits precision, takes more storage space then the other Decimalx types.
     /// </summary>
     public decimal PreciseDecimal;
 
@@ -304,22 +304,22 @@ namespace StorageDataContext {
     public Date DateOnly;
 
     /// <summary>
-    /// Stores times (24 hour timespan) but not date
+    /// Stores times (24 hour timespan) but not date.
     /// </summary>
     public Time TimeOnly;
 
     /// <summary>
-    /// Stores date and time precisely to a tick
+    /// Stores date and time precisely to a tick.
     /// </summary>
     public DateTimeTicks DateTimeTicks;
 
     /// <summary>
-    /// Stores date and time precisely to a minute
+    /// Stores date and time precisely to a minute.
     /// </summary>
     public DateMinutes DateTimeMinute;
 
     /// <summary>
-    /// Stores date and time precisely to a second
+    /// Stores date and time precisely to a second.
     /// </summary>
     public DateSeconds DateTimeSecond;
 

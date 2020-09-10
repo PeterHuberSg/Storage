@@ -32,8 +32,19 @@ namespace Storage {
     /// Display key as string
     /// </summary>
     public static string ToKeyString(this int key) {
-      if (key==NoKey) return "no";
+      if (key==NoKey) return "noKey";
       return key.ToString();
+    }
+
+
+    /// <summary>
+    /// If Key is >=0 returns "@Key", otherwise "#GetHashCode()"
+    /// </summary>
+    public static string GetKeyOrHash(this IStorageItem storageItem) {
+      if (storageItem.Key>=0) {
+        return '@'+storageItem.Key.ToString();
+      }
+      return '#'+storageItem.GetHashCode().ToString();
     }
 
 

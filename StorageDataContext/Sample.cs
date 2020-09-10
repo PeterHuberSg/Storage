@@ -55,28 +55,28 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after Sample.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before Sample gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of Sample are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(
       string text, 
@@ -101,47 +101,54 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of Sample are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(Sample old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for Sample is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after Sample.Release() got executed
     /// </summary>
-    partial void onRemove() {
+    partial void onReleased() {
     }
 
 
+    /// <summary>
+    /// Called after 'new Sample()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after Sample.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after Sample.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(Sample oldSample) {
     }
 
 
     /// <summary>
-    /// Called after item.Remove() transaction is rolled back
+    /// Called after Sample.Release() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemRemoved() {
+    partial void onRollbackItemRelease() {
     }
+
+
     /// <summary>
     /// Called after a sampleDetail gets added to SampleDetails.
     /// </summary>

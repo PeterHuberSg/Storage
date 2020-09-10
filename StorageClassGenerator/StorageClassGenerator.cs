@@ -38,6 +38,16 @@ https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/special-issue/csharp
 namespace Storage {
 
 
+  /// <summary>
+  /// Should tracing code be generated ?
+  /// </summary>
+  public enum TracingEnum {
+    noTracing,
+    debugOnlyTracing,
+    alwaysTracing
+  }
+
+
   public class StorageClassGenerator {
 
 
@@ -57,12 +67,14 @@ namespace Storage {
     /// <param name="sourceDirectoryString">Source directory from where the .cs files get read.</param>
     /// <param name="targetDirectoryString">Target directory where the new .cs files get written.</param>
     /// <param name="context">Name of Context class, which gives static access to all data stored.</param>
+    /// <param name="isTracing">defines if tracing instructions should get added to the code.</param> 
     /// <param name="isFullyCommented">If true (default), the created .cs files (not .base.cs files) have all code lines 
     /// commented out.</param>
     public StorageClassGenerator(
       string sourceDirectoryString, 
       string targetDirectoryString, 
-      string context, 
+      string context,
+      TracingEnum isTracing = TracingEnum.noTracing,
       bool isFullyCommented = true) 
     {
       try {
@@ -74,7 +86,7 @@ namespace Storage {
         DirectoryInfo targetDirectory= findDirectory(targetDirectoryString, "target directory");
         Console.WriteLine();
 
-        var compiler = new Compiler(isFullyCommented);
+        var compiler = new Compiler(isTracing, isFullyCommented);
         foreach (var file in sourceDirectory.GetFiles("*.cs")) {
           if (isModelFile(file, out NamespaceDeclarationSyntax? namespaceDeclaration)) {
             Console.WriteLine($"Parse {file.Name}");

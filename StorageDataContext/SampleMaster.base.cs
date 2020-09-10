@@ -29,7 +29,16 @@ namespace StorageDataContext  {
     /// Unique identifier for SampleMaster. Gets set once SampleMaster gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem sampleMaster, int key) {
+    internal static void SetKey(IStorageItem sampleMaster, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release SampleMaster key @{sampleMaster.Key} #{sampleMaster.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store SampleMaster key @{key} #{sampleMaster.GetHashCode()}");
+        }
+      }
+#endif
       ((SampleMaster)sampleMaster).Key = key;
     }
 
@@ -87,7 +96,13 @@ namespace StorageDataContext  {
       Text = text;
       sampleX = new HashSet<Sample>();
       NumberWithDefault = numberWithDefault;
+#if DEBUG
+      DC.Trace?.Invoke($"new SampleMaster: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(1,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -136,18 +151,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds SampleMaster to DC.Data.SampleMasters. 
+    /// Adds SampleMaster to DC.Data.SampleMasters.<br/>
+    /// Throws an Exception when SampleMaster is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"SampleMaster cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"SampleMaster cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.SampleMasters.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored SampleMaster #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -179,6 +199,9 @@ namespace StorageDataContext  {
       onUpdating(text, numberWithDefault, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating SampleMaster: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -192,9 +215,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.SampleMasters.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(1, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated SampleMaster: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(string text, int numberWithDefault, ref bool isCancelled);
     partial void onUpdated(SampleMaster old);
@@ -217,9 +245,15 @@ namespace StorageDataContext  {
     internal void AddToSampleX(Sample sample) {
 #if DEBUG
       if (sample==Sample.NoSample) throw new Exception();
+      if ((sample.Key>=0)&&(Key<0)) throw new Exception();
+      if (sampleX.Contains(sample)) throw new Exception();
 #endif
       sampleX.Add(sample);
       onAddedToSampleX(sample);
+#if DEBUG
+      DC.Trace?.Invoke($"Add Sample {sample.GetKeyOrHash()} to " +
+        $"{this.GetKeyOrHash()} SampleMaster.SampleX");
+#endif
     }
     partial void onAddedToSampleX(Sample sample);
 
@@ -242,23 +276,43 @@ namespace StorageDataContext  {
         sampleX.Remove(sample);
 #endif
       onRemovedFromSampleX(sample);
+#if DEBUG
+      DC.Trace?.Invoke($"Remove Sample {sample.GetKeyOrHash()} from " +
+        $"{this.GetKeyOrHash()} SampleMaster.SampleX");
+#endif
     }
     partial void onRemovedFromSampleX(Sample sample);
 
 
     /// <summary>
-    /// Removing SampleMaster from DC.Data.SampleMasters is not supported.
+    /// Releasing SampleMaster from DC.Data.SampleMasters is not supported.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 
     /// <summary>
-    /// Removes SampleMaster from possible parents as part of a transaction rollback.
+    /// Undoes the new() statement as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemNew(IStorageItem item) {
+      var sampleMaster = (SampleMaster) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new SampleMaster(): {sampleMaster.ToTraceString()}");
+#endif
+      sampleMaster.onRollbackItemNew();
+    }
+    partial void onRollbackItemNew();
+
+
+    /// <summary>
+    /// Releases SampleMaster from DC.Data.SampleMasters as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var sampleMaster = (SampleMaster) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback SampleMaster.Store(): {sampleMaster.ToTraceString()}");
+#endif
       sampleMaster.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -267,24 +321,47 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the SampleMaster item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var sampleMasterOld = (SampleMaster) oldItem;
-      var sampleMasterNew = (SampleMaster) newItem;
-      sampleMasterNew.Text = sampleMasterOld.Text;
-      sampleMasterNew.NumberWithDefault = sampleMasterOld.NumberWithDefault;
-      sampleMasterNew.onRollbackItemUpdated(sampleMasterOld);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (SampleMaster) oldStorageItem;
+      var newItem = (SampleMaster) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back SampleMaster.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      newItem.NumberWithDefault = oldItem.NumberWithDefault;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back SampleMaster.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(SampleMaster oldSampleMaster);
 
 
     /// <summary>
-    /// Adds SampleMaster item to possible parents again as part of a transaction rollback.
+    /// Adds SampleMaster to DC.Data.SampleMasters as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var sampleMaster = (SampleMaster) item;
-      sampleMaster.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback SampleMaster.Release(): {sampleMaster.ToTraceString()}");
+#endif
+      sampleMaster.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}|" +
+        $" {NumberWithDefault}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -306,7 +383,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" SampleX: {SampleX.Count}," +
         $" NumberWithDefault: {NumberWithDefault};";

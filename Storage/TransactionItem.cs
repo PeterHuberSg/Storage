@@ -9,9 +9,10 @@ namespace Storage {
   /// </summary>
   public enum TransactionActivityEnum {
     None,
-    Add,
+    New,
+    Store,
     Update,
-    Remove
+    Release
   }
 
 

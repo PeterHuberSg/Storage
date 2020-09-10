@@ -52,6 +52,8 @@ namespace Storage {
         sourceDirectoryString: sourceDirectoryPath, //directory from where the .cs files get read.
         targetDirectoryString: targetDirectoryPath, //directory where the new .cs files get written.
         context: "DC", //class name of data context, which gives static access to all data stored.
+        //isTracing: TracingEnum.noTracing, //defines if tracing instructions should get added to the code
+        isTracing: TracingEnum.debugOnlyTracing, //defines if tracing instructions should get added to the code
         isFullyCommented: false); //If true (default), the created .cs files (not .base.cs files) have all code lines 
                                   //commented out. False is only used here for testing.
     }

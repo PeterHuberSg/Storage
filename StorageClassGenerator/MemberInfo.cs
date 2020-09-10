@@ -40,6 +40,7 @@ namespace Storage {
     public MemberInfo? ToLowerTarget; // ToLower source member can use ToLowerTarget to find target
     public string? ReadOnlyTypeString; //used by Dictionary and SortedList: IReadOnlyDictionary<DateTime, DictionaryChild>
     public bool IsNullable; //is also set in Compiler.AnalyzeDependencies() for ToLower properties
+    public string QMark = ""; //mi.IsNullable ? "?" : "";
     public bool IsReadOnly; //property is marked 'readonly' or class is not updatable 
     public readonly string? Comment;
     public readonly string? PrecissionComment;
@@ -90,7 +91,7 @@ namespace Storage {
       CsvTypeString = csvTypeString;
       MemberType = memberType;
       ClassInfo = classInfo;
-      IsNullable = isNullable;
+      SetIsNullable(isNullable);
       IsReadOnly = isReadOnly;
       Comment = comment;
       DefaultValue = defaultValue;
@@ -365,7 +366,7 @@ namespace Storage {
       MemberType = MemberTypeEnum.ToLower;
       ClassInfo = classInfo;
       PropertyForToLower = toLower;
-      IsNullable = isNullable;
+      SetIsNullable(isNullable);
       IsReadOnly = false;
       Comment = comment;
       DefaultValue = null;
@@ -405,7 +406,7 @@ namespace Storage {
       ClassInfo = classInfo;
       ChildTypeName = childType;
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
-      IsNullable = true;
+      SetIsNullable(true);
       IsReadOnly = false; 
       TypeString = childType + '?';
 
@@ -436,7 +437,7 @@ namespace Storage {
       ClassInfo = classInfo;
       ChildTypeName = childType;
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
-      IsNullable = false;
+      SetIsNullable(false);
       IsReadOnly = false; //List properties are IReadOnlyList, but no need to mark them with ReadOnly
       TypeString = listType;
       CsvReaderRead = null;
@@ -470,7 +471,7 @@ namespace Storage {
       LowerChildTypeName = childType[0..1].ToLowerInvariant() + childType[1..];
       ChildKeyPropertyName = childKeyPropertyName;
       ChildKeyTypeString = keyTypeString;
-      IsNullable = false;
+      SetIsNullable(false);
       IsReadOnly = false; //Collection properties are IReadOnlyXXX, but not need to mark them with ReadOnly
       TypeString = memberTypeString; //will be overwritten in Compiler.AnalyzeDependencies()
       CsvReaderRead = null;
@@ -498,7 +499,7 @@ namespace Storage {
       MemberName = name;
       LowerMemberName = name[0..1].ToLowerInvariant() + name[1..];
       ClassInfo = classInfo;
-      IsNullable = isNullable;
+      SetIsNullable(isNullable);
       IsReadOnly = isReadOnly;
       ParentTypeString = memberTypeString;
       LowerParentType = memberTypeString[0..1].ToLowerInvariant() + memberTypeString[1..];
@@ -520,8 +521,16 @@ namespace Storage {
     }
 
 
+    internal void SetIsNullable(bool isNullable) {
+      IsNullable = isNullable;
+      if (isNullable) {
+        TypeString += '?';
+        QMark = "?";
+      }
+    }
+
+
     public override string ToString() {
-      string isNullableString = IsNullable ? "?" : "";
       if (MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
         return $"List<{ChildTypeName}> {MemberName}";
       }else if (MemberType==MemberTypeEnum.ParentMultipleChildrenDictionary || 
@@ -529,7 +538,7 @@ namespace Storage {
       {
         return $"{TypeString} {MemberName}";
       } else {
-        return $"{MemberType}{isNullableString} {MemberName}";
+        return $"{MemberType}{QMark} {MemberName}";
       }
     }
 
@@ -577,11 +586,7 @@ namespace Storage {
       } else {
         if (isRaw) {
           if (MemberType==MemberTypeEnum.LinkToParent) {
-            if (IsNullable) {
-              streamWriter.WriteLine($"    public int? {MemberName}Key {{ get; set; }}");
-            } else {
-              streamWriter.WriteLine($"    public int {MemberName}Key {{ get; set; }}");
-            }
+            streamWriter.WriteLine($"    public int{QMark} {MemberName}Key {{ get; set; }}");
           } else {
             if (TypeString=="string") {
               streamWriter.WriteLine($"    public string {MemberName} {{ get; set; }} =\"\";");

@@ -28,7 +28,16 @@ namespace StorageDataContext  {
     /// Unique identifier for ChildrenDictionary_ParentNullable. Gets set once ChildrenDictionary_ParentNullable gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem childrenDictionary_ParentNullable, int key) {
+    internal static void SetKey(IStorageItem childrenDictionary_ParentNullable, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release ChildrenDictionary_ParentNullable key @{childrenDictionary_ParentNullable.Key} #{childrenDictionary_ParentNullable.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store ChildrenDictionary_ParentNullable key @{key} #{childrenDictionary_ParentNullable.GetHashCode()}");
+        }
+      }
+#endif
       ((ChildrenDictionary_ParentNullable)childrenDictionary_ParentNullable).Key = key;
     }
 
@@ -80,7 +89,13 @@ namespace StorageDataContext  {
       Key = StorageExtensions.NoKey;
       Text = text;
       childrenDictionary_Children = new Dictionary<DateTime, ChildrenDictionary_Child>();
+#if DEBUG
+      DC.Trace?.Invoke($"new ChildrenDictionary_ParentNullable: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(18,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -127,18 +142,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds ChildrenDictionary_ParentNullable to DC.Data.ChildrenDictionary_ParentNullables. 
+    /// Adds ChildrenDictionary_ParentNullable to DC.Data.ChildrenDictionary_ParentNullables.<br/>
+    /// Throws an Exception when ChildrenDictionary_ParentNullable is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ChildrenDictionary_ParentNullable cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ChildrenDictionary_ParentNullable cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.ChildrenDictionary_ParentNullables.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored ChildrenDictionary_ParentNullable #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -169,6 +189,9 @@ namespace StorageDataContext  {
       onUpdating(text, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating ChildrenDictionary_ParentNullable: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (Text!=text) {
         Text = text;
@@ -178,9 +201,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.ChildrenDictionary_ParentNullables.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(18, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated ChildrenDictionary_ParentNullable: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(string text, ref bool isCancelled);
     partial void onUpdated(ChildrenDictionary_ParentNullable old);
@@ -202,9 +230,15 @@ namespace StorageDataContext  {
     internal void AddToChildrenDictionary_Children(ChildrenDictionary_Child childrenDictionary_Child) {
 #if DEBUG
       if (childrenDictionary_Child==ChildrenDictionary_Child.NoChildrenDictionary_Child) throw new Exception();
+      if ((childrenDictionary_Child.Key>=0)&&(Key<0)) throw new Exception();
+      if (childrenDictionary_Children.ContainsKey(childrenDictionary_Child.DateKey)) throw new Exception();
 #endif
       childrenDictionary_Children.Add(childrenDictionary_Child.DateKey, childrenDictionary_Child);
       onAddedToChildrenDictionary_Children(childrenDictionary_Child);
+#if DEBUG
+      DC.Trace?.Invoke($"Add ChildrenDictionary_Child {childrenDictionary_Child.GetKeyOrHash()} to " +
+        $"{this.GetKeyOrHash()} ChildrenDictionary_ParentNullable.ChildrenDictionary_Children");
+#endif
     }
     partial void onAddedToChildrenDictionary_Children(ChildrenDictionary_Child childrenDictionary_Child);
 
@@ -219,41 +253,57 @@ namespace StorageDataContext  {
         childrenDictionary_Children.Remove(childrenDictionary_Child.DateKey);
 #endif
       onRemovedFromChildrenDictionary_Children(childrenDictionary_Child);
+#if DEBUG
+      DC.Trace?.Invoke($"Remove ChildrenDictionary_Child {childrenDictionary_Child.GetKeyOrHash()} from " +
+        $"{this.GetKeyOrHash()} ChildrenDictionary_ParentNullable.ChildrenDictionary_Children");
+#endif
     }
     partial void onRemovedFromChildrenDictionary_Children(ChildrenDictionary_Child childrenDictionary_Child);
 
 
     /// <summary>
-    /// Removes ChildrenDictionary_ParentNullable from DC.Data.ChildrenDictionary_ParentNullables and 
-    /// disconnects ChildrenDictionary_Child.ParentWithDictionaryNullable from ChildrenDictionary_Children.
+    /// Removes ChildrenDictionary_ParentNullable from DC.Data.ChildrenDictionary_ParentNullables.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"ChildrenDictionary_ParentNullable.Remove(): ChildrenDictionary_ParentNullable 'Class ChildrenDictionary_ParentNullable' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"ChildrenDictionary_ParentNullable.Release(): ChildrenDictionary_ParentNullable '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      foreach (var childrenDictionary_Child in ChildrenDictionary_Children.Values) {
+        if (childrenDictionary_Child?.Key>=0) {
+          throw new Exception($"Cannot release ChildrenDictionary_ParentNullable '{this}' " + Environment.NewLine + 
+            $"because '{childrenDictionary_Child}' in ChildrenDictionary_ParentNullable.ChildrenDictionary_Children is still stored.");
+        }
+      }
+      onReleased();
       DC.Data.ChildrenDictionary_ParentNullables.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released ChildrenDictionary_ParentNullable @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Disconnects ChildrenDictionary_Child.ParentWithDictionaryNullable from ChildrenDictionary_Children.
+    /// Undoes the new() statement as part of a transaction rollback.
     /// </summary>
-    internal static void Disconnect(ChildrenDictionary_ParentNullable childrenDictionary_ParentNullable) {
-      foreach (var childrenDictionary_Child in childrenDictionary_ParentNullable.ChildrenDictionary_Children.Values) {
-        childrenDictionary_Child.RemoveParentWithDictionaryNullable(childrenDictionary_ParentNullable);
-      }
+    internal static void RollbackItemNew(IStorageItem item) {
+      var childrenDictionary_ParentNullable = (ChildrenDictionary_ParentNullable) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new ChildrenDictionary_ParentNullable(): {childrenDictionary_ParentNullable.ToTraceString()}");
+#endif
+      childrenDictionary_ParentNullable.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes ChildrenDictionary_ParentNullable from possible parents as part of a transaction rollback.
+    /// Releases ChildrenDictionary_ParentNullable from DC.Data.ChildrenDictionary_ParentNullables as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var childrenDictionary_ParentNullable = (ChildrenDictionary_ParentNullable) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenDictionary_ParentNullable.Store(): {childrenDictionary_ParentNullable.ToTraceString()}");
+#endif
       childrenDictionary_ParentNullable.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -262,23 +312,45 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the ChildrenDictionary_ParentNullable item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var childrenDictionary_ParentNullableOld = (ChildrenDictionary_ParentNullable) oldItem;
-      var childrenDictionary_ParentNullableNew = (ChildrenDictionary_ParentNullable) newItem;
-      childrenDictionary_ParentNullableNew.Text = childrenDictionary_ParentNullableOld.Text;
-      childrenDictionary_ParentNullableNew.onRollbackItemUpdated(childrenDictionary_ParentNullableOld);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (ChildrenDictionary_ParentNullable) oldStorageItem;
+      var newItem = (ChildrenDictionary_ParentNullable) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back ChildrenDictionary_ParentNullable.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.Text = oldItem.Text;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back ChildrenDictionary_ParentNullable.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(ChildrenDictionary_ParentNullable oldChildrenDictionary_ParentNullable);
 
 
     /// <summary>
-    /// Adds ChildrenDictionary_ParentNullable item to possible parents again as part of a transaction rollback.
+    /// Adds ChildrenDictionary_ParentNullable to DC.Data.ChildrenDictionary_ParentNullables as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var childrenDictionary_ParentNullable = (ChildrenDictionary_ParentNullable) item;
-      childrenDictionary_ParentNullable.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenDictionary_ParentNullable.Release(): {childrenDictionary_ParentNullable.ToTraceString()}");
+#endif
+      childrenDictionary_ParentNullable.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -299,7 +371,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" ChildrenDictionary_Children: {ChildrenDictionary_Children.Count};";
       onToString(ref returnString);

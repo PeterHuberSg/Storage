@@ -28,7 +28,16 @@ namespace StorageDataContext  {
     /// Unique identifier for ChildrenSortedList_Parent. Gets set once ChildrenSortedList_Parent gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem childrenSortedList_Parent, int key) {
+    internal static void SetKey(IStorageItem childrenSortedList_Parent, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release ChildrenSortedList_Parent key @{childrenSortedList_Parent.Key} #{childrenSortedList_Parent.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store ChildrenSortedList_Parent key @{key} #{childrenSortedList_Parent.GetHashCode()}");
+        }
+      }
+#endif
       ((ChildrenSortedList_Parent)childrenSortedList_Parent).Key = key;
     }
 
@@ -87,7 +96,13 @@ namespace StorageDataContext  {
       TextReadOnly = textReadOnly;
       TextUpdateable = textUpdateable;
       childrenSortedList_Children = new SortedList<DateTime, ChildrenSortedList_Child>();
+#if DEBUG
+      DC.Trace?.Invoke($"new ChildrenSortedList_Parent: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(20,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -136,18 +151,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds ChildrenSortedList_Parent to DC.Data.ChildrenSortedList_Parents. 
+    /// Adds ChildrenSortedList_Parent to DC.Data.ChildrenSortedList_Parents.<br/>
+    /// Throws an Exception when ChildrenSortedList_Parent is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ChildrenSortedList_Parent cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ChildrenSortedList_Parent cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.ChildrenSortedList_Parents.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored ChildrenSortedList_Parent #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -179,6 +199,9 @@ namespace StorageDataContext  {
       onUpdating(textUpdateable, ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating ChildrenSortedList_Parent: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       if (TextUpdateable!=textUpdateable) {
         TextUpdateable = textUpdateable;
@@ -188,9 +211,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.ChildrenSortedList_Parents.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(20, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated ChildrenSortedList_Parent: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(string textUpdateable, ref bool isCancelled);
     partial void onUpdated(ChildrenSortedList_Parent old);
@@ -218,9 +246,15 @@ namespace StorageDataContext  {
     internal void AddToChildrenSortedList_Children(ChildrenSortedList_Child childrenSortedList_Child) {
 #if DEBUG
       if (childrenSortedList_Child==ChildrenSortedList_Child.NoChildrenSortedList_Child) throw new Exception();
+      if ((childrenSortedList_Child.Key>=0)&&(Key<0)) throw new Exception();
+      if (childrenSortedList_Children.ContainsKey(childrenSortedList_Child.DateKey)) throw new Exception();
 #endif
       childrenSortedList_Children.Add(childrenSortedList_Child.DateKey, childrenSortedList_Child);
       onAddedToChildrenSortedList_Children(childrenSortedList_Child);
+#if DEBUG
+      DC.Trace?.Invoke($"Add ChildrenSortedList_Child {childrenSortedList_Child.GetKeyOrHash()} to " +
+        $"{this.GetKeyOrHash()} ChildrenSortedList_Parent.ChildrenSortedList_Children");
+#endif
     }
     partial void onAddedToChildrenSortedList_Children(ChildrenSortedList_Child childrenSortedList_Child);
 
@@ -235,45 +269,57 @@ namespace StorageDataContext  {
         childrenSortedList_Children.Remove(childrenSortedList_Child.DateKey);
 #endif
       onRemovedFromChildrenSortedList_Children(childrenSortedList_Child);
+#if DEBUG
+      DC.Trace?.Invoke($"Remove ChildrenSortedList_Child {childrenSortedList_Child.GetKeyOrHash()} from " +
+        $"{this.GetKeyOrHash()} ChildrenSortedList_Parent.ChildrenSortedList_Children");
+#endif
     }
     partial void onRemovedFromChildrenSortedList_Children(ChildrenSortedList_Child childrenSortedList_Child);
 
 
     /// <summary>
-    /// Removes ChildrenSortedList_Parent from DC.Data.ChildrenSortedList_Parents and 
-    /// deletes any ChildrenSortedList_Child where ChildrenSortedList_Child.ParentWithSortedList links to this ChildrenSortedList_Parent.
+    /// Removes ChildrenSortedList_Parent from DC.Data.ChildrenSortedList_Parents.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"ChildrenSortedList_Parent.Remove(): ChildrenSortedList_Parent 'Class ChildrenSortedList_Parent' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"ChildrenSortedList_Parent.Release(): ChildrenSortedList_Parent '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      foreach (var childrenSortedList_Child in ChildrenSortedList_Children.Values) {
+        if (childrenSortedList_Child?.Key>=0) {
+          throw new Exception($"Cannot release ChildrenSortedList_Parent '{this}' " + Environment.NewLine + 
+            $"because '{childrenSortedList_Child}' in ChildrenSortedList_Parent.ChildrenSortedList_Children is still stored.");
+        }
+      }
+      onReleased();
       DC.Data.ChildrenSortedList_Parents.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released ChildrenSortedList_Parent @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Deletes any ChildrenSortedList_Child where ChildrenSortedList_Child.ParentWithSortedList links to this ChildrenSortedList_Parent.
+    /// Undoes the new() statement as part of a transaction rollback.
     /// </summary>
-    internal static void Disconnect(ChildrenSortedList_Parent childrenSortedList_Parent) {
-      var childrenSortedList_Children = new ChildrenSortedList_Child[childrenSortedList_Parent.ChildrenSortedList_Children.Count];
-      childrenSortedList_Parent.childrenSortedList_Children.Values.CopyTo(childrenSortedList_Children, 0);
-      foreach (var childrenSortedList_Child in childrenSortedList_Children) {
-         if (childrenSortedList_Child.Key>=0) {
-           childrenSortedList_Child.Remove();
-         }
-      }
+    internal static void RollbackItemNew(IStorageItem item) {
+      var childrenSortedList_Parent = (ChildrenSortedList_Parent) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new ChildrenSortedList_Parent(): {childrenSortedList_Parent.ToTraceString()}");
+#endif
+      childrenSortedList_Parent.onRollbackItemNew();
     }
+    partial void onRollbackItemNew();
 
 
     /// <summary>
-    /// Removes ChildrenSortedList_Parent from possible parents as part of a transaction rollback.
+    /// Releases ChildrenSortedList_Parent from DC.Data.ChildrenSortedList_Parents as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var childrenSortedList_Parent = (ChildrenSortedList_Parent) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenSortedList_Parent.Store(): {childrenSortedList_Parent.ToTraceString()}");
+#endif
       childrenSortedList_Parent.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -282,28 +328,51 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the ChildrenSortedList_Parent item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var childrenSortedList_ParentOld = (ChildrenSortedList_Parent) oldItem;
-      var childrenSortedList_ParentNew = (ChildrenSortedList_Parent) newItem;
-      if (childrenSortedList_ParentNew.TextReadOnly!=childrenSortedList_ParentOld.TextReadOnly) {
-        throw new Exception($"ChildrenSortedList_Parent.Update(): Property TextReadOnly '{childrenSortedList_ParentNew.TextReadOnly}' is " +
-          $"readonly, TextReadOnly '{childrenSortedList_ParentOld.TextReadOnly}' read from the CSV file should be the same." + Environment.NewLine + 
-          childrenSortedList_ParentNew.ToString());
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (ChildrenSortedList_Parent) oldStorageItem;
+      var newItem = (ChildrenSortedList_Parent) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back ChildrenSortedList_Parent.Update(): {newItem.ToTraceString()}");
+#endif
+      if (newItem.TextReadOnly!=oldItem.TextReadOnly) {
+        throw new Exception($"ChildrenSortedList_Parent.Update(): Property TextReadOnly '{newItem.TextReadOnly}' is " +
+          $"readonly, TextReadOnly '{oldItem.TextReadOnly}' read from the CSV file should be the same." + Environment.NewLine + 
+          newItem.ToString());
       }
-      childrenSortedList_ParentNew.TextUpdateable = childrenSortedList_ParentOld.TextUpdateable;
-      childrenSortedList_ParentNew.onRollbackItemUpdated(childrenSortedList_ParentOld);
+      newItem.TextUpdateable = oldItem.TextUpdateable;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back ChildrenSortedList_Parent.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(ChildrenSortedList_Parent oldChildrenSortedList_Parent);
 
 
     /// <summary>
-    /// Adds ChildrenSortedList_Parent item to possible parents again as part of a transaction rollback.
+    /// Adds ChildrenSortedList_Parent to DC.Data.ChildrenSortedList_Parents as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var childrenSortedList_Parent = (ChildrenSortedList_Parent) item;
-      childrenSortedList_Parent.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenSortedList_Parent.Release(): {childrenSortedList_Parent.ToTraceString()}");
+#endif
+      childrenSortedList_Parent.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {TextReadOnly}|" +
+        $" {TextUpdateable}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -325,7 +394,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" TextReadOnly: {TextReadOnly}," +
         $" TextUpdateable: {TextUpdateable}," +
         $" ChildrenSortedList_Children: {ChildrenSortedList_Children.Count};";

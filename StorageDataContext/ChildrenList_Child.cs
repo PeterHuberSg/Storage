@@ -55,28 +55,28 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Called before storing gets executed
+    /// Called before {ClassName}.Store() gets executed
     /// </summary>
     partial void onStoring(ref bool isCancelled) {
     }
 
 
     /// <summary>
-    /// Called after storing is executed
+    /// Called after ChildrenList_Child.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before the data gets written to a CSV file
+    /// Called before ChildrenList_Child gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenList_Child are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(
       string text, 
@@ -90,47 +90,54 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenList_Child are updated, but before the HasChanged event gets raised
     /// </summary>
     partial void onUpdated(ChildrenList_Child old) {
     }
 
 
     /// <summary>
-    /// Called after an update is read from a CSV file
+    /// Called after an update for ChildrenList_Child is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called before removal gets executed
+    /// Called after ChildrenList_Child.Release() got executed
     /// </summary>
-    partial void onRemove() {
+    partial void onReleased() {
     }
 
 
+    /// <summary>
+    /// Called after 'new ChildrenList_Child()' transaction is rolled back
+    /// </summary>
+    partial void onRollbackItemNew() {
+    }
 
 
     /// <summary>
-    /// Called after item.Store() transaction is rolled back
+    /// Called after ChildrenList_Child.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after item.Update() transaction is rolled back
+    /// Called after ChildrenList_Child.Update() transaction is rolled back
     /// </summary>
     partial void onRollbackItemUpdated(ChildrenList_Child oldChildrenList_Child) {
     }
 
 
     /// <summary>
-    /// Called after item.Remove() transaction is rolled back
+    /// Called after ChildrenList_Child.Release() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemRemoved() {
+    partial void onRollbackItemRelease() {
     }
+
+
     /// <summary>
     /// Updates returnString with additional info for a short description.
     /// </summary>

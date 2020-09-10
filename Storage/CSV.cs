@@ -382,6 +382,7 @@ namespace Storage {
         fileCount++;
       }
       result += $"{fileCount} files copied from {csvConfig.DirectoryPath} {Environment.NewLine}to {newDirectory.FullName}.";
+
       return result;
     }
     #endregion

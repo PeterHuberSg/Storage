@@ -28,7 +28,16 @@ namespace StorageDataContext  {
     /// Unique identifier for DataTypeSample. Gets set once DataTypeSample gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem dataTypeSample, int key) {
+    internal static void SetKey(IStorageItem dataTypeSample, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release DataTypeSample key @{dataTypeSample.Key} #{dataTypeSample.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store DataTypeSample key @{key} #{dataTypeSample.GetHashCode()}");
+        }
+      }
+#endif
       ((DataTypeSample)dataTypeSample).Key = key;
     }
 
@@ -320,7 +329,13 @@ namespace StorageDataContext  {
       ANullableString = aNullableString;
       AEnum = aEnum;
       ANullableEnum = aNullableEnum;
+#if DEBUG
+      DC.Trace?.Invoke($"new DataTypeSample: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(0,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -428,18 +443,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds DataTypeSample to DC.Data.DataTypeSamples. 
+    /// Adds DataTypeSample to DC.Data.DataTypeSamples.<br/>
+    /// Throws an Exception when DataTypeSample is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"DataTypeSample cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"DataTypeSample cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.DataTypeSamples.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored DataTypeSample #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -567,6 +587,9 @@ namespace StorageDataContext  {
         ref isCancelled);
       if (isCancelled) return;
 
+#if DEBUG
+      DC.Trace?.Invoke($"Updating DataTypeSample: {ToTraceString()}");
+#endif
       var isChangeDetected = false;
       var aDateRounded = aDate.Floor(Rounding.Days);
       if (ADate!=aDateRounded) {
@@ -714,9 +737,14 @@ namespace StorageDataContext  {
         onUpdated(clone);
         if (Key>=0) {
           DC.Data.DataTypeSamples.ItemHasChanged(clone, this);
+        } else if (DC.Data.IsTransaction) {
+          DC.Data.AddTransaction(new TransactionItem(0, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }
+#if DEBUG
+      DC.Trace?.Invoke($"Updated DataTypeSample: {ToTraceString()}");
+#endif
     }
     partial void onUpdating(
       DateTime aDate, 
@@ -799,23 +827,40 @@ namespace StorageDataContext  {
     /// <summary>
     /// Removes DataTypeSample from DC.Data.DataTypeSamples.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       if (Key<0) {
-        throw new Exception($"DataTypeSample.Remove(): DataTypeSample 'Class DataTypeSample' is not stored in DC.Data, key is {Key}.");
+        throw new Exception($"DataTypeSample.Release(): DataTypeSample '{this}' is not stored in DC.Data, key is {Key}.");
       }
-      onRemove();
-      //the removal of this instance from its parent instances gets executed in Disconnect(), which gets
-      //called during the execution of the following line.
+      onReleased();
       DC.Data.DataTypeSamples.Remove(Key);
+#if DEBUG
+      DC.Trace?.Invoke($"Released DataTypeSample @{Key} #{GetHashCode()}");
+#endif
     }
-    partial void onRemove();
+    partial void onReleased();
 
 
     /// <summary>
-    /// Removes DataTypeSample from possible parents as part of a transaction rollback.
+    /// Undoes the new() statement as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemNew(IStorageItem item) {
+      var dataTypeSample = (DataTypeSample) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new DataTypeSample(): {dataTypeSample.ToTraceString()}");
+#endif
+      dataTypeSample.onRollbackItemNew();
+    }
+    partial void onRollbackItemNew();
+
+
+    /// <summary>
+    /// Releases DataTypeSample from DC.Data.DataTypeSamples as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var dataTypeSample = (DataTypeSample) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback DataTypeSample.Store(): {dataTypeSample.ToTraceString()}");
+#endif
       dataTypeSample.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -824,54 +869,107 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the DataTypeSample item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var dataTypeSampleOld = (DataTypeSample) oldItem;
-      var dataTypeSampleNew = (DataTypeSample) newItem;
-      dataTypeSampleNew.ADate = dataTypeSampleOld.ADate;
-      dataTypeSampleNew.ANullableDate = dataTypeSampleOld.ANullableDate;
-      dataTypeSampleNew.ATime = dataTypeSampleOld.ATime;
-      dataTypeSampleNew.ANullableTime = dataTypeSampleOld.ANullableTime;
-      dataTypeSampleNew.ADateMinutes = dataTypeSampleOld.ADateMinutes;
-      dataTypeSampleNew.ANullableDateMinutes = dataTypeSampleOld.ANullableDateMinutes;
-      dataTypeSampleNew.ADateSeconds = dataTypeSampleOld.ADateSeconds;
-      dataTypeSampleNew.ANullableDateSeconds = dataTypeSampleOld.ANullableDateSeconds;
-      dataTypeSampleNew.ADateTime = dataTypeSampleOld.ADateTime;
-      dataTypeSampleNew.ANullableDateTime = dataTypeSampleOld.ANullableDateTime;
-      dataTypeSampleNew.ATimeSpan = dataTypeSampleOld.ATimeSpan;
-      dataTypeSampleNew.ANullableTimeSpan = dataTypeSampleOld.ANullableTimeSpan;
-      dataTypeSampleNew.ADecimal = dataTypeSampleOld.ADecimal;
-      dataTypeSampleNew.ANullableDecimal = dataTypeSampleOld.ANullableDecimal;
-      dataTypeSampleNew.ADecimal2 = dataTypeSampleOld.ADecimal2;
-      dataTypeSampleNew.ANullableDecimal2 = dataTypeSampleOld.ANullableDecimal2;
-      dataTypeSampleNew.ADecimal4 = dataTypeSampleOld.ADecimal4;
-      dataTypeSampleNew.ANullableDecimal4 = dataTypeSampleOld.ANullableDecimal4;
-      dataTypeSampleNew.ADecimal5 = dataTypeSampleOld.ADecimal5;
-      dataTypeSampleNew.ANullableDecimal5 = dataTypeSampleOld.ANullableDecimal5;
-      dataTypeSampleNew.ABool = dataTypeSampleOld.ABool;
-      dataTypeSampleNew.ANullableBool = dataTypeSampleOld.ANullableBool;
-      dataTypeSampleNew.AInt = dataTypeSampleOld.AInt;
-      dataTypeSampleNew.ANullableInt = dataTypeSampleOld.ANullableInt;
-      dataTypeSampleNew.ALong = dataTypeSampleOld.ALong;
-      dataTypeSampleNew.ANullableLong = dataTypeSampleOld.ANullableLong;
-      dataTypeSampleNew.AChar = dataTypeSampleOld.AChar;
-      dataTypeSampleNew.ANullableChar = dataTypeSampleOld.ANullableChar;
-      dataTypeSampleNew.AString = dataTypeSampleOld.AString;
-      dataTypeSampleNew.ANullableString = dataTypeSampleOld.ANullableString;
-      dataTypeSampleNew.AEnum = dataTypeSampleOld.AEnum;
-      dataTypeSampleNew.ANullableEnum = dataTypeSampleOld.ANullableEnum;
-      dataTypeSampleNew.onRollbackItemUpdated(dataTypeSampleOld);
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (DataTypeSample) oldStorageItem;
+      var newItem = (DataTypeSample) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back DataTypeSample.Update(): {newItem.ToTraceString()}");
+#endif
+      newItem.ADate = oldItem.ADate;
+      newItem.ANullableDate = oldItem.ANullableDate;
+      newItem.ATime = oldItem.ATime;
+      newItem.ANullableTime = oldItem.ANullableTime;
+      newItem.ADateMinutes = oldItem.ADateMinutes;
+      newItem.ANullableDateMinutes = oldItem.ANullableDateMinutes;
+      newItem.ADateSeconds = oldItem.ADateSeconds;
+      newItem.ANullableDateSeconds = oldItem.ANullableDateSeconds;
+      newItem.ADateTime = oldItem.ADateTime;
+      newItem.ANullableDateTime = oldItem.ANullableDateTime;
+      newItem.ATimeSpan = oldItem.ATimeSpan;
+      newItem.ANullableTimeSpan = oldItem.ANullableTimeSpan;
+      newItem.ADecimal = oldItem.ADecimal;
+      newItem.ANullableDecimal = oldItem.ANullableDecimal;
+      newItem.ADecimal2 = oldItem.ADecimal2;
+      newItem.ANullableDecimal2 = oldItem.ANullableDecimal2;
+      newItem.ADecimal4 = oldItem.ADecimal4;
+      newItem.ANullableDecimal4 = oldItem.ANullableDecimal4;
+      newItem.ADecimal5 = oldItem.ADecimal5;
+      newItem.ANullableDecimal5 = oldItem.ANullableDecimal5;
+      newItem.ABool = oldItem.ABool;
+      newItem.ANullableBool = oldItem.ANullableBool;
+      newItem.AInt = oldItem.AInt;
+      newItem.ANullableInt = oldItem.ANullableInt;
+      newItem.ALong = oldItem.ALong;
+      newItem.ANullableLong = oldItem.ANullableLong;
+      newItem.AChar = oldItem.AChar;
+      newItem.ANullableChar = oldItem.ANullableChar;
+      newItem.AString = oldItem.AString;
+      newItem.ANullableString = oldItem.ANullableString;
+      newItem.AEnum = oldItem.AEnum;
+      newItem.ANullableEnum = oldItem.ANullableEnum;
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back DataTypeSample.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(DataTypeSample oldDataTypeSample);
 
 
     /// <summary>
-    /// Adds DataTypeSample item to possible parents again as part of a transaction rollback.
+    /// Adds DataTypeSample to DC.Data.DataTypeSamples as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var dataTypeSample = (DataTypeSample) item;
-      dataTypeSample.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback DataTypeSample.Release(): {dataTypeSample.ToTraceString()}");
+#endif
+      dataTypeSample.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {ADate.ToShortDateString()}|" +
+        $" {ANullableDate?.ToShortDateString()}|" +
+        $" {ATime}|" +
+        $" {ANullableTime}|" +
+        $" {ADateMinutes}|" +
+        $" {ANullableDateMinutes}|" +
+        $" {ADateSeconds}|" +
+        $" {ANullableDateSeconds}|" +
+        $" {ADateTime}|" +
+        $" {ANullableDateTime}|" +
+        $" {ATimeSpan}|" +
+        $" {ANullableTimeSpan}|" +
+        $" {ADecimal}|" +
+        $" {ANullableDecimal}|" +
+        $" {ADecimal2}|" +
+        $" {ANullableDecimal2}|" +
+        $" {ADecimal4}|" +
+        $" {ANullableDecimal4}|" +
+        $" {ADecimal5}|" +
+        $" {ANullableDecimal5}|" +
+        $" {ABool}|" +
+        $" {ANullableBool}|" +
+        $" {AInt}|" +
+        $" {ANullableInt}|" +
+        $" {ALong}|" +
+        $" {ANullableLong}|" +
+        $" {AChar}|" +
+        $" {ANullableChar}|" +
+        $" {AString}|" +
+        $" {ANullableString}|" +
+        $" {AEnum}|" +
+        $" {ANullableEnum}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -923,7 +1021,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" ADate: {ADate.ToShortDateString()}," +
         $" ANullableDate: {ANullableDate?.ToShortDateString()}," +
         $" ATime: {ATime}," +

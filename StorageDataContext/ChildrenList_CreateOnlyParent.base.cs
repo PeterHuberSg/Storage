@@ -30,7 +30,16 @@ namespace StorageDataContext  {
     /// Unique identifier for ChildrenList_CreateOnlyParent. Gets set once ChildrenList_CreateOnlyParent gets added to DC.Data.
     /// </summary>
     public int Key { get; private set; }
-    internal static void SetKey(IStorageItem childrenList_CreateOnlyParent, int key) {
+    internal static void SetKey(IStorageItem childrenList_CreateOnlyParent, int key, bool isRollback) {
+#if DEBUG
+      if (isRollback) {
+        if (key==StorageExtensions.NoKey) {
+          DC.Trace?.Invoke($"Release ChildrenList_CreateOnlyParent key @{childrenList_CreateOnlyParent.Key} #{childrenList_CreateOnlyParent.GetHashCode()}");
+        } else {
+          DC.Trace?.Invoke($"Store ChildrenList_CreateOnlyParent key @{key} #{childrenList_CreateOnlyParent.GetHashCode()}");
+        }
+      }
+#endif
       ((ChildrenList_CreateOnlyParent)childrenList_CreateOnlyParent).Key = key;
     }
 
@@ -91,7 +100,13 @@ namespace StorageDataContext  {
       Text = text;
       childrenList_Children = new List<ChildrenList_Child>();
       childrenList_CreateOnlyChildren = new List<ChildrenList_CreateOnlyChild>();
+#if DEBUG
+      DC.Trace?.Invoke($"new ChildrenList_CreateOnlyParent: {ToTraceString()}");
+#endif
       onConstruct();
+      if (DC.Data.IsTransaction) {
+        DC.Data.AddTransaction(new TransactionItem(13,TransactionActivityEnum.New, Key, this));
+      }
 
       if (isStoring) {
         Store();
@@ -139,18 +154,23 @@ namespace StorageDataContext  {
     //      -------
 
     /// <summary>
-    /// Adds ChildrenList_CreateOnlyParent to DC.Data.ChildrenList_CreateOnlyParents. 
+    /// Adds ChildrenList_CreateOnlyParent to DC.Data.ChildrenList_CreateOnlyParents.<br/>
+    /// Throws an Exception when ChildrenList_CreateOnlyParent is already stored.
     /// </summary>
     public void Store() {
       if (Key>=0) {
-        throw new Exception($"ChildrenList_CreateOnlyParent cannot be stored again in DC.Data, key is {Key} greater equal 0." + Environment.NewLine + ToString());
+        throw new Exception($"ChildrenList_CreateOnlyParent cannot be stored again in DC.Data, key {Key} is greater equal 0." + Environment.NewLine + ToString());
       }
+
       var isCancelled = false;
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
       DC.Data.ChildrenList_CreateOnlyParents.Add(this);
       onStored();
+#if DEBUG
+      DC.Trace?.Invoke($"Stored ChildrenList_CreateOnlyParent #{GetHashCode()} @{Key}");
+#endif
     }
     partial void onStoring(ref bool isCancelled);
     partial void onStored();
@@ -178,9 +198,15 @@ namespace StorageDataContext  {
     internal void AddToChildrenList_Children(ChildrenList_Child childrenList_Child) {
 #if DEBUG
       if (childrenList_Child==ChildrenList_Child.NoChildrenList_Child) throw new Exception();
+      if ((childrenList_Child.Key>=0)&&(Key<0)) throw new Exception();
+      if (childrenList_Children.Contains(childrenList_Child)) throw new Exception();
 #endif
       childrenList_Children.Add(childrenList_Child);
       onAddedToChildrenList_Children(childrenList_Child);
+#if DEBUG
+      DC.Trace?.Invoke($"Add ChildrenList_Child {childrenList_Child.GetKeyOrHash()} to " +
+        $"{this.GetKeyOrHash()} ChildrenList_CreateOnlyParent.ChildrenList_Children");
+#endif
     }
     partial void onAddedToChildrenList_Children(ChildrenList_Child childrenList_Child);
 
@@ -195,6 +221,10 @@ namespace StorageDataContext  {
         childrenList_Children.Remove(childrenList_Child);
 #endif
       onRemovedFromChildrenList_Children(childrenList_Child);
+#if DEBUG
+      DC.Trace?.Invoke($"Remove ChildrenList_Child {childrenList_Child.GetKeyOrHash()} from " +
+        $"{this.GetKeyOrHash()} ChildrenList_CreateOnlyParent.ChildrenList_Children");
+#endif
     }
     partial void onRemovedFromChildrenList_Children(ChildrenList_Child childrenList_Child);
 
@@ -205,9 +235,15 @@ namespace StorageDataContext  {
     internal void AddToChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild) {
 #if DEBUG
       if (childrenList_CreateOnlyChild==ChildrenList_CreateOnlyChild.NoChildrenList_CreateOnlyChild) throw new Exception();
+      if ((childrenList_CreateOnlyChild.Key>=0)&&(Key<0)) throw new Exception();
+      if (childrenList_CreateOnlyChildren.Contains(childrenList_CreateOnlyChild)) throw new Exception();
 #endif
       childrenList_CreateOnlyChildren.Add(childrenList_CreateOnlyChild);
       onAddedToChildrenList_CreateOnlyChildren(childrenList_CreateOnlyChild);
+#if DEBUG
+      DC.Trace?.Invoke($"Add ChildrenList_CreateOnlyChild {childrenList_CreateOnlyChild.GetKeyOrHash()} to " +
+        $"{this.GetKeyOrHash()} ChildrenList_CreateOnlyParent.ChildrenList_CreateOnlyChildren");
+#endif
     }
     partial void onAddedToChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild);
 
@@ -222,23 +258,43 @@ namespace StorageDataContext  {
         childrenList_CreateOnlyChildren.Remove(childrenList_CreateOnlyChild);
 #endif
       onRemovedFromChildrenList_CreateOnlyChildren(childrenList_CreateOnlyChild);
+#if DEBUG
+      DC.Trace?.Invoke($"Remove ChildrenList_CreateOnlyChild {childrenList_CreateOnlyChild.GetKeyOrHash()} from " +
+        $"{this.GetKeyOrHash()} ChildrenList_CreateOnlyParent.ChildrenList_CreateOnlyChildren");
+#endif
     }
     partial void onRemovedFromChildrenList_CreateOnlyChildren(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild);
 
 
     /// <summary>
-    /// Removing ChildrenList_CreateOnlyParent from DC.Data.ChildrenList_CreateOnlyParents is not supported.
+    /// Releasing ChildrenList_CreateOnlyParent from DC.Data.ChildrenList_CreateOnlyParents is not supported.
     /// </summary>
-    public void Remove() {
+    public void Release() {
       throw new NotSupportedException("StorageClass attribute AreInstancesDeletable is false.");
     }
 
 
     /// <summary>
-    /// Removes ChildrenList_CreateOnlyParent from possible parents as part of a transaction rollback.
+    /// Undoes the new() statement as part of a transaction rollback.
+    /// </summary>
+    internal static void RollbackItemNew(IStorageItem item) {
+      var childrenList_CreateOnlyParent = (ChildrenList_CreateOnlyParent) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback new ChildrenList_CreateOnlyParent(): {childrenList_CreateOnlyParent.ToTraceString()}");
+#endif
+      childrenList_CreateOnlyParent.onRollbackItemNew();
+    }
+    partial void onRollbackItemNew();
+
+
+    /// <summary>
+    /// Releases ChildrenList_CreateOnlyParent from DC.Data.ChildrenList_CreateOnlyParents as part of a transaction rollback of Store().
     /// </summary>
     internal static void RollbackItemStore(IStorageItem item) {
       var childrenList_CreateOnlyParent = (ChildrenList_CreateOnlyParent) item;
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenList_CreateOnlyParent.Store(): {childrenList_CreateOnlyParent.ToTraceString()}");
+#endif
       childrenList_CreateOnlyParent.onRollbackItemStored();
     }
     partial void onRollbackItemStored();
@@ -247,27 +303,49 @@ namespace StorageDataContext  {
     /// <summary>
     /// Restores the ChildrenList_CreateOnlyParent item data as it was before the last update as part of a transaction rollback.
     /// </summary>
-    internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
-      var childrenList_CreateOnlyParentOld = (ChildrenList_CreateOnlyParent) oldItem;
-      var childrenList_CreateOnlyParentNew = (ChildrenList_CreateOnlyParent) newItem;
-      if (childrenList_CreateOnlyParentNew.Text!=childrenList_CreateOnlyParentOld.Text) {
-        throw new Exception($"ChildrenList_CreateOnlyParent.Update(): Property Text '{childrenList_CreateOnlyParentNew.Text}' is " +
-          $"readonly, Text '{childrenList_CreateOnlyParentOld.Text}' read from the CSV file should be the same." + Environment.NewLine + 
-          childrenList_CreateOnlyParentNew.ToString());
+    internal static void RollbackItemUpdate(IStorageItem oldStorageItem, IStorageItem newStorageItem) {
+      var oldItem = (ChildrenList_CreateOnlyParent) oldStorageItem;
+      var newItem = (ChildrenList_CreateOnlyParent) newStorageItem;
+#if DEBUG
+      DC.Trace?.Invoke($"Rolling back ChildrenList_CreateOnlyParent.Update(): {newItem.ToTraceString()}");
+#endif
+      if (newItem.Text!=oldItem.Text) {
+        throw new Exception($"ChildrenList_CreateOnlyParent.Update(): Property Text '{newItem.Text}' is " +
+          $"readonly, Text '{oldItem.Text}' read from the CSV file should be the same." + Environment.NewLine + 
+          newItem.ToString());
       }
-      childrenList_CreateOnlyParentNew.onRollbackItemUpdated(childrenList_CreateOnlyParentOld);
+      newItem.onRollbackItemUpdated(oldItem);
+#if DEBUG
+      DC.Trace?.Invoke($"Rolled back ChildrenList_CreateOnlyParent.Update(): {newItem.ToTraceString()}");
+#endif
     }
     partial void onRollbackItemUpdated(ChildrenList_CreateOnlyParent oldChildrenList_CreateOnlyParent);
 
 
     /// <summary>
-    /// Adds ChildrenList_CreateOnlyParent item to possible parents again as part of a transaction rollback.
+    /// Adds ChildrenList_CreateOnlyParent to DC.Data.ChildrenList_CreateOnlyParents as part of a transaction rollback of Release().
     /// </summary>
-    internal static void RollbackItemRemove(IStorageItem item) {
+    internal static void RollbackItemRelease(IStorageItem item) {
       var childrenList_CreateOnlyParent = (ChildrenList_CreateOnlyParent) item;
-      childrenList_CreateOnlyParent.onRollbackItemRemoved();
+#if DEBUG
+      DC.Trace?.Invoke($"Rollback ChildrenList_CreateOnlyParent.Release(): {childrenList_CreateOnlyParent.ToTraceString()}");
+#endif
+      childrenList_CreateOnlyParent.onRollbackItemRelease();
     }
-    partial void onRollbackItemRemoved();
+    partial void onRollbackItemRelease();
+
+
+    /// <summary>
+    /// Returns property values for tracing. Parents are shown with their key instead their content.
+    /// </summary>
+    public string ToTraceString() {
+      var returnString =
+        $"{this.GetKeyOrHash()}|" +
+        $" {Text}";
+      onToTraceString(ref returnString);
+      return returnString;
+    }
+    partial void onToTraceString(ref string returnString);
 
 
     /// <summary>
@@ -288,7 +366,7 @@ namespace StorageDataContext  {
     /// </summary>
     public override string ToString() {
       var returnString =
-        $"Key: {Key}," +
+        $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" ChildrenList_Children: {ChildrenList_Children.Count}," +
         $" ChildrenList_CreateOnlyChildren: {ChildrenList_CreateOnlyChildren.Count};";

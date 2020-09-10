@@ -10,7 +10,7 @@ namespace StorageTest {
   public class TestItemCsv: IStorageItemGeneric<TestItemCsv> {
 
     public int Key { get; private set; }
-    public static void SetKey(IStorageItem testItem, int key) { ((TestItemCsv)testItem).Key = key; }
+    public static void SetKey(IStorageItem testItem, int key, bool /*isRollback*/_) { ((TestItemCsv)testItem).Key = key; }
 
     public string Text { get; private set; }
 
@@ -65,7 +65,7 @@ namespace StorageTest {
     }
 
 
-    public void Remove() {
+    public void Release() {
       throw new NotImplementedException();
     }
 
@@ -95,8 +95,13 @@ namespace StorageTest {
     }
 
 
-    internal static void RollbackItemRemove(IStorageItem _) {
+    internal static void RollbackItemRelease(IStorageItem _) {
       throw new NotSupportedException();
+    }
+
+
+    public string ToTraceString() {
+      return $"{Key.ToKeyString()}, {Text};";
     }
 
 

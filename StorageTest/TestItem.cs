@@ -9,7 +9,7 @@ namespace StorageTest {
 
   public class TestItem: IStorageItemGeneric<TestItem> {
     public int Key { get; private set; }
-    public static void SetKey(IStorageItem testItem, int key) { ((TestItem)testItem).Key = key; }
+    public static void SetKey(IStorageItem testItem, int key, bool /*isRollback*/_) { ((TestItem)testItem).Key = key; }
 
     public string Text { get; private set; }
 
@@ -37,7 +37,7 @@ namespace StorageTest {
     }
 
 
-    public void Remove() {
+    public void Release() {
       throw new NotImplementedException();
     }
 
@@ -55,15 +55,26 @@ namespace StorageTest {
     }
 
 
+    internal static void RollbackItemNew(IStorageItem _) {
+    }
+
+
     internal static void RollbackItemStore(IStorageItem _) {
     }
 
 
+    #pragma warning disable IDE0060 // Remove unused parameter
     internal static void RollbackItemUpdate(IStorageItem oldItem, IStorageItem newItem) {
+    #pragma warning restore IDE0060 // Remove unused parameter
     }
 
 
-    internal static void RollbackItemRemove(IStorageItem _) {
+    internal static void RollbackItemRelease(IStorageItem _) {
+    }
+
+
+    public string ToTraceString() {
+      return $"{Key.ToKeyString()}, {Text};";
     }
 
 

@@ -19,10 +19,13 @@ This software is distributed without any warranty.
 **************************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using System.Threading;
 
+
 namespace Storage {
+
 
   /// <summary>
   /// The DataContext holds all DataStores and is used by the application code to access them. The DataContext also 
@@ -54,6 +57,13 @@ namespace Storage {
 
 
     /// <summary>
+    /// Adds transactionItem to TransactionItems
+    /// </summary>
+    virtual protected void AddTransaction(TransactionItem transactionItem) {
+      TransactionItems.Add(transactionItem);
+    }
+
+    /// <summary>
     /// Marks any DataStore that was changed during the current transaction
     /// </summary>
     internal bool[] TransactionStoreFlags;
@@ -83,19 +93,65 @@ namespace Storage {
     //      -------
 
     /// <summary>
-    /// Starts a transaction. All DataStores changes will be traced until a commit or rollback.
+    /// Trace messages used by DataContextBase
     /// </summary>
-    public void StartTransaction() {
-      IsTransaction = true;
+    public enum TraceMessageEnum {
+      none,
+      StartTransaction,
+      CommitTransaction,
+      RollingbackTransaction,
+      RolledbackTransaction
     }
 
 
+    /// <summary>
+    /// Inheritor can override TraceFromBase() if trace messages from DataContextBase should be processed.
+    /// </summary>
+    protected virtual void TraceFromBase(TraceMessageEnum traceMessageEnum) { 
+    }
+
+
+    /// <summary>
+    /// Starts a transaction. All DataStores changes will be traced until a commit or rollback.
+    /// </summary>
+    public void StartTransaction() {
+      if (IsTransaction) {
+        throw new Exception("Commit or roll back the currently running transaction before starting a new one.");
+      }
+      IsTransaction = true;
+      startTransactio();
+    }
+
+
+    /// <summary>
+    /// If a transaction is already running, returns false, otherwise starts a transaction and returns true. 
+    /// All DataStores changes will be traced until a commit or rollback.
+    /// </summary>
+    public bool StartOrContinueTransaction() {
+      if (IsTransaction) return false;
+      
+      IsTransaction = true;
+      startTransactio();
+      return true;
+    }
+
+
+    private void startTransactio() {
+      TraceFromBase(TraceMessageEnum.StartTransaction);
+#if DEBUG
+      if (TransactionItems.Count>0) throw new Exception();
+#endif
+    }
 
     /// <summary>
     /// Ends a transaction. All changes to DataStores traced during the current transaction get deleted.
     /// </summary>
     public void CommitTransaction() {
+      if (!IsTransaction) {
+        throw new Exception("It is not possible to commit a transaction, there is no transaction active.");
+      }
       IsTransaction = false;
+      TraceFromBase(TraceMessageEnum.CommitTransaction);
       for (int storeIndex = 0; storeIndex < TransactionStoreFlags.Length; storeIndex++) {
         if (TransactionStoreFlags[storeIndex]) {
           TransactionStoreFlags[storeIndex] = false;
@@ -116,18 +172,25 @@ namespace Storage {
     /// Reverses all DataStores changes made during the current transaction.
     /// </summary>
     public void RollbackTransaction() {
+      if (!IsTransaction) {
+        throw new Exception("It is not possible to roll back a transaction, there is no transaction active.");
+      }
       IsTransaction = false;
+      TraceFromBase(TraceMessageEnum.RollingbackTransaction);
+      //rollback the changes since transaction started in each DataStore which was changed during the transaction.
       for (int storeIndex = 0; storeIndex < (int)TransactionStoreFlags.Length; storeIndex++) {
         if (TransactionStoreFlags[storeIndex]) {
           TransactionStoreFlags[storeIndex] = false;
           DataStores[storeIndex].RollbackTransaction();
         }
       }
+      //rollback the action done on each item since transaction started like updating parent child relationships
       for (int transactionItemsIndex = TransactionItems.Count-1; transactionItemsIndex>=0; transactionItemsIndex--) {
         var transactionItem = TransactionItems[transactionItemsIndex];
         DataStores[(int)transactionItem.StoreKey].RollbackItem(transactionItem);
       }
       TransactionItems.Clear();
+      TraceFromBase(TraceMessageEnum.RolledbackTransaction);
     }
     #endregion
 
