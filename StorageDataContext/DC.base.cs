@@ -160,6 +160,16 @@ namespace StorageDataContext  {
     public DataStore<DataTypeSample> DataTypeSamples { get; private set; }
 
     /// <summary>
+    /// Directory of all DemoChildren
+    /// </summary>
+    public DataStore<DemoChild> DemoChildren { get; private set; }
+
+    /// <summary>
+    /// Directory of all DemoParents
+    /// </summary>
+    public DataStore<DemoParent> DemoParents { get; private set; }
+
+    /// <summary>
     /// Directory of all Lookup_Children
     /// </summary>
     public DataStore<Lookup_Child> Lookup_Children { get; private set; }
@@ -260,7 +270,7 @@ namespace StorageDataContext  {
     /// program terminates. With csvConfig defined, existing data gets read at startup, changes get immediately
     /// written and Dispose() ensures by flushing that all data is permanently stored.
     /// </summary>
-    public DC(CsvConfig? csvConfig): base(DataStoresCount: 30) {
+    public DC(CsvConfig? csvConfig): base(DataStoresCount: 32) {
       data = this;
       IsInitialised = false;
 #if DEBUG
@@ -665,9 +675,35 @@ namespace StorageDataContext  {
         DataStores[28] = CreateOnlyParentChangeableChild_Children;
         onCreateOnlyParentChangeableChild_ChildrenFilled();
 
-        PrivateConstructors = new DataStore<PrivateConstructor>(
+        DemoParents = new DataStore<DemoParent>(
           this,
           29,
+          DemoParent.SetKey,
+          DemoParent.RollbackItemNew,
+          DemoParent.RollbackItemStore,
+          DemoParent.RollbackItemUpdate,
+          DemoParent.RollbackItemRelease,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        DataStores[29] = DemoParents;
+        onDemoParentsFilled();
+
+        DemoChildren = new DataStore<DemoChild>(
+          this,
+          30,
+          DemoChild.SetKey,
+          DemoChild.RollbackItemNew,
+          DemoChild.RollbackItemStore,
+          DemoChild.RollbackItemUpdate,
+          DemoChild.RollbackItemRelease,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        DataStores[30] = DemoChildren;
+        onDemoChildrenFilled();
+
+        PrivateConstructors = new DataStore<PrivateConstructor>(
+          this,
+          31,
           PrivateConstructor.SetKey,
           PrivateConstructor.RollbackItemNew,
           PrivateConstructor.RollbackItemStore,
@@ -675,7 +711,7 @@ namespace StorageDataContext  {
           PrivateConstructor.RollbackItemRelease,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
-        DataStores[29] = PrivateConstructors;
+        DataStores[31] = PrivateConstructors;
         onPrivateConstructorsFilled();
 
       } else {
@@ -1259,9 +1295,49 @@ namespace StorageDataContext  {
         DataStores[28] = CreateOnlyParentChangeableChild_Children;
         onCreateOnlyParentChangeableChild_ChildrenFilled();
 
-        PrivateConstructors = new DataStoreCSV<PrivateConstructor>(
+        DemoParents = new DataStoreCSV<DemoParent>(
           this,
           29,
+          csvConfig!,
+          DemoParent.EstimatedLineLength,
+          DemoParent.Headers,
+          DemoParent.SetKey,
+          DemoParent.Create,
+          null,
+          DemoParent.Update,
+          DemoParent.Write,
+          DemoParent.RollbackItemNew,
+          DemoParent.RollbackItemStore,
+          DemoParent.RollbackItemUpdate,
+          DemoParent.RollbackItemRelease,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        DataStores[29] = DemoParents;
+        onDemoParentsFilled();
+
+        DemoChildren = new DataStoreCSV<DemoChild>(
+          this,
+          30,
+          csvConfig!,
+          DemoChild.EstimatedLineLength,
+          DemoChild.Headers,
+          DemoChild.SetKey,
+          DemoChild.Create,
+          DemoChild.Verify,
+          DemoChild.Update,
+          DemoChild.Write,
+          DemoChild.RollbackItemNew,
+          DemoChild.RollbackItemStore,
+          DemoChild.RollbackItemUpdate,
+          DemoChild.RollbackItemRelease,
+          areInstancesUpdatable: true,
+          areInstancesDeletable: true);
+        DataStores[30] = DemoChildren;
+        onDemoChildrenFilled();
+
+        PrivateConstructors = new DataStoreCSV<PrivateConstructor>(
+          this,
+          31,
           csvConfig!,
           PrivateConstructor.EstimatedLineLength,
           PrivateConstructor.Headers,
@@ -1276,7 +1352,7 @@ namespace StorageDataContext  {
           PrivateConstructor.RollbackItemRelease,
           areInstancesUpdatable: true,
           areInstancesDeletable: true);
-        DataStores[29] = PrivateConstructors;
+        DataStores[31] = PrivateConstructors;
         onPrivateConstructorsFilled();
 
       }
@@ -1444,6 +1520,16 @@ namespace StorageDataContext  {
     partial void onCreateOnlyParentChangeableChild_ChildrenFilled();
 
     /// <summary>}
+    /// Called once the data for DemoParents is read.
+    /// </summary>}
+    partial void onDemoParentsFilled();
+
+    /// <summary>}
+    /// Called once the data for DemoChildren is read.
+    /// </summary>}
+    partial void onDemoChildrenFilled();
+
+    /// <summary>}
     /// Called once the data for PrivateConstructors is read.
     /// </summary>}
     partial void onPrivateConstructorsFilled();
@@ -1480,6 +1566,10 @@ namespace StorageDataContext  {
         onDispose();
         PrivateConstructors.Dispose();
         PrivateConstructors = null!;
+        DemoChildren.Dispose();
+        DemoChildren = null!;
+        DemoParents.Dispose();
+        DemoParents = null!;
         CreateOnlyParentChangeableChild_Children.Dispose();
         CreateOnlyParentChangeableChild_Children = null!;
         CreateOnlyParentChangeableChild_ParentNullables.Dispose();

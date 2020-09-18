@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FFD62FB7-9078-41A8-BFCC-DEB79BCBDA0B}"
 	ProjectSection(SolutionItems) = preProject
 		Design.pptx = Design.pptx
+		Generator.jpg = Generator.jpg
 		Manual.md = Manual.md
 		README.md = README.md
 	EndProjectSection

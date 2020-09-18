@@ -1013,6 +1013,24 @@ namespace StorageDataContext {
     /// </summary>          
     public CreateOnlyParentChangeableChild_ParentNullable? ParentNullable;
   }
+
+
+  /// <summary>
+  /// Demo parent
+  /// </summary>
+  /// 
+
+
+  public class DemoParent {
+    public string DemoParentData;
+    public List<DemoChild> DemoChildren;
+  }
+
+  [StorageClass(pluralName: "DemoChildren")]
+  public class DemoChild {
+    public string DemoChildData;
+    public DemoParent Parent;
+  }
   #endregion
 
 
