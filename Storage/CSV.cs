@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 
 
+
 namespace Storage {
 
 
@@ -351,7 +352,9 @@ namespace Storage {
         $"equal 1 for backup to {csvConfig.BackupPath}.");
 
       var backupDir = new DirectoryInfo(csvConfig.BackupPath);
-      if (!backupDir.Exists) throw new Exception($"Backup directory does not exist: {csvConfig.BackupPath}");
+      if (!backupDir.Exists) 
+        throw new Exception($"Backup directory does not exist: {csvConfig.BackupPath}");
+      
 
       var existingDirectories = backupDir.GetDirectories("csv*").OrderBy(d=>d.Name).ToList();
       if (existingDirectories.Count>0) {

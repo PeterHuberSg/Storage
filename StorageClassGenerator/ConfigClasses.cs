@@ -81,7 +81,7 @@ namespace Storage {
 
 
   /// <summary>
-  /// Stores dates and time with a precision of seconds
+  /// Stores dates and time with a precision of minutes
   /// </summary>
   public class DateMinutes { }
 

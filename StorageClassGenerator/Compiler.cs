@@ -853,7 +853,7 @@ namespace Storage {
       sw.WriteLine("      if (disposing) {");
       sw.WriteLine("        onDispose();");
       foreach (var classInfo in ((IEnumerable<ClassInfo>)parentChildTree).Reverse()) {
-        sw.WriteLine($"        {classInfo.PluralName}.Dispose();");
+        sw.WriteLine($"        {classInfo.PluralName}?.Dispose();");
         sw.WriteLine($"        {classInfo.PluralName} = null!;");
         foreach (var mi in classInfo.Members.Values.OrderBy(mi => mi.MemberName)) {
           if (mi.NeedsDictionary) {
