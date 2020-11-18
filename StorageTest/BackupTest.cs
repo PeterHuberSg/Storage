@@ -16,6 +16,7 @@ namespace StorageTest {
     [TestMethod]
     public void TestBackup() {
       var directoryInfo =  new DirectoryInfo("TestCsv");
+      var directoryPath = directoryInfo.FullName;
       try {
         directoryInfo.Refresh();
         if (directoryInfo.Exists) {
@@ -32,8 +33,8 @@ namespace StorageTest {
         var csvConfig = new CsvConfig(activeDirectory.FullName, backupDirectory.FullName, backupPeriodicity, backupCopies);
         var now = new DateTime(2000, 12, 11);
         var result = Csv.Backup(csvConfig, now);
-        Assert.AreEqual(@"0 files copied from C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Active 
-to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Backup\csv20001211.", result);
+        Assert.AreEqual(@$"0 files copied from {directoryPath}\Active 
+to {directoryPath}\Backup\csv20001211.", result);
 
         now = now.AddDays(1);
         result = Csv.Backup(csvConfig, now);
@@ -42,8 +43,8 @@ to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestC
         File.WriteAllText(activeDirectory.FullName + @"\Data.csv", "some text");
         now = now.AddDays(1);
         result = Csv.Backup(csvConfig, now);
-        Assert.AreEqual(@"1 files copied from C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Active 
-to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Backup\csv20001213.", result);
+        Assert.AreEqual(@$"1 files copied from {directoryPath}\Active 
+to {directoryPath}\Backup\csv20001213.", result);
 
         now = now.AddDays(1);
         result = Csv.Backup(csvConfig, now);
@@ -52,21 +53,21 @@ to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestC
         File.WriteAllText(activeDirectory.FullName + @"\Data1.csv", "other text");
         now = now.AddDays(1);
         result = Csv.Backup(csvConfig, now);
-        Assert.AreEqual(@"2 files copied from C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Active 
-to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Backup\csv20001215.", result);
+        Assert.AreEqual(@$"2 files copied from {directoryPath}\Active 
+to {directoryPath}\Backup\csv20001215.", result);
 
         File.WriteAllText(activeDirectory.FullName + @"\Data1.csv", "other text");
         now = now.AddDays(2);
         result = Csv.Backup(csvConfig, now);
-        Assert.AreEqual(@"2 files copied from C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Active 
-to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Backup\csv20001217.", result);
+        Assert.AreEqual(@$"2 files copied from {directoryPath}\Active 
+to {directoryPath}\Backup\csv20001217.", result);
 
         File.WriteAllText(activeDirectory.FullName + @"\Data1.csv", "other text");
         now = now.AddDays(2);
         result = Csv.Backup(csvConfig, now);
-        Assert.AreEqual(@"Directory C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Backup\csv20001211 deleted
-2 files copied from C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Active 
-to C:\Users\peter\Source\Repos\Storage\StorageTest\bin\Debug\netcoreapp3.1\TestCsv\Backup\csv20001219.", result);
+        Assert.AreEqual(@$"Directory {directoryPath}\Backup\csv20001211 deleted
+2 files copied from {directoryPath}\Active 
+to {directoryPath}\Backup\csv20001219.", result);
       } finally {
         directoryInfo.Delete(recursive: true);
       }

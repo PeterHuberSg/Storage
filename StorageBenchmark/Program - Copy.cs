@@ -7,11 +7,7 @@
 ////https://benchmarkdotnet.org
 
 //namespace StorageBenchmark {
-
-
-//  public class Program {
-
-
+//  class Program {
 //    static void Main(string[] args) {
 //#if DEBUG
 //      Console.WriteLine("Debug Tests");
