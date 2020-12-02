@@ -422,10 +422,11 @@ namespace Storage {
               if (childMI.MemberType==MemberTypeEnum.LinkToParent && childMI.ParentTypeString==ci.ClassName) {
                 isFound = true;
                 mi.IsChildReadOnly |= childMI.IsReadOnly;
-                if (mi.MemberName!=childMI.ClassInfo.PluralName) {
-                  throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}:" + 
-                    Environment.NewLine + mi.MemberText);
-                }
+                //Todo: Removed requirement that list in parent must have plural name of children
+                //if (mi.MemberName!=childMI.ClassInfo.PluralName) {
+                //  throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}:" + 
+                //    Environment.NewLine + mi.MemberText);
+                //}
                 //no break here, because child can have 2 properties belonging to the same Parent
                 //mi.ChildMemberInfo = childMI; not done here, because of multiple children
               }
@@ -450,10 +451,11 @@ namespace Storage {
               if (childMI.MemberType==MemberTypeEnum.LinkToParent && childMI.ParentTypeString==ci.ClassName) {
                 isFound = true;
                 mi.IsChildReadOnly |= childMI.IsReadOnly;
-                if (mi.MemberName!=childMI.ClassInfo.PluralName) {
-                  throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}:" + 
-                    Environment.NewLine + mi.MemberText);
-                }
+                //Todo: Removed requirement that Dictionary, SortedList in parent must have plural name of children
+                //if (mi.MemberName!=childMI.ClassInfo.PluralName) {
+                //  throw new GeneratorException($"{ci} '{mi}': name {mi.MemberName} should be {childMI.ClassInfo.PluralName}:" + 
+                //    Environment.NewLine + mi.MemberText);
+                //}
                 foreach (var childKeyMI in mi.ChildClassInfo.Members.Values) {
                   if (mi.ChildKeyPropertyName==childKeyMI.MemberName) {
                     if (mi.ChildKeyTypeString!=childKeyMI.CsvTypeString) {
