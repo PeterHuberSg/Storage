@@ -18,7 +18,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// This none deletable child has links to 2 different types of parents, which must be none deletable
+    /// This none deletable child has links to 4 different types of parents, which must be none deletable
     /// </summary>
   public partial class ChildrenList_CreateOnlyChild: IStorageItemGeneric<ChildrenList_CreateOnlyChild> {
 
@@ -56,21 +56,35 @@ namespace StorageDataContext  {
 
 
     /// <summary>
+    /// None deletable parent for none deletable child which must have a none deletable parent. The parent cannot be 
+    /// changed once child is created (readonly).
+    /// </summary>
+    public ChildrenList_CreateOnlyParentReadonly CreateOnlyParentReadonly { get; }
+
+
+    /// <summary>
     /// None deletable parent for deletable child which might or might not have a parent which must be none deletable
     /// </summary>
     public ChildrenList_CreateOnlyParentNullable? CreateOnlyParentNullable { get; }
 
 
     /// <summary>
+    /// None deletable parent for deletable child which might or might not have a parent which must be none deletable.
+    /// The parent cannot be changed once child is created (readonly).
+    /// </summary>
+    public ChildrenList_CreateOnlyParentNullableReadonly? CreateOnlyParentNullableReadonly { get; }
+
+
+    /// <summary>
     /// Headers written to first line in CSV file
     /// </summary>
-    internal static readonly string[] Headers = {"Text", "CreateOnlyParent", "CreateOnlyParentNullable"};
+    internal static readonly string[] Headers = {"Text", "CreateOnlyParent", "CreateOnlyParentReadonly", "CreateOnlyParentNullable", "CreateOnlyParentNullableReadonly"};
 
 
     /// <summary>
     /// None existing ChildrenList_CreateOnlyChild
     /// </summary>
-    internal static ChildrenList_CreateOnlyChild NoChildrenList_CreateOnlyChild = new ChildrenList_CreateOnlyChild("NoText", ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent, null, isStoring: false);
+    internal static ChildrenList_CreateOnlyChild NoChildrenList_CreateOnlyChild = new ChildrenList_CreateOnlyChild("NoText", ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent, ChildrenList_CreateOnlyParentReadonly.NoChildrenList_CreateOnlyParentReadonly, null, null, isStoring: false);
     #endregion
 
 
@@ -92,21 +106,34 @@ namespace StorageDataContext  {
     /// <summary>
     /// ChildrenList_CreateOnlyChild Constructor. If isStoring is true, adds ChildrenList_CreateOnlyChild to DC.Data.ChildrenList_CreateOnlyChildren.
     /// </summary>
-    public ChildrenList_CreateOnlyChild(string text, ChildrenList_CreateOnlyParent createOnlyParent, ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable, bool isStoring = true) {
+    public ChildrenList_CreateOnlyChild(
+      string text, 
+      ChildrenList_CreateOnlyParent createOnlyParent, 
+      ChildrenList_CreateOnlyParentReadonly createOnlyParentReadonly, 
+      ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable, 
+      ChildrenList_CreateOnlyParentNullableReadonly? createOnlyParentNullableReadonly, 
+      bool isStoring = true)
+    {
       Key = StorageExtensions.NoKey;
       Text = text;
       CreateOnlyParent = createOnlyParent;
+      CreateOnlyParentReadonly = createOnlyParentReadonly;
       CreateOnlyParentNullable = createOnlyParentNullable;
+      CreateOnlyParentNullableReadonly = createOnlyParentNullableReadonly;
 #if DEBUG
       DC.Trace?.Invoke($"new ChildrenList_CreateOnlyChild: {ToTraceString()}");
 #endif
       CreateOnlyParent.AddToChildrenList_CreateOnlyChildren(this);
+      CreateOnlyParentReadonly.AddToChildrenList_CreateOnlyChildren(this);
       if (CreateOnlyParentNullable!=null) {
         CreateOnlyParentNullable.AddToChildrenList_CreateOnlyChildren(this);
       }
+      if (CreateOnlyParentNullableReadonly!=null) {
+        CreateOnlyParentNullableReadonly.AddToChildrenList_CreateOnlyChildren(this);
+      }
       onConstruct();
       if (DC.Data.IsTransaction) {
-        DC.Data.AddTransaction(new TransactionItem(16,TransactionActivityEnum.New, Key, this));
+        DC.Data.AddTransaction(new TransactionItem(20,TransactionActivityEnum.New, Key, this));
       }
 
       if (isStoring) {
@@ -125,7 +152,9 @@ namespace StorageDataContext  {
       Key = StorageExtensions.NoKey;
       Text = original.Text;
       CreateOnlyParent = original.CreateOnlyParent;
+      CreateOnlyParentReadonly = original.CreateOnlyParentReadonly;
       CreateOnlyParentNullable = original.CreateOnlyParentNullable;
+      CreateOnlyParentNullableReadonly = original.CreateOnlyParentNullableReadonly;
       onCloned(this);
     }
     partial void onCloned(ChildrenList_CreateOnlyChild clone);
@@ -144,6 +173,13 @@ namespace StorageDataContext  {
         throw new Exception($"Read ChildrenList_CreateOnlyChild from CSV file: Cannot find CreateOnlyParent with key {childrenList_CreateOnlyParentKey}." + Environment.NewLine + 
           csvReader.PresentContent);
       }
+      var childrenList_CreateOnlyParentReadonlyKey = csvReader.ReadInt();
+      if (DC.Data.ChildrenList_CreateOnlyParentReadonlys.TryGetValue(childrenList_CreateOnlyParentReadonlyKey, out var createOnlyParentReadonly)) {
+          CreateOnlyParentReadonly = createOnlyParentReadonly;
+      } else {
+        throw new Exception($"Read ChildrenList_CreateOnlyChild from CSV file: Cannot find CreateOnlyParentReadonly with key {childrenList_CreateOnlyParentReadonlyKey}." + Environment.NewLine + 
+          csvReader.PresentContent);
+      }
       var createOnlyParentNullableKey = csvReader.ReadIntNull();
       if (createOnlyParentNullableKey.HasValue) {
         if (DC.Data.ChildrenList_CreateOnlyParentNullables.TryGetValue(createOnlyParentNullableKey.Value, out var createOnlyParentNullable)) {
@@ -152,11 +188,25 @@ namespace StorageDataContext  {
           CreateOnlyParentNullable = ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable;
         }
       }
+      var createOnlyParentNullableReadonlyKey = csvReader.ReadIntNull();
+      if (createOnlyParentNullableReadonlyKey.HasValue) {
+        if (DC.Data.ChildrenList_CreateOnlyParentNullableReadonlys.TryGetValue(createOnlyParentNullableReadonlyKey.Value, out var createOnlyParentNullableReadonly)) {
+          CreateOnlyParentNullableReadonly = createOnlyParentNullableReadonly;
+        } else {
+          CreateOnlyParentNullableReadonly = ChildrenList_CreateOnlyParentNullableReadonly.NoChildrenList_CreateOnlyParentNullableReadonly;
+        }
+      }
       if (CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
         CreateOnlyParent.AddToChildrenList_CreateOnlyChildren(this);
       }
+      if (CreateOnlyParentReadonly!=ChildrenList_CreateOnlyParentReadonly.NoChildrenList_CreateOnlyParentReadonly) {
+        CreateOnlyParentReadonly.AddToChildrenList_CreateOnlyChildren(this);
+      }
       if (createOnlyParentNullableKey.HasValue && CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
         CreateOnlyParentNullable!.AddToChildrenList_CreateOnlyChildren(this);
+      }
+      if (createOnlyParentNullableReadonlyKey.HasValue && CreateOnlyParentNullableReadonly!=ChildrenList_CreateOnlyParentNullableReadonly.NoChildrenList_CreateOnlyParentNullableReadonly) {
+        CreateOnlyParentNullableReadonly!.AddToChildrenList_CreateOnlyChildren(this);
       }
       onCsvConstruct();
     }
@@ -173,11 +223,15 @@ namespace StorageDataContext  {
 
     /// <summary>
     /// Verify that childrenList_CreateOnlyChild.CreateOnlyParent exists.
+    /// Verify that childrenList_CreateOnlyChild.CreateOnlyParentReadonly exists.
     /// Verify that childrenList_CreateOnlyChild.CreateOnlyParentNullable exists.
+    /// Verify that childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly exists.
     /// </summary>
     internal static bool Verify(ChildrenList_CreateOnlyChild childrenList_CreateOnlyChild) {
       if (childrenList_CreateOnlyChild.CreateOnlyParent==ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) return false;
+      if (childrenList_CreateOnlyChild.CreateOnlyParentReadonly==ChildrenList_CreateOnlyParentReadonly.NoChildrenList_CreateOnlyParentReadonly) return false;
       if (childrenList_CreateOnlyChild.CreateOnlyParentNullable==ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) return false;
+      if (childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly==ChildrenList_CreateOnlyParentNullableReadonly.NoChildrenList_CreateOnlyParentNullableReadonly) return false;
       return true;
     }
     #endregion
@@ -202,8 +256,14 @@ namespace StorageDataContext  {
       if (CreateOnlyParent.Key<0) {
         throw new Exception($"Cannot store child ChildrenList_CreateOnlyChild '{this}'.CreateOnlyParent to ChildrenList_CreateOnlyParent '{CreateOnlyParent}' because parent is not stored yet.");
       }
+      if (CreateOnlyParentReadonly.Key<0) {
+        throw new Exception($"Cannot store child ChildrenList_CreateOnlyChild '{this}'.CreateOnlyParentReadonly to ChildrenList_CreateOnlyParentReadonly '{CreateOnlyParentReadonly}' because parent is not stored yet.");
+      }
       if (CreateOnlyParentNullable?.Key<0) {
         throw new Exception($"Cannot store child ChildrenList_CreateOnlyChild '{this}'.CreateOnlyParentNullable to ChildrenList_CreateOnlyParentNullable '{CreateOnlyParentNullable}' because parent is not stored yet.");
+      }
+      if (CreateOnlyParentNullableReadonly?.Key<0) {
+        throw new Exception($"Cannot store child ChildrenList_CreateOnlyChild '{this}'.CreateOnlyParentNullableReadonly to ChildrenList_CreateOnlyParentNullableReadonly '{CreateOnlyParentNullableReadonly}' because parent is not stored yet.");
       }
       DC.Data.ChildrenList_CreateOnlyChildren.Add(this);
       onStored();
@@ -230,12 +290,22 @@ namespace StorageDataContext  {
       if (childrenList_CreateOnlyChild.CreateOnlyParent.Key<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild '{childrenList_CreateOnlyChild}' to CSV File, because CreateOnlyParent is not stored in DC.Data.ChildrenList_CreateOnlyParents.");
 
       csvWriter.Write(childrenList_CreateOnlyChild.CreateOnlyParent.Key.ToString());
+      if (childrenList_CreateOnlyChild.CreateOnlyParentReadonly.Key<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild '{childrenList_CreateOnlyChild}' to CSV File, because CreateOnlyParentReadonly is not stored in DC.Data.ChildrenList_CreateOnlyParentReadonlys.");
+
+      csvWriter.Write(childrenList_CreateOnlyChild.CreateOnlyParentReadonly.Key.ToString());
       if (childrenList_CreateOnlyChild.CreateOnlyParentNullable is null) {
         csvWriter.WriteNull();
       } else {
         if (childrenList_CreateOnlyChild.CreateOnlyParentNullable.Key<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild '{childrenList_CreateOnlyChild}' to CSV File, because CreateOnlyParentNullable is not stored in DC.Data.ChildrenList_CreateOnlyParentNullables.");
 
         csvWriter.Write(childrenList_CreateOnlyChild.CreateOnlyParentNullable.Key.ToString());
+      }
+      if (childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly.Key<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild '{childrenList_CreateOnlyChild}' to CSV File, because CreateOnlyParentNullableReadonly is not stored in DC.Data.ChildrenList_CreateOnlyParentNullableReadonlys.");
+
+        csvWriter.Write(childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly.Key.ToString());
       }
     }
     partial void onCsvWrite();
@@ -260,8 +330,14 @@ namespace StorageDataContext  {
       if (childrenList_CreateOnlyChild.CreateOnlyParent!=ChildrenList_CreateOnlyParent.NoChildrenList_CreateOnlyParent) {
         childrenList_CreateOnlyChild.CreateOnlyParent.RemoveFromChildrenList_CreateOnlyChildren(childrenList_CreateOnlyChild);
       }
+      if (childrenList_CreateOnlyChild.CreateOnlyParentReadonly!=ChildrenList_CreateOnlyParentReadonly.NoChildrenList_CreateOnlyParentReadonly) {
+        childrenList_CreateOnlyChild.CreateOnlyParentReadonly.RemoveFromChildrenList_CreateOnlyChildren(childrenList_CreateOnlyChild);
+      }
       if (childrenList_CreateOnlyChild.CreateOnlyParentNullable!=null && childrenList_CreateOnlyChild.CreateOnlyParentNullable!=ChildrenList_CreateOnlyParentNullable.NoChildrenList_CreateOnlyParentNullable) {
         childrenList_CreateOnlyChild.CreateOnlyParentNullable.RemoveFromChildrenList_CreateOnlyChildren(childrenList_CreateOnlyChild);
+      }
+      if (childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly!=null && childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly!=ChildrenList_CreateOnlyParentNullableReadonly.NoChildrenList_CreateOnlyParentNullableReadonly) {
+        childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly.RemoveFromChildrenList_CreateOnlyChildren(childrenList_CreateOnlyChild);
       }
       childrenList_CreateOnlyChild.onRollbackItemNew();
     }
@@ -300,9 +376,19 @@ namespace StorageDataContext  {
           $"readonly, CreateOnlyParent '{oldItem.CreateOnlyParent}' read from the CSV file should be the same." + Environment.NewLine + 
           newItem.ToString());
       }
+      if (newItem.CreateOnlyParentReadonly!=oldItem.CreateOnlyParentReadonly) {
+        throw new Exception($"ChildrenList_CreateOnlyChild.Update(): Property CreateOnlyParentReadonly '{newItem.CreateOnlyParentReadonly}' is " +
+          $"readonly, CreateOnlyParentReadonly '{oldItem.CreateOnlyParentReadonly}' read from the CSV file should be the same." + Environment.NewLine + 
+          newItem.ToString());
+      }
       if (newItem.CreateOnlyParentNullable!=oldItem.CreateOnlyParentNullable) {
         throw new Exception($"ChildrenList_CreateOnlyChild.Update(): Property CreateOnlyParentNullable '{newItem.CreateOnlyParentNullable}' is " +
           $"readonly, CreateOnlyParentNullable '{oldItem.CreateOnlyParentNullable}' read from the CSV file should be the same." + Environment.NewLine + 
+          newItem.ToString());
+      }
+      if (newItem.CreateOnlyParentNullableReadonly!=oldItem.CreateOnlyParentNullableReadonly) {
+        throw new Exception($"ChildrenList_CreateOnlyChild.Update(): Property CreateOnlyParentNullableReadonly '{newItem.CreateOnlyParentNullableReadonly}' is " +
+          $"readonly, CreateOnlyParentNullableReadonly '{oldItem.CreateOnlyParentNullableReadonly}' read from the CSV file should be the same." + Environment.NewLine + 
           newItem.ToString());
       }
       newItem.onRollbackItemUpdated(oldItem);
@@ -334,7 +420,9 @@ namespace StorageDataContext  {
         $"{this.GetKeyOrHash()}|" +
         $" {Text}|" +
         $" CreateOnlyParent {CreateOnlyParent.GetKeyOrHash()}|" +
-        $" CreateOnlyParentNullable {CreateOnlyParentNullable?.GetKeyOrHash()}";
+        $" CreateOnlyParentReadonly {CreateOnlyParentReadonly.GetKeyOrHash()}|" +
+        $" CreateOnlyParentNullable {CreateOnlyParentNullable?.GetKeyOrHash()}|" +
+        $" CreateOnlyParentNullableReadonly {CreateOnlyParentNullableReadonly?.GetKeyOrHash()}";
       onToTraceString(ref returnString);
       return returnString;
     }
@@ -349,7 +437,9 @@ namespace StorageDataContext  {
         $"{Key.ToKeyString()}," +
         $" {Text}," +
         $" {CreateOnlyParent.ToShortString()}," +
-        $" {CreateOnlyParentNullable?.ToShortString()}";
+        $" {CreateOnlyParentReadonly.ToShortString()}," +
+        $" {CreateOnlyParentNullable?.ToShortString()}," +
+        $" {CreateOnlyParentNullableReadonly?.ToShortString()}";
       onToShortString(ref returnString);
       return returnString;
     }
@@ -364,7 +454,9 @@ namespace StorageDataContext  {
         $"Key: {Key.ToKeyString()}," +
         $" Text: {Text}," +
         $" CreateOnlyParent: {CreateOnlyParent.ToShortString()}," +
-        $" CreateOnlyParentNullable: {CreateOnlyParentNullable?.ToShortString()};";
+        $" CreateOnlyParentReadonly: {CreateOnlyParentReadonly.ToShortString()}," +
+        $" CreateOnlyParentNullable: {CreateOnlyParentNullable?.ToShortString()}," +
+        $" CreateOnlyParentNullableReadonly: {CreateOnlyParentNullableReadonly?.ToShortString()};";
       onToString(ref returnString);
       return returnString;
     }
@@ -401,9 +493,23 @@ namespace StorageDataContext  {
 
 
     /// <summary>
+    /// None deletable parent for none deletable child which must have a none deletable parent. The parent cannot be 
+    /// changed once child is created (readonly).
+    /// </summary>
+    public int CreateOnlyParentReadonlyKey { get; set; }
+
+
+    /// <summary>
     /// None deletable parent for deletable child which might or might not have a parent which must be none deletable
     /// </summary>
     public int? CreateOnlyParentNullableKey { get; set; }
+
+
+    /// <summary>
+    /// None deletable parent for deletable child which might or might not have a parent which must be none deletable.
+    /// The parent cannot be changed once child is created (readonly).
+    /// </summary>
+    public int? CreateOnlyParentNullableReadonlyKey { get; set; }
 
 
     /// <summary>
@@ -420,7 +526,9 @@ namespace StorageDataContext  {
       Key = childrenList_CreateOnlyChild.Key;
       Text = childrenList_CreateOnlyChild.Text;
       CreateOnlyParentKey = childrenList_CreateOnlyChild.CreateOnlyParent.Key;
+      CreateOnlyParentReadonlyKey = childrenList_CreateOnlyChild.CreateOnlyParentReadonly.Key;
       CreateOnlyParentNullableKey = childrenList_CreateOnlyChild.CreateOnlyParentNullable?.Key;
+      CreateOnlyParentNullableReadonlyKey = childrenList_CreateOnlyChild.CreateOnlyParentNullableReadonly?.Key;
     }
 
 
@@ -432,7 +540,9 @@ namespace StorageDataContext  {
         $"Key: {Key}," +
         $" Text: {Text}," +
         $" CreateOnlyParentKey: {CreateOnlyParentKey}," +
-        $" CreateOnlyParentNullableKey: {CreateOnlyParentNullableKey};";
+        $" CreateOnlyParentReadonlyKey: {CreateOnlyParentReadonlyKey}," +
+        $" CreateOnlyParentNullableKey: {CreateOnlyParentNullableKey}," +
+        $" CreateOnlyParentNullableReadonlyKey: {CreateOnlyParentNullableReadonlyKey};";
       return returnString;
     }
   }
@@ -481,7 +591,9 @@ namespace StorageDataContext  {
       childrenList_CreateOnlyChildRaw.Key = nextKey++;
       childrenList_CreateOnlyChildRaw.Text = csvReader.ReadString();
       childrenList_CreateOnlyChildRaw.CreateOnlyParentKey = csvReader.ReadInt();
+      childrenList_CreateOnlyChildRaw.CreateOnlyParentReadonlyKey = csvReader.ReadInt();
       childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableKey = csvReader.ReadIntNull();
+      childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableReadonlyKey = csvReader.ReadIntNull();
       csvReader.ReadEndOfLine();
       return true;
     }
@@ -563,12 +675,22 @@ namespace StorageDataContext  {
       if (childrenList_CreateOnlyChildRaw.CreateOnlyParentKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParent is not stored in DC.Data.ChildrenList_CreateOnlyParents.");
 
       csvWriter.Write(childrenList_CreateOnlyChildRaw.CreateOnlyParentKey.ToString());
+      if (childrenList_CreateOnlyChildRaw.CreateOnlyParentReadonlyKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParentReadonly is not stored in DC.Data.ChildrenList_CreateOnlyParentReadonlys.");
+
+      csvWriter.Write(childrenList_CreateOnlyChildRaw.CreateOnlyParentReadonlyKey.ToString());
       if (childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableKey is null) {
         csvWriter.WriteNull();
       } else {
         if (childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParentNullable is not stored in DC.Data.ChildrenList_CreateOnlyParentNullables.");
 
         csvWriter.Write(childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableKey.ToString());
+      }
+      if (childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableReadonlyKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableReadonlyKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParentNullableReadonly is not stored in DC.Data.ChildrenList_CreateOnlyParentNullableReadonlys.");
+
+        csvWriter.Write(childrenList_CreateOnlyChildRaw.CreateOnlyParentNullableReadonlyKey.ToString());
       }
       csvWriter.WriteEndOfLine();
     }
@@ -577,7 +699,14 @@ namespace StorageDataContext  {
     /// <summary>
     /// Writes the details of one ChildrenList_CreateOnlyChild to the CSV file
     /// </summary>
-    public void Write(int key, string text, int createOnlyParentKey, int? createOnlyParentNullableKey) {
+    public void Write(
+      int key, 
+      string text, 
+      int createOnlyParentKey, 
+      int createOnlyParentReadonlyKey, 
+      int? createOnlyParentNullableKey, 
+      int? createOnlyParentNullableReadonlyKey)
+    {
       if (key!=nextKey) {
         throw new Exception($"ChildrenList_CreateOnlyChild's key {key} should be {nextKey}.");
       }
@@ -587,12 +716,22 @@ namespace StorageDataContext  {
       if (createOnlyParentKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParent is not stored in DC.Data.ChildrenList_CreateOnlyParents.");
 
       csvWriter.Write(createOnlyParentKey.ToString());
+      if (createOnlyParentReadonlyKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParentReadonly is not stored in DC.Data.ChildrenList_CreateOnlyParentReadonlys.");
+
+      csvWriter.Write(createOnlyParentReadonlyKey.ToString());
       if (createOnlyParentNullableKey is null) {
         csvWriter.WriteNull();
       } else {
         if (createOnlyParentNullableKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParentNullable is not stored in DC.Data.ChildrenList_CreateOnlyParentNullables.");
 
         csvWriter.Write(createOnlyParentNullableKey.ToString());
+      }
+      if (createOnlyParentNullableReadonlyKey is null) {
+        csvWriter.WriteNull();
+      } else {
+        if (createOnlyParentNullableReadonlyKey<0) throw new Exception($"Cannot write childrenList_CreateOnlyChild to CSV File, because CreateOnlyParentNullableReadonly is not stored in DC.Data.ChildrenList_CreateOnlyParentNullableReadonlys.");
+
+        csvWriter.Write(createOnlyParentNullableReadonlyKey.ToString());
       }
       csvWriter.WriteEndOfLine();
     }

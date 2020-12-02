@@ -567,6 +567,7 @@ namespace StorageDataContext {
   //If the child is not deletable, the parent must not be not deletable too. It's not possible to delete a parent and
   //leave the child with a link to that deleted parent.
   //The child.Parent property can be nullable (conditional parent) or not nullable (parent required)
+  //The child.Parent property can be readonly (parent child relationship cannot be changed after child is created)
   //[StorageClass(isGenerateReaderWriter: true)] creates ClassXyzReader and ClassXyzWriter, which allow to read and write 
   //the CSV file without using a data context nor DataStore. This is useful for administrative tasks, like deleting
   //of data which is not deletable within the data context.
@@ -577,6 +578,25 @@ namespace StorageDataContext {
   /// </summary>
   [StorageClass(isGenerateReaderWriter: true)]
   public class ChildrenList_Parent {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Deletable children which must have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+  }
+
+
+  /// <summary>
+  /// Example of deletable parent using a List for its children. It can have only deletable children. The child must have a 
+  /// parent (the child.Parent property is not nullable). The relationship cannot be updated, since child is readonly.
+  /// </summary>
+  [StorageClass(isGenerateReaderWriter: true)]
+  public class ChildrenList_ParentReadonly {
 
     /// <summary>
     /// Some Text
@@ -610,11 +630,55 @@ namespace StorageDataContext {
 
 
   /// <summary>
+  /// Example of deletable parent using a List for its children. It can have only deletable children. The child might have a 
+  /// parent (the child.Parent property is nullable). The relationship cannot be updated, since child is readonly.
+  /// </summary>
+  [StorageClass(isGenerateReaderWriter: true)]
+  public class ChildrenList_ParentNullableReadonly {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Deletable children which might or might not have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+  }
+
+
+  /// <summary>
   /// Example of none deletable parent using a List for its children. It can have deletable and none
   /// deletable children. The child must have a parent (the Parent property is not nullable).
   /// </summary>
   [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, isGenerateReaderWriter: true)]
   public class ChildrenList_CreateOnlyParent {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// These deletable children must have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+
+    /// <summary>
+    /// These none deletable children must have a none deletable parent
+    /// </summary>
+    public List<ChildrenList_CreateOnlyChild> ChildrenList_CreateOnlyChildren;
+  }
+
+
+  /// <summary>
+  /// Example of none deletable parent using a List for its children. It can have deletable and none
+  /// deletable children. The child must have a parent (the Parent property is not nullable). The relationship 
+  /// cannot be updated, since child is readonly.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, isGenerateReaderWriter: true)]
+  public class ChildrenList_CreateOnlyParentReadonly {
 
     /// <summary>
     /// Some Text
@@ -658,7 +722,32 @@ namespace StorageDataContext {
 
 
   /// <summary>
-  /// This deletable child has links to 4 different types of parents
+  /// Example of none deletable parent using a List for its children. The child can be deletable or none deletable. The 
+  /// child might have a parent (the Parent property is nullable). The relationship cannot be updated, since child is 
+  /// readonly.
+  /// </summary>
+  [StorageClass(areInstancesDeletable: false, areInstancesUpdatable: false, isGenerateReaderWriter: true)]
+  public class ChildrenList_CreateOnlyParentNullableReadonly {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// These deletable children might or might not have a parent
+    /// </summary>
+    public List<ChildrenList_Child> ChildrenList_Children;
+
+    /// <summary>
+    /// These none deletable children might or might not have a parent
+    /// </summary>
+    public List<ChildrenList_CreateOnlyChild> ChildrenList_CreateOnlyChildren;
+  }
+
+
+  /// <summary>
+  /// This deletable child has links to 8 different types of parents
   /// </summary>
   [StorageClass(pluralName: "ChildrenList_Children", isGenerateReaderWriter: true)]
   public class ChildrenList_Child {
@@ -673,9 +762,21 @@ namespace StorageDataContext {
     public ChildrenList_Parent Parent;
 
     /// <summary>
+    /// Deletable parent for deletable children which must have a parent. The parent cannot be changed once child
+    /// is created (readonly).
+    /// </summary>
+    public readonly ChildrenList_ParentReadonly ParentReadonly;
+
+    /// <summary>
     /// Deletable parent for deletable children which might or might not have a parent
     /// </summary>
     public ChildrenList_ParentNullable? ParentNullable;
+
+    /// <summary>
+    /// Deletable parent for deletable children which might or might not have a parent. The parent cannot be changed 
+    /// once child is created (readonly).
+    /// </summary>
+    public readonly ChildrenList_ParentNullableReadonly? ParentNullableReadonly;
 
     /// <summary>
     /// None deletable parent for deletable children which must have a parent
@@ -683,14 +784,26 @@ namespace StorageDataContext {
     public ChildrenList_CreateOnlyParent CreateOnlyParent;
 
     /// <summary>
+    /// None deletable parent for deletable children which must have a parent. The parent cannot be changed once child 
+    /// is created (readonly).
+    /// </summary>
+    public readonly ChildrenList_CreateOnlyParentReadonly CreateOnlyParentReadonly;
+
+    /// <summary>
     /// None deletable parent for deletable children which might or might not have a parent
     /// </summary>
     public ChildrenList_CreateOnlyParentNullable? CreateOnlyParentNullable;
+
+    /// <summary>
+    /// None deletable parent for deletable children which might or might not have a parent. The parent cannot be 
+    /// changed once child is created (readonly).
+    /// </summary>
+    public readonly ChildrenList_CreateOnlyParentNullableReadonly? CreateOnlyParentNullableReadonly;
   }
 
 
   /// <summary>
-  /// This none deletable child has links to 2 different types of parents, which must be none deletable
+  /// This none deletable child has links to 4 different types of parents, which must be none deletable
   /// </summary>
   [StorageClass(pluralName: "ChildrenList_CreateOnlyChildren", areInstancesDeletable: false, 
     areInstancesUpdatable: false, isGenerateReaderWriter: true)]
@@ -706,9 +819,21 @@ namespace StorageDataContext {
     public ChildrenList_CreateOnlyParent CreateOnlyParent;
 
     /// <summary>
+    /// None deletable parent for none deletable child which must have a none deletable parent. The parent cannot be 
+    /// changed once child is created (readonly).
+    /// </summary>
+    public readonly ChildrenList_CreateOnlyParentReadonly CreateOnlyParentReadonly;
+
+    /// <summary>
     /// None deletable parent for deletable child which might or might not have a parent which must be none deletable
     /// </summary>
     public ChildrenList_CreateOnlyParentNullable? CreateOnlyParentNullable;
+
+    /// <summary>
+    /// None deletable parent for deletable child which might or might not have a parent which must be none deletable.
+    /// The parent cannot be changed once child is created (readonly).
+    /// </summary>
+    public readonly ChildrenList_CreateOnlyParentNullableReadonly? CreateOnlyParentNullableReadonly;
   }
   #endregion
 

@@ -1109,7 +1109,6 @@ namespace Storage {
           sw.WriteLine("      }");
         }
       }
-      sw.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
 
       //foreach (var mi in Members.Values) {
       //  if (mi.MemberType==MemberTypeEnum.ToLower) continue;
@@ -1134,6 +1133,10 @@ namespace Storage {
       //    writeNeedsDictionaryAddStatement(sw, mi, context, addIndent: "  ");
       //  }
       //}
+
+      //add first the item to dictinaries, if needed and only when this is successful, write it to the dataStore. The
+      //chance of an exception is higher with the dictionary, because the same entry might exist already. If the item
+      //is added to the dictionary after storing, that item causes a Dictionary exception again after restart.
       foreach (var mi in Members.Values) {
         if (mi.MemberType<=MemberTypeEnum.String || mi.MemberType==MemberTypeEnum.Enum) {
           //enum or simple data type
@@ -1141,6 +1144,7 @@ namespace Storage {
           writeNeedsDictionaryAddStatement(sw, mi, context, addIndent: "");
         }
       }
+      sw.WriteLine($"      {context}.Data.{PluralName}.Add(this);");
 
       //lines.Clear();
       //foreach (var mi in Members.Values) {
@@ -1236,7 +1240,7 @@ namespace Storage {
       //generated code needs to throw an exception when stored child links to a not stored parent
       lines.Clear();
       foreach (var mi in Members.Values) {
-        if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+        if (mi.MemberType==MemberTypeEnum.LinkToParent && !mi.IsReadOnly) {
           lines.Add($"        if ({mi.LowerMemberName}{mi.QMark}.Key<0) {{");
           lines.Add($"          throw new Exception($\"{ClassName}.Update(): It is illegal to add stored {ClassName} '{{this}}'\" " +
             "+ Environment.NewLine + ");
@@ -1431,6 +1435,24 @@ namespace Storage {
           //ensure that the values stored in the CSV file are the same as the instance itself
           if (mi.MemberType==MemberTypeEnum.Enum) {
             sw.WriteLine($"      var {mi.LowerMemberName} = ({mi.TypeString})csvReader.{mi.CsvReaderRead};");
+          
+          } else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+            if (mi.IsNullable) {
+              sw.WriteLine($"      var {mi.LowerMemberName}Key = csvReader.ReadIntNull();");
+              sw.WriteLine($"      {mi.ParentTypeString}? {mi.LowerMemberName};");
+              sw.WriteLine($"      if ({mi.LowerMemberName}Key is null) {{");
+              sw.WriteLine($"        {mi.LowerMemberName} = null;");
+              sw.WriteLine("      } else {");
+              sw.WriteLine($"        if (!{context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue({mi.LowerMemberName}Key.Value, out {mi.LowerMemberName})) {{");
+              sw.WriteLine($"          {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+              sw.WriteLine("        }");
+              sw.WriteLine("      }");
+            } else {
+              sw.WriteLine($"      if (!{context}.Data.{mi.ParentClassInfo!.PluralName}.TryGetValue(csvReader.ReadInt(), out var {mi.LowerMemberName})) {{");
+              sw.WriteLine($"        {mi.LowerMemberName} = {mi.ParentTypeString}.No{mi.ParentTypeString};");
+              sw.WriteLine("      }");
+            }
+
           } else {
             sw.WriteLine($"      var {mi.LowerMemberName} = csvReader.{mi.CsvReaderRead};");
           }

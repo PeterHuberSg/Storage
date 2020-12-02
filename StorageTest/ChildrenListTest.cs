@@ -59,9 +59,13 @@ namespace StorageTest {
     CsvConfig? csvConfig;
     #pragma warning disable CS8618 // Non-nullable field is uninitialized.
     DataStoreStats parents;
+    DataStoreStats parentReadonlies;
     DataStoreStats parentNullables;
+    DataStoreStats parentNullableReadonlies;
     DataStoreStats coParents;
+    DataStoreStats coParentReadonlies;
     DataStoreStats coParentNullables;
+    DataStoreStats coParentNullableReadonlies;
     DataStoreStats children;
     DataStoreStats coChildren;
     #pragma warning restore CS8618 // Non-nullable field is uninitialized.
@@ -74,9 +78,13 @@ namespace StorageTest {
     public void TestChildrenList() {
       try {
         parents = new DataStoreStats();
+        parentReadonlies = new DataStoreStats();
         parentNullables = new DataStoreStats();
+        parentNullableReadonlies = new DataStoreStats();
         coParents = new DataStoreStats();
+        coParentReadonlies = new DataStoreStats();
         coParentNullables = new DataStoreStats();
+        coParentNullableReadonlies = new DataStoreStats();
         children = new DataStoreStats();
         coChildren = new DataStoreStats();
         childrenTestString = new Dictionary<int, string>();
@@ -98,55 +106,87 @@ namespace StorageTest {
         traceHeader("--- construct and store parent P0, PN0, CP0, CPN0 ---");
         DC.Data.StartTransaction();
         var p0 = new ChildrenList_Parent("P0");
+        var p0r = new ChildrenList_ParentReadonly("P0r");
         var pn0 = new ChildrenList_ParentNullable("PN0", isStoring: false);
+        var pn0r = new ChildrenList_ParentNullableReadonly("PN0r", isStoring: false);
         var cp0 = new ChildrenList_CreateOnlyParent("CP0");
+        var cp0r = new ChildrenList_CreateOnlyParentReadonly("CP0r");
         var cpn0 = new ChildrenList_CreateOnlyParentNullable("CPN0", isStoring: false);
+        var cpn0r = new ChildrenList_CreateOnlyParentNullableReadonly("CPN0r", isStoring: false);
         DC.Data.RollbackTransaction();
         assertData();
         DC.Data.StartTransaction();
         p0.Store();
         var p0Key = p0.Key;
+        p0r.Store();
+        var p0rKey = p0r.Key;
         pn0.Store();
         var pn0Key = pn0.Key;
+        pn0r.Store();
+        var pn0rKey = pn0r.Key;
         cp0.Store();
         var cp0Key = cp0.Key;
+        cp0r.Store();
+        var cp0rKey = cp0r.Key;
         cpn0.Store();
         var cpn0Key = cpn0.Key;
+        cpn0r.Store();
+        var cpn0rKey = cpn0r.Key;
         DC.Data.CommitTransaction();
         parents.Items[p0Key] = p0.ToString();
         parents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        parentReadonlies.Items[p0rKey] = p0r.ToString();
+        parentReadonlies.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
         coParents.Items[cp0Key] = cp0.ToString();
         coParents.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        coParentReadonlies.Items[cp0rKey] = cp0r.ToString();
+        coParentReadonlies.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
         parentNullables.Items[pn0Key] = pn0.ToString();
         parentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        parentNullableReadonlies.Items[pn0rKey] = pn0r.ToString();
+        parentNullableReadonlies.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
         coParentNullables.Items[cpn0Key] = cpn0.ToString();
         coParentNullables.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
+        coParentNullableReadonlies.Items[cpn0rKey] = cpn0r.ToString();
+        coParentNullableReadonlies.Set(isContinuous: true, isUpdated: false, isDeleted: false, firstIndex: 0, lastIndex: 0);
         assertData();
 
         traceHeader("--- construct and store children C0 and CC0 ---");
         p0 = DC.Data.ChildrenList_Parents[p0Key];
+        p0r = DC.Data.ChildrenList_ParentReadonlys[p0rKey];
         pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        pn0r = DC.Data.ChildrenList_ParentNullableReadonlys[pn0rKey];
         cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cp0r = DC.Data.ChildrenList_CreateOnlyParentReadonlys[cp0rKey];
         cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
+        cpn0r = DC.Data.ChildrenList_CreateOnlyParentNullableReadonlys[cpn0rKey];
         DC.Data.StartTransaction();
-        var c0 = new  ChildrenList_Child("C0", p0, pn0, cp0, cpn0);
-        var cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cpn0);
+        var c0 = new  ChildrenList_Child("C0", p0, p0r, pn0, pn0r, cp0, cp0r, cpn0, cpn0r);
+        var cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cp0r, cpn0, cpn0r);
         DC.Data.RollbackTransaction();
         assertData();
         p0 = DC.Data.ChildrenList_Parents[p0Key];
+        p0r = DC.Data.ChildrenList_ParentReadonlys[p0rKey];
         pn0 = DC.Data.ChildrenList_ParentNullables[pn0Key];
+        pn0r = DC.Data.ChildrenList_ParentNullableReadonlys[pn0rKey];
         cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cp0r = DC.Data.ChildrenList_CreateOnlyParentReadonlys[cp0rKey];
         cpn0 = DC.Data.ChildrenList_CreateOnlyParentNullables[cpn0Key];
+        cpn0r = DC.Data.ChildrenList_CreateOnlyParentNullableReadonlys[cpn0rKey];
         DC.Data.StartTransaction();
-        c0 = new  ChildrenList_Child("C0", p0, pn0, cp0, cpn0);
+        c0 = new  ChildrenList_Child("C0", p0, p0r, pn0, pn0r, cp0, cp0r, cpn0, cpn0r);
         var c0Key = c0.Key;
-        cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cpn0);
+        cc0 = new  ChildrenList_CreateOnlyChild("CC0", cp0, cp0r, cpn0, cpn0r);
         var cc0Key = cc0.Key;
         DC.Data.CommitTransaction();
         parents.Items[p0Key] = p0.ToString();
+        parentReadonlies.Items[p0rKey] = p0r.ToString();
         coParents.Items[cp0Key] = cp0.ToString();
+        coParentReadonlies.Items[cp0rKey] = cp0r.ToString();
         parentNullables.Items[pn0Key] = pn0.ToString();
+        parentNullableReadonlies.Items[pn0rKey] = pn0r.ToString();
         coParentNullables.Items[cpn0Key] = cpn0.ToString();
+        coParentNullableReadonlies.Items[cpn0rKey] = cpn0r.ToString();
         children.Items[c0Key] = c0.ToString();
         childrenTestString[c0Key] = c0.ToTestString();
         coChildren.Items[cc0Key] = cc0.ToString();
@@ -220,19 +260,23 @@ namespace StorageTest {
 
         traceHeader("--- add children C1, CC1 with parents 0 ---");
         p0 = DC.Data.ChildrenList_Parents[p0Key];
+        p0r = DC.Data.ChildrenList_ParentReadonlys[p0rKey];
         cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cp0r = DC.Data.ChildrenList_CreateOnlyParentReadonlys[cp0rKey];
         DC.Data.StartTransaction();
-        var c1 = new ChildrenList_Child("C1", p0, null, cp0, null);
+        var c1 = new ChildrenList_Child("C1", p0, p0r, null, null, cp0, cp0r, null, null);
         var c1Key = c1.Key;
-        var cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, null);
+        var cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, cp0r, null, null);
         var cc1Key = cc1.Key;
         DC.Data.RollbackTransaction();
         assertData();
         p0 = DC.Data.ChildrenList_Parents[p0Key];
+        p0r = DC.Data.ChildrenList_ParentReadonlys[p0rKey];
         cp0 = DC.Data.ChildrenList_CreateOnlyParents[cp0Key];
+        cp0r = DC.Data.ChildrenList_CreateOnlyParentReadonlys[cp0rKey];
         DC.Data.StartTransaction();
-        c1 = new ChildrenList_Child("C1", p0, null, cp0, null);
-        cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, null);
+        c1 = new ChildrenList_Child("C1", p0, p0r, null, null, cp0, cp0r, null, null);
+        cc1 = new ChildrenList_CreateOnlyChild("CC1", cp0, cp0r, null, null);
         DC.Data.CommitTransaction();
         children.Items[c1Key] = c1.ToString();
         childrenTestString[c1Key] = c1.ToTestString();
@@ -388,7 +432,7 @@ namespace StorageTest {
 
 
     private void initDC() {
-      new DC(csvConfig);
+      _ = new DC(csvConfig);
     }
 
 
@@ -453,7 +497,7 @@ namespace StorageTest {
       BindingFlags.NonPublic | BindingFlags.Instance)!;
 
 
-    private void assertStore(DataStoreStats storeStats, DataStore store, bool isAfterDispose, bool skipCount = false) {
+    private static void assertStore(DataStoreStats storeStats, DataStore store, bool isAfterDispose, bool skipCount = false) {
       Assert.AreEqual(storeStats.IsContinuous, store.AreKeysContinuous);
       if (isAfterDispose) {
         Assert.AreEqual(false, store.AreItemsDeleted);
@@ -641,12 +685,12 @@ with tracing:
     }
 
 
-    private void testNormal(int activitiesCount, int childrenPerParent, CsvConfig csvConfig, Stopwatch sw) {
-      new DC(csvConfig);
+    private static void testNormal(int activitiesCount, int childrenPerParent, CsvConfig csvConfig, Stopwatch sw) {
+      _ = new DC(csvConfig);
       //new DC(null);
-      createParents(activitiesCount, out var parentP, out var parentPC);
+      createParents(activitiesCount, out var parentP, out var parentPr, out var parentPC, out var parentPCr);
       sw.Start();
-      createChildren(activitiesCount, childrenPerParent, parentP, parentPC, out var childrenP, out var cIndex);
+      createChildren(activitiesCount, childrenPerParent, parentP, parentPr, parentPC, parentPCr, out var childrenP, out var cIndex);
       DC.Data.ChildrenList_Parents.Flush();
       DC.Data.ChildrenList_CreateOnlyParents.Flush();
       DC.Data.ChildrenList_Children.Flush();
@@ -677,20 +721,20 @@ with tracing:
     }
 
 
-    private void testRollback(int activitiesCount, int childrenPerParent, CsvConfig csvConfig, Stopwatch sw) {
-      new DC(csvConfig);
+    private static void testRollback(int activitiesCount, int childrenPerParent, CsvConfig csvConfig, Stopwatch sw) {
+      _ = new DC(csvConfig);
 
-      createParents(activitiesCount, out var parentP, out var parentPC);
+      createParents(activitiesCount, out var parentP, out var parentPr, out var parentPC, out var parentPCr);
       sw.Restart();
       DC.Data.StartTransaction();
-      createChildren(activitiesCount, childrenPerParent, parentP, parentPC, out _, out _);
+      createChildren(activitiesCount, childrenPerParent, parentP, parentPr, parentPC, parentPCr, out _, out _);
       DC.Data.RollbackTransaction();
       DC.Data.ChildrenList_Parents.Flush();
       DC.Data.ChildrenList_CreateOnlyParents.Flush();
       DC.Data.ChildrenList_Children.Flush();
       sw.Stop();
       Debug.WriteLine($"{sw.Elapsed} Create, rollback");
-      createChildren(activitiesCount, childrenPerParent, parentP, parentPC, out var childrenP, out var cIndex);
+      createChildren(activitiesCount, childrenPerParent, parentP, parentPr, parentPC, parentPCr, out var childrenP, out var cIndex);
       DC.Data.ChildrenList_Children.Flush();
       sw.Restart();
       DC.Data.StartTransaction();
@@ -720,13 +764,13 @@ with tracing:
     }
 
 
-    private void testCommit(int activitiesCount, int childrenPerParent, CsvConfig csvConfig, Stopwatch sw) {
-      new DC(csvConfig);
+    private static void testCommit(int activitiesCount, int childrenPerParent, CsvConfig csvConfig, Stopwatch sw) {
+      _ = new DC(csvConfig);
 
-      createParents(activitiesCount, out var parentP, out var parentPC);
+      createParents(activitiesCount, out var parentP, out var parentPr, out var parentPC, out var parentPCr);
       sw.Restart();
       DC.Data.StartTransaction();
-      createChildren(activitiesCount, childrenPerParent, parentP, parentPC, out var childrenP, out var cIndex);
+      createChildren(activitiesCount, childrenPerParent, parentP, parentPr, parentPC, parentPCr, out var childrenP, out var cIndex);
       DC.Data.CommitTransaction();
       DC.Data.ChildrenList_Parents.Flush();
       DC.Data.ChildrenList_CreateOnlyParents.Flush();
@@ -762,23 +806,33 @@ with tracing:
     }
 
 
-    private void createParents(int activitiesCount, out ChildrenList_Parent[] parentP, out ChildrenList_CreateOnlyParent[] parentPC) {
+    private static void createParents(
+      int activitiesCount, 
+      out ChildrenList_Parent[] parentP,
+      out ChildrenList_ParentReadonly[] parentPr, 
+      out ChildrenList_CreateOnlyParent[] parentPC,
+      out ChildrenList_CreateOnlyParentReadonly[] parentPCr) 
+    {
       parentP = new ChildrenList_Parent[activitiesCount];
+      parentPr = new ChildrenList_ParentReadonly[activitiesCount];
       parentPC = new ChildrenList_CreateOnlyParent[activitiesCount];
+      parentPCr = new ChildrenList_CreateOnlyParentReadonly[activitiesCount];
       for (int i = 0; i < activitiesCount; i++) {
-        var pP = new ChildrenList_Parent($"{i}");
-        parentP[i] = pP;
-        var pC = new ChildrenList_CreateOnlyParent($"{i}");
-        parentPC[i] = pC;
+        parentP[i] = new ChildrenList_Parent($"{i}");
+        parentPr[i] = new ChildrenList_ParentReadonly($"{i}");
+        parentPC[i] = new ChildrenList_CreateOnlyParent($"{i}");
+        parentPCr[i] = new ChildrenList_CreateOnlyParentReadonly($"{i}");
       }
     }
 
 
-    private void createChildren(
+    private static void createChildren(
       int activitiesCount,
       int childrenPerParent,
       ChildrenList_Parent[] parentP,
+      ChildrenList_ParentReadonly[] parentPr,
       ChildrenList_CreateOnlyParent[] parentPC,
+      ChildrenList_CreateOnlyParentReadonly[] parentPCr,
       out ChildrenList_Child[] childrenP,
       out int cIndex) 
     {
@@ -786,9 +840,11 @@ with tracing:
       childrenP = new ChildrenList_Child[childrenPerParent * activitiesCount];
       for (int i = 0; i < activitiesCount; i++) {
         var pP = parentP[i];
+        var pPr = parentPr[i];
         var pC = parentPC[i];
+        var pCr = parentPCr[i];
         for (int j = 0; j < childrenPerParent; j++) {
-          childrenP[cIndex++] = new ChildrenList_Child($"{cIndex}", pP, null, pC, null);
+          childrenP[cIndex++] = new ChildrenList_Child($"{cIndex}", pP, pPr, null, null, pC, pCr, null, null);
         }
       }
     }

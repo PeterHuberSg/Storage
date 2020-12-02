@@ -233,7 +233,6 @@ namespace StorageDataContext  {
       onStoring(ref isCancelled);
       if (isCancelled) return;
 
-      DC.Data.PropertyNeedsDictionaryClasses.Add(this);
       DC.Data._PropertyNeedsDictionaryClassesByIdInt.Add(IdInt, this);
       if (IdString!=null) {
         DC.Data._PropertyNeedsDictionaryClassesByIdString.Add(IdString, this);
@@ -243,6 +242,7 @@ namespace StorageDataContext  {
         DC.Data._PropertyNeedsDictionaryClassesByTextNullableLower.Add(TextNullableLower, this);
       }
       DC.Data._PropertyNeedsDictionaryClassesByTextReadonlyLower.Add(TextReadonlyLower, this);
+      DC.Data.PropertyNeedsDictionaryClasses.Add(this);
       onStored();
 #if DEBUG
       DC.Trace?.Invoke($"Stored PropertyNeedsDictionaryClass #{GetHashCode()} @{Key}");

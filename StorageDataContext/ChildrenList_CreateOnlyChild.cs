@@ -7,7 +7,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// This none deletable child has links to 2 different types of parents, which must be none deletable
+    /// This none deletable child has links to 4 different types of parents, which must be none deletable
     /// </summary>
   public partial class ChildrenList_CreateOnlyChild: IStorageItemGeneric<ChildrenList_CreateOnlyChild> {
 

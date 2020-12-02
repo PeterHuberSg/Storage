@@ -7,9 +7,10 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// This deletable child has links to 8 different types of parents
+    /// Example of deletable parent using a List for its children. It can have only deletable children. The child might have a 
+    /// parent (the child.Parent property is nullable). The relationship cannot be updated, since child is readonly.
     /// </summary>
-  public partial class ChildrenList_Child: IStorageItemGeneric<ChildrenList_Child> {
+  public partial class ChildrenList_ParentNullableReadonly: IStorageItemGeneric<ChildrenList_ParentNullableReadonly> {
 
 
     #region Properties
@@ -37,7 +38,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// Called once the cloning constructor has filled all the properties. Clones have no children data.
     /// </summary>
-    partial void onCloned(ChildrenList_Child clone) {
+    partial void onCloned(ChildrenList_ParentNullableReadonly clone) {
     }
 
 
@@ -62,79 +63,79 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after ChildrenList_Child.Store() is executed
+    /// Called after ChildrenList_ParentNullableReadonly.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before ChildrenList_Child gets written to a CSV file
+    /// Called before ChildrenList_ParentNullableReadonly gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties of ChildrenList_Child are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenList_ParentNullableReadonly are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(
-      string text, 
-      ChildrenList_Parent parent, 
-      ChildrenList_ParentNullable? parentNullable, 
-      ChildrenList_CreateOnlyParent createOnlyParent, 
-      ChildrenList_CreateOnlyParentNullable? createOnlyParentNullable, 
-      ref bool isCancelled)
-   {
+    partial void onUpdating(string text, ref bool isCancelled){
    }
 
 
     /// <summary>
-    /// Called after all properties of ChildrenList_Child are updated, but before the HasChanged event gets raised
+    /// Called after all properties of ChildrenList_ParentNullableReadonly are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdated(ChildrenList_Child old) {
+    partial void onUpdated(ChildrenList_ParentNullableReadonly old) {
     }
 
 
     /// <summary>
-    /// Called after an update for ChildrenList_Child is read from a CSV file
+    /// Called after an update for ChildrenList_ParentNullableReadonly is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called after ChildrenList_Child.Release() got executed
+    /// Called after ChildrenList_ParentNullableReadonly.Release() got executed
     /// </summary>
     partial void onReleased() {
     }
 
 
     /// <summary>
-    /// Called after 'new ChildrenList_Child()' transaction is rolled back
+    /// Called after 'new ChildrenList_ParentNullableReadonly()' transaction is rolled back
     /// </summary>
     partial void onRollbackItemNew() {
     }
 
 
     /// <summary>
-    /// Called after ChildrenList_Child.Store() transaction is rolled back
+    /// Called after ChildrenList_ParentNullableReadonly.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after ChildrenList_Child.Update() transaction is rolled back
+    /// Called after ChildrenList_ParentNullableReadonly.Update() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemUpdated(ChildrenList_Child oldChildrenList_Child) {
+    partial void onRollbackItemUpdated(ChildrenList_ParentNullableReadonly oldChildrenList_ParentNullableReadonly) {
     }
 
 
     /// <summary>
-    /// Called after ChildrenList_Child.Release() transaction is rolled back
+    /// Called after ChildrenList_ParentNullableReadonly.Release() transaction is rolled back
     /// </summary>
     partial void onRollbackItemRelease() {
+    }
+
+
+    /// <summary>
+    /// Called after a childrenList_Child gets added to ChildrenList_Children.
+    /// </summary>
+    partial void onAddedToChildrenList_Children(ChildrenList_Child childrenList_Child){
     }
 
 

@@ -366,10 +366,11 @@ namespace Storage {
                 }
                 if (!isFound) {
                   throw new GeneratorException(
-                    $"Property {mi.MemberName} from child class {ci.ClassName} links to parent {mi.ParentClassInfo.ClassName}." + 
+                    $"Property {mi.MemberName} from child class {ci.ClassName} links to parent {mi.ParentClassInfo.ClassName}. " + 
                     $"But the parent does not have a property which links to the child. Add a collection (list, dictionary or sortedList) " + 
                     $"to the parent if many children are allowed or a property with the [StorageProperty(isParentOneChild: true)] attribute " + 
-                    $"if only 1 child is allowed:" + Environment.NewLine + mi.MemberText);
+                    $"if only 1 child is allowed. Add [StorageProperty(isLookupOnly: true)] to the child property if the parent " +
+                    "should not have a relation with the child:" + Environment.NewLine + mi.MemberText);
                 }
                 if (!mi.ClassInfo.AreInstancesDeletable && mi.ParentClassInfo.AreInstancesDeletable) {
                   //todo: Compiler.AnalyzeDependencies() Add tests if child is at least updatable, parent property not readonly and nullable
