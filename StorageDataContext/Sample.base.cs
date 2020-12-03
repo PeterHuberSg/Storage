@@ -249,7 +249,7 @@ namespace StorageDataContext  {
       }
       onConstruct();
       if (DC.Data.IsTransaction) {
-        DC.Data.AddTransaction(new TransactionItem(2,TransactionActivityEnum.New, Key, this));
+        DC.Data.AddTransaction(new TransactionItem(7,TransactionActivityEnum.New, Key, this));
       }
 
       if (isStoring) {
@@ -598,7 +598,7 @@ namespace StorageDataContext  {
         if (Key>=0) {
           DC.Data.SampleX.ItemHasChanged(clone, this);
         } else if (DC.Data.IsTransaction) {
-          DC.Data.AddTransaction(new TransactionItem(2, TransactionActivityEnum.Update, Key, this, oldItem: clone));
+          DC.Data.AddTransaction(new TransactionItem(7, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }

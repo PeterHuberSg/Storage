@@ -208,6 +208,146 @@ namespace StorageDataContext {
   #endregion
 
 
+  #region Private Constructor, public constructor will be in the other partial file
+  //      -------------------------------------------------------------------------
+
+  // Example where constructor is private instead of public. This is convenient when another public constructor
+  // is defined in Xxx.cs, additional to the private constructor in Xxx.base.cs, which is now hidden.
+
+  /// <summary>
+  /// Example with private constructor.
+  /// </summary>
+  [StorageClass(isConstructorPrivate: true)]
+  public class PrivateConstructor {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+  }
+  #endregion
+
+
+  #region Class where the value of one property is used to build a dictionary for that class
+  //      ----------------------------------------------------------------------------------
+
+  // Often, a class has one property which can be used to identify one particular instance. 
+  // [StorageProperty(needsDictionary: true)] adds a Dictionary to the data context, which gets updated whenever
+  // an instance get added, that property updated or the instance deleted.
+
+  /// <summary>
+  /// Some comment for PropertyNeedsDictionaryClass
+  /// </summary>
+  [StorageClass(pluralName: "PropertyNeedsDictionaryClasses")]
+  public class PropertyNeedsDictionaryClass {
+
+    /// <summary>
+    /// Used as key into dictionary PropertyNeedsDictionaryClassesByIdInt
+    /// </summary>
+    [StorageProperty(needsDictionary: true)]
+    public int IdInt;
+
+    /// <summary>
+    /// Used as key into dictionary PropertyNeedsDictionaryClassesByIdString
+    /// </summary>
+    [StorageProperty(needsDictionary: true)]
+    public string? IdString;
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Lower case version of Text
+    /// </summary>
+    [StorageProperty(toLower: "Text", needsDictionary: true)]
+    public string TextLower;
+
+    /// <summary>
+    /// Some Text comment which can be null
+    /// </summary>
+    public string? TextNullable;
+
+    /// <summary>
+    /// Lower case version of TextNullable
+    /// </summary>
+    [StorageProperty(toLower: "TextNullable", needsDictionary: true)]
+    public string? TextNullableLower;
+
+    /// <summary>
+    /// Some Text comment
+    /// </summary>
+    public readonly string TextReadonly;
+
+    /// <summary>
+    /// Lower case version of TextReadonly
+    /// </summary>
+    [StorageProperty(toLower: "TextReadonly", needsDictionary: true)]
+    public string TextReadonlyLower;
+  }
+  #endregion
+
+
+  #region LookupParent: LookupChild, parent has no collection for children
+  //      ----------------------------------------------------------------
+
+  //An example for lookup, only the child linking to parent but the parent having no child collection.
+  //This can be useful for example if parent holds exchange rates for every day. The child links to
+  //one particular exchange rate, but the exchange rate does not know which child links to it. If a parent
+  //is used as a lookup, that class is not allowed to support deletion. Because when the parent gets
+  //deleted, it does not know which children get involved.
+
+  /// <summary>
+  /// Parent of children who use lookup, i.e. parent has no children collection. areInstancesDeletable
+  /// must be false.
+  /// </summary>
+  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: false)]
+  public class Lookup_Parent {
+    public Date Date;
+    public Decimal2 SomeValue;
+  }
+
+
+  /// <summary>
+  /// Parent of children who use lookup, i.e. parent has no children collection,  where the child's 
+  /// parent property is nullable. areInstancesDeletable must be false.
+  /// </summary>
+  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: false)]
+  public class Lookup_ParentNullable {
+    public Date Date;
+    public Decimal2 SomeValue;
+  }
+
+
+  /// <summary>
+  /// Example of a child with a none nullable and a nullable lookup parent. The child maintains links
+  /// to its parents, but the parents don't have children collections.
+  /// </summary>
+  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: true, pluralName: "Lookup_Children")]
+  public class Lookup_Child {
+    /// <summary>
+    /// Some info
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
+    /// lookup. This property requires a parent.
+    /// </summary>
+    [StorageProperty(isLookupOnly: true)]
+    public Lookup_Parent LookupParent;
+
+    /// <summary>
+    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
+    /// lookup. This property does not require a parent.
+    /// </summary>
+    [StorageProperty(isLookupOnly: true)] //parent LookupParentNullable does not have a collection for LookupChild
+    public Lookup_ParentNullable? LookupParentNullable;
+  }
+  #endregion
+
+
   #region SampleMaster -> Sample -> SampleDetail, using List for children
   //      ---------------------------------------------------------------
 
@@ -436,126 +576,6 @@ namespace StorageDataContext {
     /// Links to parent conditionally
     /// </summary>
     public ParentOneChild_ParentNullable? ParentNullable;
-  }
-  #endregion
-
-
-  #region Class where the value of one property is used to build a dictionary for that class
-  //      ----------------------------------------------------------------------------------
-
-  // Often, a class has one property which can be used to identify one particular instance. 
-  // [StorageProperty(needsDictionary: true)] adds a Dictionary to the data context, which gets updated whenever
-  // an instance get added, that property updated or the instance deleted.
-
-  /// <summary>
-  /// Some comment for PropertyNeedsDictionaryClass
-  /// </summary>
-  [StorageClass(pluralName: "PropertyNeedsDictionaryClasses")]
-  public class PropertyNeedsDictionaryClass {
-
-    /// <summary>
-    /// Used as key into dictionary PropertyNeedsDictionaryClassesByIdInt
-    /// </summary>
-    [StorageProperty(needsDictionary: true)]
-    public int IdInt;
-
-    /// <summary>
-    /// Used as key into dictionary PropertyNeedsDictionaryClassesByIdString
-    /// </summary>
-    [StorageProperty(needsDictionary: true)]
-    public string? IdString;
-
-    /// <summary>
-    /// Some Text comment
-    /// </summary>
-    public string Text;
-
-    /// <summary>
-    /// Lower case version of Text
-    /// </summary>
-    [StorageProperty(toLower: "Text", needsDictionary: true)]
-    public string TextLower;
-
-    /// <summary>
-    /// Some Text comment which can be null
-    /// </summary>
-    public string? TextNullable;
-
-    /// <summary>
-    /// Lower case version of TextNullable
-    /// </summary>
-    [StorageProperty(toLower: "TextNullable", needsDictionary: true)]
-    public string? TextNullableLower;
-
-    /// <summary>
-    /// Some Text comment
-    /// </summary>
-    public readonly string TextReadonly;
-
-    /// <summary>
-    /// Lower case version of TextReadonly
-    /// </summary>
-    [StorageProperty(toLower: "TextReadonly", needsDictionary: true)]
-    public string TextReadonlyLower;
-  }
-  #endregion
-
-
-  #region LookupParent -> LookupChild, parent has no collection for children
-  //      ------------------------------------------------------------------
-
-  //An example for lookup, only the child linking to parent but the parent having no child collection.
-  //This can be useful for example if parent holds exchange rates for every day. The child links to
-  //one particular exchange rate, but the exchange rate does not know which child links to it. If a parent
-  //is used as a lookup, that class is not allowed to support deletion. Because when the parent gets
-  //deleted, it does not know which children get involved.
-
-  /// <summary>
-  /// Parent of children who use lookup, i.e. parent has no children collection. areInstancesDeletable
-  /// must be false.
-  /// </summary>
-  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: false)]
-  public class Lookup_Parent {
-    public Date Date;
-    public Decimal2 SomeValue;
-  }
-
-
-  /// <summary>
-  /// Parent of children who use lookup, i.e. parent has no children collection,  where the child's 
-  /// parent property is nullable. areInstancesDeletable must be false.
-  /// </summary>
-  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: false)]
-  public class Lookup_ParentNullable {
-    public Date Date;
-    public Decimal2 SomeValue;
-  }
-
-
-  /// <summary>
-  /// Example of a child with a none nullable and a nullable lookup parent. The child maintains links
-  /// to its parents, but the parents don't have children collections.
-  /// </summary>
-  [StorageClass(areInstancesUpdatable: true, areInstancesDeletable: true, pluralName: "Lookup_Children")]
-  public class Lookup_Child {
-    /// <summary>
-    /// Some info
-    /// </summary>
-    public string Text;
-
-    /// <summary>
-    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
-    /// lookup. This property requires a parent.
-    /// </summary>
-    [StorageProperty(isLookupOnly: true)] 
-    public Lookup_Parent LookupParent;
-
-    /// <summary>
-    /// Parent does not have a collection for LookupChild, because the child wants to use it only for
-    /// lookup. This property does not require a parent.
-    /// </summary>
-    [StorageProperty(isLookupOnly: true)] //parent LookupParentNullable does not have a collection for LookupChild
-    public Lookup_ParentNullable? LookupParentNullable;
   }
   #endregion
 
@@ -996,8 +1016,8 @@ namespace StorageDataContext {
   #endregion
 
 
-  #region CreateOnlyParent -> CreateOnlyChild, using List for children
-  //      ------------------------------------------------------------
+  #region CreateOnlyParent with CreateOnlyChild, using List for children
+  //      --------------------------------------------------------------
 
   //Example where parent and children are CreateOnly, meaning not updatable and not deletable. This should lead to
   //the smallest amount of generated code.
@@ -1067,8 +1087,8 @@ namespace StorageDataContext {
   #endregion
 
 
-  #region CreateOnlyParent -> ChangeableChild (updatable and or deletable), using List for children
-  //      -----------------------------------------------------------------------------------------
+  #region CreateOnlyParent with ChangeableChild (updatable and or deletable), using List for children
+  //      -------------------------------------------------------------------------------------------
 
   //Example where parent is not updatable and not deletable. Child can be updated and/or deleted. 
 
@@ -1159,23 +1179,93 @@ namespace StorageDataContext {
   #endregion
 
 
-  #region Private Constructor
-  //      -------------------
+  #region Parent with none standard name for children list
+  //      ------------------------------------------------
 
-  // Example where constructor is private instead of public. This is convenient when another public constructor
-  // is defined in Xxx.cs, additional to the private constructor in Xxx.base.cs, which is now hidden.
+  // Example where the parent's List for it's children is not the plural of the child type type. 
 
   /// <summary>
-  /// Example with private constructor.
+  /// Example where the parent's List for it's children is not the plural of the child type type. 
   /// </summary>
-  [StorageClass(isConstructorPrivate: true)]
-  public class PrivateConstructor {
+  public class NotMatchingChildrenListName_Parent {
 
     /// <summary>
     /// Some Text
     /// </summary>
     public string Text;
+
+    /// <summary>
+    /// Deletable children which must have a parent
+    /// </summary>
+    public List<NotMatchingChildrenListName_Child> Children;
+  }
+
+
+  /// <summary>
+  /// Child for NotMatchingChildrenListName_Parent
+  /// </summary>
+  public class NotMatchingChildrenListName_Child {
+
+    /// <summary>
+    /// Some Text
+    /// </summary>
+    public string Text;
+
+    /// <summary>
+    /// Deletable children which must have a parent
+    /// </summary>
+    public NotMatchingChildrenListName_Parent Parent;
   }
   #endregion
 
+  //Todo: TwoListsParent needs StorageProperty to link child property to parent list
+  //#region Parent with 2 lists for same child type
+  ////      ---------------------------------------
+
+  //// Example where the parent has 2 Lists for one child type. 
+
+  ///// <summary>
+  /////  Example where the parent has 2 Lists for one child type.
+  ///// </summary>
+  //public class TwoListsParent_Parent {
+
+  //  /// <summary>
+  //  /// Some Text
+  //  /// </summary>
+  //  public string Text;
+
+  //  /// <summary>
+  //  /// Deletable children which must have a parent
+  //  /// </summary>
+  //  public List<TwoListsParent_Child> ChildrenA;
+
+  //  /// <summary>
+  //  /// Deletable children which must have a parent
+  //  /// </summary>
+  //  public List<TwoListsParent_Child> ChildrenB;
+  //}
+
+
+  ///// <summary>
+  ///// Example of deletable parent using a List for its children. It can have only deletable children. The child must have a 
+  ///// parent (the child.Parent property is not nullable). The relationship cannot be updated, since child is readonly.
+  ///// </summary>
+  //public class TwoListsParent_Child {
+
+  //  /// <summary>
+  //  /// Some Text
+  //  /// </summary>
+  //  public string Text;
+
+  //  /// <summary>
+  //  /// Deletable children which must have a parent
+  //  /// </summary>
+  //  public TwoListsParent_Parent ParentA;
+
+  //  /// <summary>
+  //  /// Deletable children which must have a parent
+  //  /// </summary>
+  //  public TwoListsParent_Parent? ParentB;
+  //}
+  //#endregion
 }

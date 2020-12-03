@@ -129,7 +129,7 @@ namespace StorageTest {
 
 
     private void initDL() {
-      new DC(csvConfig);
+      _ = new DC(csvConfig);
     }
 
 
@@ -159,7 +159,7 @@ namespace StorageTest {
       //}
       if (isStoring) {
         DC.Data.StartTransaction();
-        new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
+        _ = new ChildrenSortedList_Parent(readOnlyText, updateableText, isStoring);
         DC.Data.RollbackTransaction();
         assertData();
 
@@ -190,7 +190,7 @@ namespace StorageTest {
       //return newParentNullable;
       if (isStoring) {
         DC.Data.StartTransaction();
-        new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
+        _ = new ChildrenSortedList_ParentNullable(readOnlyText, updateableText, isStoring);
         DC.Data.RollbackTransaction();
         assertData();
 
@@ -253,7 +253,7 @@ namespace StorageTest {
       //return newChild;
       if (isStoring) {
         DC.Data.StartTransaction();
-        new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring: true);
+        _ = new ChildrenSortedList_Child(date, text, parent, parentNullable, isStoring: true);
         DC.Data.RollbackTransaction();
         assertData();
 
@@ -317,8 +317,8 @@ namespace StorageTest {
       parentNullable.Update(textUpdateable);
       DC.Data.CommitTransaction();
       expectedParentsNullable[parentNullable.Key] = parentNullable.ToString();
-      foreach (var Child in parentNullable.ChildrenSortedList_Children.Values) {
-        expectedChildren[Child.Key] = Child.ToString();
+      foreach (var child in parentNullable.ChildrenSortedList_Children.Values) {
+        expectedChildren[child.Key] = child.ToString();
       }
       assertData();
     }

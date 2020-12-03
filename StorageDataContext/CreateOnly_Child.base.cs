@@ -107,7 +107,7 @@ namespace StorageDataContext  {
       }
       onConstruct();
       if (DC.Data.IsTransaction) {
-        DC.Data.AddTransaction(new TransactionItem(29,TransactionActivityEnum.New, Key, this));
+        DC.Data.AddTransaction(new TransactionItem(30,TransactionActivityEnum.New, Key, this));
       }
 
       if (isStoring) {

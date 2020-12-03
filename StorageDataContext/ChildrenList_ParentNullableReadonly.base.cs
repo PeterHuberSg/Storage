@@ -95,7 +95,7 @@ namespace StorageDataContext  {
 #endif
       onConstruct();
       if (DC.Data.IsTransaction) {
-        DC.Data.AddTransaction(new TransactionItem(14,TransactionActivityEnum.New, Key, this));
+        DC.Data.AddTransaction(new TransactionItem(15,TransactionActivityEnum.New, Key, this));
       }
 
       if (isStoring) {
@@ -203,7 +203,7 @@ namespace StorageDataContext  {
         if (Key>=0) {
           DC.Data.ChildrenList_ParentNullableReadonlys.ItemHasChanged(clone, this);
         } else if (DC.Data.IsTransaction) {
-          DC.Data.AddTransaction(new TransactionItem(14, TransactionActivityEnum.Update, Key, this, oldItem: clone));
+          DC.Data.AddTransaction(new TransactionItem(15, TransactionActivityEnum.Update, Key, this, oldItem: clone));
         }
         HasChanged?.Invoke(clone, this);
       }

@@ -132,14 +132,14 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after a parentOneChild_Child gets added to ParentOneChild_Children.
+    /// Called after a parentOneChild_Child gets added to Child.
     /// </summary>
     partial void onAddedToChild(ParentOneChild_Child parentOneChild_Child){
     }
 
 
     /// <summary>
-    /// Called after a parentOneChild_Child gets removed from ParentOneChild_Children.
+    /// Called after a parentOneChild_Child gets removed from Child.
     /// </summary>
     partial void onRemovedFromChild(ParentOneChild_Child parentOneChild_Child){
     }

@@ -65,7 +65,6 @@ namespace Storage {
     public bool IsChildReadOnly;
     public ClassInfo? ParentClassInfo; //not really used
     public MemberInfo? ParentMemberInfo;
-    public string? ParentMethodName;
     public EnumInfo? EnumInfo;
     public int ChildCount = 0;
 

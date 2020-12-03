@@ -475,34 +475,34 @@ namespace Storage {
       foreach (var mi in Members.Values) {
         if (mi.MemberType==MemberTypeEnum.ParentOneChild) {
           sw.WriteLine("    /// <summary>");
-          sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
+          sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.MemberName}.");
           sw.WriteLine("    /// </summary>");
-          sw.WriteLine($"    {cs}partial void onAddedTo{mi.ChildMemberInfo!.ParentMethodName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+          sw.WriteLine($"    {cs}partial void onAddedTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
           sw.WriteLine($"    {cs}}}");
           sw.WriteLine();
           sw.WriteLine();
           if (!mi.IsChildReadOnly) {
             sw.WriteLine("    /// <summary>");
-            sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
+            sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.MemberName}.");
             sw.WriteLine("    /// </summary>");
-            sw.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildMemberInfo!.ParentMethodName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+            sw.WriteLine($"    {cs}partial void onRemovedFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
             sw.WriteLine($"    {cs}}}");
             sw.WriteLine();
             sw.WriteLine();
           }
         } else  if (mi.MemberType>MemberTypeEnum.ParentOneChild) { //List, Dictionary or SortedList
           sw.WriteLine("    /// <summary>");
-          sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.ChildClassInfo!.PluralName}.");
+          sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets added to {mi.MemberName}.");
           sw.WriteLine("    /// </summary>");
-          sw.WriteLine($"    {cs}partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+          sw.WriteLine($"    {cs}partial void onAddedTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
           sw.WriteLine($"    {cs}}}");
           sw.WriteLine();
           sw.WriteLine();
           if (!mi.IsChildReadOnly) {
             sw.WriteLine("    /// <summary>");
-            sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.ChildClassInfo!.PluralName}.");
+            sw.WriteLine($"    /// Called after a {mi.LowerChildTypeName} gets removed from {mi.MemberName}.");
             sw.WriteLine("    /// </summary>");
-            sw.WriteLine($"    {cs}partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
+            sw.WriteLine($"    {cs}partial void onRemovedFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}){{");
             sw.WriteLine($"    {cs}}}");
             sw.WriteLine();
             sw.WriteLine();
@@ -807,10 +807,10 @@ namespace Storage {
         if (mi.MemberType==MemberTypeEnum.LinkToParent && !mi.IsLookupOnly) {
           if (mi.IsNullable) {
             sw.WriteLine($"      if ({mi.MemberName}!=null) {{");
-            sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+            sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
             sw.WriteLine("      }");
           } else {
-            sw.WriteLine($"      {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+            sw.WriteLine($"      {mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
           }
         }
       }
@@ -910,11 +910,11 @@ namespace Storage {
         if (mi.MemberType==MemberTypeEnum.LinkToParent && !mi.IsLookupOnly) {
           if (mi.IsNullable) {
             sw.WriteLine($"      if ({mi.LowerMemberName}Key.HasValue && {mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-            sw.WriteLine($"        {mi.MemberName}!.AddTo{mi.ParentMethodName}(this);");
+            sw.WriteLine($"        {mi.MemberName}!.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
             sw.WriteLine("      }");
           } else {
             sw.WriteLine($"      if ({mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-            sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+            sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
             sw.WriteLine("      }");
           }
         }
@@ -1294,7 +1294,7 @@ namespace Storage {
             //old==null && new==not null 
             sw.WriteLine($"          {mi.MemberName} = {mi.LowerMemberName};");
             if (!mi.IsLookupOnly) {
-              sw.WriteLine($"          {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+              sw.WriteLine($"          {mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
             }
             sw.WriteLine("          isChangeDetected = true;");
             sw.WriteLine("        }");
@@ -1306,10 +1306,10 @@ namespace Storage {
               if (mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentMultipleChildrenList ||
                 mi.ParentMemberInfo.MemberType==MemberTypeEnum.ParentOneChild) 
               {
-                sw.WriteLine($"          {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
+                sw.WriteLine($"          {mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(this);");
               } else {
                 //ParentMultipleChildrenDictionary or ParentMultipleChildrenSortedList
-                sw.WriteLine($"          {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(clone);");
+                sw.WriteLine($"          {mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(clone);");
               }
             }
             sw.WriteLine($"          {mi.MemberName} = null;");
@@ -1330,15 +1330,15 @@ namespace Storage {
               if (mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentMultipleChildrenList ||
                 mi.ParentMemberInfo.MemberType==MemberTypeEnum.ParentOneChild) 
               {
-                sw.WriteLine($"            {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
+                sw.WriteLine($"            {mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(this);");
               } else {
                 //ParentMultipleChildrenDictionary or ParentMultipleChildrenSortedList
-                sw.WriteLine($"            {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(clone);");
+                sw.WriteLine($"            {mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(clone);");
               }
             }
             sw.WriteLine($"            {mi.MemberName} = {mi.LowerMemberName};");
             if (!mi.IsLookupOnly) {
-              sw.WriteLine($"            {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+              sw.WriteLine($"            {mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
             }
             sw.WriteLine("            isChangeDetected = true;");
             sw.WriteLine("          }");
@@ -1360,15 +1360,15 @@ namespace Storage {
               if (mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentMultipleChildrenList ||
                 mi.ParentMemberInfo.MemberType==MemberTypeEnum.ParentOneChild) 
               {
-                sw.WriteLine($"        {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(this);");
+                sw.WriteLine($"        {mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(this);");
               } else {
                 //ParentMultipleChildrenDictionary or ParentMultipleChildrenSortedList
-                sw.WriteLine($"        {mi.MemberName}.RemoveFrom{mi.ParentMethodName}(clone);");
+                sw.WriteLine($"        {mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(clone);");
               }
             }
             sw.WriteLine($"        {mi.MemberName} = {mi.LowerMemberName};");
             if (!mi.IsLookupOnly) {
-              sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMethodName}(this);");
+              sw.WriteLine($"        {mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(this);");
             }
             sw.WriteLine("        isChangeDetected = true;");
             sw.WriteLine("      }");
@@ -1483,26 +1483,26 @@ namespace Storage {
               sw.WriteLine("        } else {");
               sw.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
               if (!mi.IsLookupOnly) {
-                sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+                sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
               }
               sw.WriteLine("        }");
               sw.WriteLine("      } else {");
               sw.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
               if (!mi.IsLookupOnly) {
                 sw.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                sw.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                sw.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
                 sw.WriteLine("          }");
               }
               sw.WriteLine($"          {LowerClassName}.{mi.MemberName} = null;");
               sw.WriteLine("        } else {");
               if (!mi.IsLookupOnly) {
                 sw.WriteLine($"          if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                sw.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                sw.WriteLine($"            {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
                 sw.WriteLine("          }");
               }
               sw.WriteLine($"          {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
               if (!mi.IsLookupOnly) {
-                sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+                sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
               }
               sw.WriteLine("        }");
               sw.WriteLine("      }");
@@ -1513,12 +1513,12 @@ namespace Storage {
               sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.LowerMemberName}) {{");
               if (!mi.IsLookupOnly) {
                 sw.WriteLine($"        if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-                sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+                sw.WriteLine($"          {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
                 sw.WriteLine("        }");
               }
               sw.WriteLine($"        {LowerClassName}.{mi.MemberName} = {mi.LowerMemberName};");
               if (!mi.IsLookupOnly) {
-                sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMethodName}({LowerClassName});");
+                sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
               }
               sw.WriteLine("      }");
             }
@@ -1577,29 +1577,29 @@ namespace Storage {
           } else if (mi.MemberType>MemberTypeEnum.ParentOneChild) {
             //List, Dictionary or SortedList
             sw.WriteLine("    /// <summary>");
-            sw.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.ChildClassInfo!.PluralName}.");
+            sw.WriteLine($"    /// Add {mi.LowerChildTypeName} to {mi.MemberName}.");
             sw.WriteLine("    /// </summary>");
-            sw.WriteLine($"    internal void AddTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+            sw.WriteLine($"    internal void AddTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
             sw.WriteLine($"#if DEBUG");
             sw.WriteLine($"      if ({mi.LowerChildTypeName}=={mi.ChildTypeName}.No{mi.ChildTypeName}) throw new Exception();");
             sw.WriteLine($"      if (({mi.LowerChildTypeName}.Key>=0)&&(Key<0)) throw new Exception();");
             if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
-              sw.WriteLine($"      if ({mi.ChildClassInfo!.LowerPluralName}.Contains({mi.LowerChildTypeName})) throw new Exception();");
+              sw.WriteLine($"      if ({mi.LowerMemberName}.Contains({mi.LowerChildTypeName})) throw new Exception();");
             } else {
-              sw.WriteLine($"      if ({mi.ChildClassInfo!.LowerPluralName}.ContainsKey({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName})) throw new Exception();");
+              sw.WriteLine($"      if ({mi.LowerMemberName}.ContainsKey({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName})) throw new Exception();");
             }
             sw.WriteLine($"#endif");
             if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
-              sw.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName});");
+              sw.WriteLine($"      {mi.LowerMemberName}.Add({mi.LowerChildTypeName});");
             } else { //Dictionary or SortedList
-              sw.WriteLine($"      {mi.ChildClassInfo!.LowerPluralName}.Add({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName}, {mi.LowerChildTypeName});");
+              sw.WriteLine($"      {mi.LowerMemberName}.Add({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName}, {mi.LowerChildTypeName});");
             }
-            sw.WriteLine($"      onAddedTo{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
+            sw.WriteLine($"      onAddedTo{mi.MemberName}({mi.LowerChildTypeName});");
             Compiler.WriteLinesTracing(sw, isTracing,
                          $"      {context}.Trace?.Invoke($\"Add {mi.ChildTypeName} {{{mi.LowerChildTypeName}.GetKeyOrHash()}} to \" +",
                          $"        $\"{{this.GetKeyOrHash()}} {ClassName}.{mi.MemberName}\");");
             sw.WriteLine("    }");
-            sw.WriteLine($"    partial void onAddedTo{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
+            sw.WriteLine($"    partial void onAddedTo{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
             sw.WriteLine();
             sw.WriteLine();
           }
@@ -1627,7 +1627,7 @@ namespace Storage {
 
           } else {
             //ParentMultipleChildren
-            sw.WriteLine($"    internal void RemoveFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
+            sw.WriteLine($"    internal void RemoveFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName}) {{");
             if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
               var linksLines = new List<string>();
               foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
@@ -1639,9 +1639,9 @@ namespace Storage {
 
               if (linksLines.Count==1) {
                 sw.WriteLine("#if DEBUG");
-                sw.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
+                sw.WriteLine($"      if (!{mi.LowerMemberName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
                 sw.WriteLine("#else");
-                sw.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName});");
+                sw.WriteLine($"        {mi.LowerMemberName}.Remove({mi.LowerChildTypeName});");
                 sw.WriteLine("#endif");
               } else {
                 sw.WriteLine("      //Execute Remove() only when exactly one property in the child still links to this parent. If");
@@ -1654,25 +1654,25 @@ namespace Storage {
                 sw.WriteLine("      if (countLinks>1) return;");
                 sw.WriteLine("#if DEBUG");
                 sw.WriteLine("      if (countLinks==0) throw new Exception();");
-                sw.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
+                sw.WriteLine($"      if (!{mi.LowerMemberName}.Remove({mi.LowerChildTypeName})) throw new Exception();");
                 sw.WriteLine("#else");
-                sw.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName});");
+                sw.WriteLine($"        {mi.LowerMemberName}.Remove({mi.LowerChildTypeName});");
                 sw.WriteLine("#endif");
               }
             } else { //Dictionary or SortedList
               sw.WriteLine("#if DEBUG");
-              sw.WriteLine($"      if (!{mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName})) throw new Exception();");
+              sw.WriteLine($"      if (!{mi.LowerMemberName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName})) throw new Exception();");
               sw.WriteLine("#else");
-              sw.WriteLine($"        {mi.ChildClassInfo!.LowerPluralName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName});");
+              sw.WriteLine($"        {mi.LowerMemberName}.Remove({mi.LowerChildTypeName}.{mi.ChildKeyPropertyName});");
               sw.WriteLine("#endif");
             }
 
-            sw.WriteLine($"      onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.LowerChildTypeName});");
+            sw.WriteLine($"      onRemovedFrom{mi.MemberName}({mi.LowerChildTypeName});");
             Compiler.WriteLinesTracing(sw, isTracing,
                          $"      {context}.Trace?.Invoke($\"Remove {mi.ChildTypeName} {{{mi.LowerChildTypeName}.GetKeyOrHash()}} from \" +",
                          $"        $\"{{this.GetKeyOrHash()}} {ClassName}.{mi.MemberName}\");");
             sw.WriteLine("    }");
-            sw.WriteLine($"    partial void onRemovedFrom{mi.ChildClassInfo!.PluralName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
+            sw.WriteLine($"    partial void onRemovedFrom{mi.MemberName}({mi.ChildTypeName} {mi.LowerChildTypeName});");
           }
           sw.WriteLine();
           sw.WriteLine();
@@ -1701,9 +1701,9 @@ namespace Storage {
 
         } else if (mi.MemberType>MemberTypeEnum.ParentOneChild) { //ParentMultipleChildren
           if (mi.MemberType==MemberTypeEnum.ParentMultipleChildrenList) {
-            sw.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.ChildClassInfo!.PluralName}) {{");
+            sw.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.MemberName}) {{");
           } else {
-            sw.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.ChildClassInfo!.PluralName}.Values) {{");
+            sw.WriteLine($"      foreach (var {mi.LowerChildTypeName} in {mi.MemberName}.Values) {{");
           }
           foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
             if (childMI.MemberType==MemberTypeEnum.LinkToParent && (childMI.ParentTypeString!)==ClassName) {
@@ -1908,11 +1908,11 @@ namespace Storage {
           if (!mi.IsLookupOnly) {
             if (mi.IsNullable) {
               sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!=null && {LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-              sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+              sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
               sw.WriteLine("      }");
             } else {
               sw.WriteLine($"      if ({LowerClassName}.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
-              sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}({LowerClassName});");
+              sw.WriteLine($"        {LowerClassName}.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}({LowerClassName});");
               sw.WriteLine("      }");
             }
           }
@@ -2002,7 +2002,7 @@ namespace Storage {
               //old==null && new==not null 
               sw.WriteLine($"          newItem.{mi.MemberName} = oldItem.{mi.MemberName};");
               if (!mi.IsLookupOnly) {
-                sw.WriteLine($"          newItem.{mi.MemberName}.AddTo{mi.ParentMethodName}(newItem);");
+                sw.WriteLine($"          newItem.{mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(newItem);");
               }
               sw.WriteLine("        }");
               sw.WriteLine("      } else {");
@@ -2014,10 +2014,10 @@ namespace Storage {
                 if (mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentMultipleChildrenList ||
                   mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentOneChild) 
                 {
-                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}(newItem);");
+                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(newItem);");
                 } else {
                   //ParentMultipleChildrenDictionary or ParentMultipleChildrenSortedList
-                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}(oldItem);");
+                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(oldItem);");
                 }
                 sw.WriteLine("          }");
               }
@@ -2038,16 +2038,16 @@ namespace Storage {
                 sw.WriteLine($"          if (newItem.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
                 if (mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentMultipleChildrenList ||
                   mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentOneChild) {
-                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}(newItem);");
+                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(newItem);");
                 } else {
                   //ParentMultipleChildrenDictionary or ParentMultipleChildrenSortedList
-                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}(oldItem);");
+                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(oldItem);");
                 }
                 sw.WriteLine("          }");
               }
               sw.WriteLine($"          newItem.{mi.MemberName} = oldItem.{mi.MemberName};");
               if (!mi.IsLookupOnly) {
-                sw.WriteLine($"          newItem.{mi.MemberName}.AddTo{mi.ParentMethodName}(newItem);");
+                sw.WriteLine($"          newItem.{mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(newItem);");
               }
               sw.WriteLine("          }");
               sw.WriteLine("        }");
@@ -2060,16 +2060,16 @@ namespace Storage {
                 sw.WriteLine($"        if (newItem.{mi.MemberName}!={mi.ParentTypeString}.No{mi.ParentTypeString}) {{");
                 if (mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentMultipleChildrenList ||
                   mi.ParentMemberInfo!.MemberType==MemberTypeEnum.ParentOneChild) {
-                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}(newItem);");
+                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(newItem);");
                 } else {
                   //ParentMultipleChildrenDictionary or ParentMultipleChildrenSortedList
-                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMethodName}(oldItem);");
+                  sw.WriteLine($"            newItem.{mi.MemberName}.RemoveFrom{mi.ParentMemberInfo!.MemberName}(oldItem);");
                 }
                 sw.WriteLine("        }");
               }
               sw.WriteLine($"        newItem.{mi.MemberName} = oldItem.{mi.MemberName};");
               if (!mi.IsLookupOnly) {
-                sw.WriteLine($"        newItem.{mi.MemberName}.AddTo{mi.ParentMethodName}(newItem);");
+                sw.WriteLine($"        newItem.{mi.MemberName}.AddTo{mi.ParentMemberInfo!.MemberName}(newItem);");
               }
               sw.WriteLine("      }");
             }

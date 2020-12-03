@@ -309,7 +309,9 @@ namespace Storage {
       foreach (var ci in classes.Values) {
         foreach (var mi in ci.Members.Values) {
           var isFound = false;
+          var parentMembersCount = 0;
           switch (mi.MemberType) {
+
           case MemberTypeEnum.ToLower:
             //                --------
             foreach (var member in ci.Members.Values) {
@@ -344,40 +346,56 @@ namespace Storage {
                   throw new GeneratorException($"{ci.ClassName}.{mi.MemberName}: cannot use the deletable instances of class " +
                     $"{mi.ParentClassInfo.ClassName} as lookup:" + Environment.NewLine + mi.MemberText);
                 }
-              } else { 
+              } else {
+                //Todo: Removed requirement that list in parent must have plural name of children
+                //foreach (var parentMember in mi.ParentClassInfo.Members.Values) {
+                //  if (parentMember.MemberName==ci.PluralName) {
+                //    isFound = true;
+                //    //ci.ParentsWithList.Add(mi.ParentClassInfo);
+                //    mi.ParentMemberInfo = parentMember;
+                //    mi.ParentMethodName = ci.PluralName;
+                //    parentMember.ChildCount++;
+                //    break;
+                //  } else if (parentMember.ChildTypeName==mi.ClassInfo.ClassName) {
+                //    if (parentMember.MemberType!=MemberTypeEnum.ParentOneChild) {
+                //      throw new GeneratorException($"{ci.ClassName}.{mi.MemberName}: links to {mi.TypeString}.{parentMember.MemberName}, " +
+                //        "which should have StoragePropertyAttribute(isParentOneChild: true):" + Environment.NewLine + mi.MemberText);
+                //    }
+                //    isFound = true;
+                //    mi.ParentMemberInfo = parentMember;
+                //    mi.ParentMethodName = parentMember.MemberName;
+                //    break;
+                //  }
+                //}
                 foreach (var parentMember in mi.ParentClassInfo.Members.Values) {
-                  if (parentMember.MemberName==ci.PluralName) {
-                    isFound = true;
-                    //ci.ParentsWithList.Add(mi.ParentClassInfo);
+                  if (parentMember.ChildTypeName==mi.ClassInfo.ClassName) {
+                    parentMembersCount++;
                     mi.ParentMemberInfo = parentMember;
-                    mi.ParentMethodName = ci.PluralName;
-                    parentMember.ChildCount++;
-                    break;
-                  } else if (parentMember.ChildTypeName==mi.ClassInfo.ClassName) {
                     if (parentMember.MemberType!=MemberTypeEnum.ParentOneChild) {
-                      throw new GeneratorException($"{ci.ClassName}.{mi.MemberName}: links to {mi.TypeString}.{parentMember.MemberName}, " +
-                        "which should have StoragePropertyAttribute(isParentOneChild: true):" + Environment.NewLine + mi.MemberText);
+                      parentMember.ChildCount++;
                     }
-                    isFound = true;
-                    mi.ParentMemberInfo = parentMember;
-                    mi.ParentMethodName = parentMember.MemberName;
-                    break;
                   }
                 }
-                if (!isFound) {
+                if (parentMembersCount==1) break;
+
+                if (parentMembersCount<1) {
                   throw new GeneratorException(
                     $"Property {mi.MemberName} from child class {ci.ClassName} links to parent {mi.ParentClassInfo.ClassName}. " + 
                     $"But the parent does not have a property which links to the child. Add a collection (list, dictionary or sortedList) " + 
                     $"to the parent if many children are allowed or a property with the [StorageProperty(isParentOneChild: true)] attribute " + 
                     $"if only 1 child is allowed. Add [StorageProperty(isLookupOnly: true)] to the child property if the parent " +
                     "should not have a relation with the child:" + Environment.NewLine + mi.MemberText);
+                } else {
+                  throw new GeneratorException(
+                    $"Property {mi.MemberName} from child class {ci.ClassName} links to parent {mi.ParentClassInfo.ClassName}. " +
+                    $"But the parent has more than 1property which links to the child:" + Environment.NewLine + mi.MemberText);
                 }
-                if (!mi.ClassInfo.AreInstancesDeletable && mi.ParentClassInfo.AreInstancesDeletable) {
-                  //todo: Compiler.AnalyzeDependencies() Add tests if child is at least updatable, parent property not readonly and nullable
-                  throw new GeneratorException($"Child {mi.ClassInfo.ClassName} does not support deletion. Therefore, the " + 
-                    $"parent {mi.ParentClassInfo.ClassName} can neither support deletion, because it can not delete its children:" 
-                    + Environment.NewLine + mi.MemberText);
-                }
+                //if (!mi.ClassInfo.AreInstancesDeletable && mi.ParentClassInfo.AreInstancesDeletable) {
+                //  //todo: Compiler.AnalyzeDependencies() Add tests if child is at least updatable, parent property not readonly and nullable
+                //  throw new GeneratorException($"Child {mi.ClassInfo.ClassName} does not support deletion. Therefore, the " + 
+                //    $"parent {mi.ParentClassInfo.ClassName} can neither support deletion, because it can not delete its children:" 
+                //    + Environment.NewLine + mi.MemberText);
+                //}
               }
 
             } else if (enums.TryGetValue(mi.ParentTypeString!, out mi.EnumInfo)) {

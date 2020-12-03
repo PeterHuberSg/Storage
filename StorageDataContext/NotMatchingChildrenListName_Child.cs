@@ -7,9 +7,9 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Example for parent which can have at most 1 child and the parent property in the child is nullable.
+    /// Child for NotMatchingChildrenListName_Parent
     /// </summary>
-  public partial class ParentOneChild_ParentNullable: IStorageItemGeneric<ParentOneChild_ParentNullable> {
+  public partial class NotMatchingChildrenListName_Child: IStorageItemGeneric<NotMatchingChildrenListName_Child> {
 
 
     #region Properties
@@ -37,7 +37,7 @@ namespace StorageDataContext  {
     /// <summary>
     /// Called once the cloning constructor has filled all the properties. Clones have no children data.
     /// </summary>
-    partial void onCloned(ParentOneChild_ParentNullable clone) {
+    partial void onCloned(NotMatchingChildrenListName_Child clone) {
     }
 
 
@@ -62,86 +62,72 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after ParentOneChild_ParentNullable.Store() is executed
+    /// Called after NotMatchingChildrenListName_Child.Store() is executed
     /// </summary>
     partial void onStored() {
     }
 
 
     /// <summary>
-    /// Called before ParentOneChild_ParentNullable gets written to a CSV file
+    /// Called before NotMatchingChildrenListName_Child gets written to a CSV file
     /// </summary>
     partial void onCsvWrite() {
     }
 
 
     /// <summary>
-    /// Called after all properties of ParentOneChild_ParentNullable are updated, but before the HasChanged event gets raised
+    /// Called after all properties of NotMatchingChildrenListName_Child are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdating(string text, ref bool isCancelled){
+    partial void onUpdating(string text, NotMatchingChildrenListName_Parent parent, ref bool isCancelled){
    }
 
 
     /// <summary>
-    /// Called after all properties of ParentOneChild_ParentNullable are updated, but before the HasChanged event gets raised
+    /// Called after all properties of NotMatchingChildrenListName_Child are updated, but before the HasChanged event gets raised
     /// </summary>
-    partial void onUpdated(ParentOneChild_ParentNullable old) {
+    partial void onUpdated(NotMatchingChildrenListName_Child old) {
     }
 
 
     /// <summary>
-    /// Called after an update for ParentOneChild_ParentNullable is read from a CSV file
+    /// Called after an update for NotMatchingChildrenListName_Child is read from a CSV file
     /// </summary>
     partial void onCsvUpdate() {
     }
 
 
     /// <summary>
-    /// Called after ParentOneChild_ParentNullable.Release() got executed
+    /// Called after NotMatchingChildrenListName_Child.Release() got executed
     /// </summary>
     partial void onReleased() {
     }
 
 
     /// <summary>
-    /// Called after 'new ParentOneChild_ParentNullable()' transaction is rolled back
+    /// Called after 'new NotMatchingChildrenListName_Child()' transaction is rolled back
     /// </summary>
     partial void onRollbackItemNew() {
     }
 
 
     /// <summary>
-    /// Called after ParentOneChild_ParentNullable.Store() transaction is rolled back
+    /// Called after NotMatchingChildrenListName_Child.Store() transaction is rolled back
     /// </summary>
     partial void onRollbackItemStored() {
     }
 
 
     /// <summary>
-    /// Called after ParentOneChild_ParentNullable.Update() transaction is rolled back
+    /// Called after NotMatchingChildrenListName_Child.Update() transaction is rolled back
     /// </summary>
-    partial void onRollbackItemUpdated(ParentOneChild_ParentNullable oldParentOneChild_ParentNullable) {
+    partial void onRollbackItemUpdated(NotMatchingChildrenListName_Child oldNotMatchingChildrenListName_Child) {
     }
 
 
     /// <summary>
-    /// Called after ParentOneChild_ParentNullable.Release() transaction is rolled back
+    /// Called after NotMatchingChildrenListName_Child.Release() transaction is rolled back
     /// </summary>
     partial void onRollbackItemRelease() {
-    }
-
-
-    /// <summary>
-    /// Called after a parentOneChild_Child gets added to Child.
-    /// </summary>
-    partial void onAddedToChild(ParentOneChild_Child parentOneChild_Child){
-    }
-
-
-    /// <summary>
-    /// Called after a parentOneChild_Child gets removed from Child.
-    /// </summary>
-    partial void onRemovedFromChild(ParentOneChild_Child parentOneChild_Child){
     }
 
 

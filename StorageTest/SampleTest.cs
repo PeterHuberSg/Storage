@@ -58,7 +58,7 @@ namespace StorageTest {
           addDetail(2, 2);
 
           updateMaster(1, "a");
-          //todo: What should happen if the child has to parent property for the same parent. Presently, updateSample() doesn't work
+          //todo: What should happen if the child has two parent property for the same parent. Presently, updateSample() doesn't work
           //updateSample(1, "b", DC.Data.SampleMasters[0]);
           //updateSample(1, "c", null);
           //updateSample(1, "d", DC.Data.SampleMasters[1]);
