@@ -407,7 +407,7 @@ namespace Storage {
       sw.WriteLine();
       if (AreInstancesUpdatable) {
         sw.WriteLine("    /// <summary>");
-        sw.WriteLine($"    /// Called after all properties of {ClassName} are updated, but before the HasChanged event gets raised");
+        sw.WriteLine($"    /// Called before any property of {ClassName} is updated and before the HasChanged event gets raised");
         sw.WriteLine("    /// </summary>");
         sw.Write($"    {cs}partial void onUpdating(");
         if (!writeOnUpdateParameters(sw, updateTypeEnum.Implementation, cs)) {
@@ -1283,7 +1283,7 @@ namespace Storage {
             //null       | null     => nothing to do
             //null       | not null => add new value to parent
             //not null   | null     => remove old value from parent
-            //not null   | null     => if old!=new: remove old value from old parent, add new value to new parent 
+            //not null   | not null => if old!=new: remove old value from old parent, add new value to new parent 
             sw.WriteLine($"      if ({mi.MemberName} is null) {{");
             sw.WriteLine($"        if ({mi.LowerMemberName} is null) {{");
 
@@ -2870,17 +2870,22 @@ namespace Storage {
     private bool writeRemoveComment(StreamWriter streamWriter, string context, bool isCapitaliseFirstLetter) {
       var lineParts = new List<string>();
       foreach (var mi in Members.Values) {
-        if (mi.MemberType>=MemberTypeEnum.ParentOneChild) {//parent child relationship
-          foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
-            if (childMI.MemberType==MemberTypeEnum.LinkToParent && (childMI.ParentTypeString!)==ClassName) {
-              if (childMI.IsNullable) {
-                lineParts.Add($"disconnects {childMI.ClassInfo.ClassName}.{childMI.MemberName} from {mi.ChildClassInfo!.PluralName}");
-              } else {
-                lineParts.Add($"deletes any {childMI.ClassInfo.ClassName} where {childMI.ClassInfo.ClassName}.{childMI.MemberName} links to this {ClassName}");
-              }
-            }
-          }
-        } else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+        //if (mi.MemberType>=MemberTypeEnum.ParentOneChild) {//parent child relationship
+        //  foreach (var childMI in mi.ChildClassInfo!.Members.Values) {
+        //    if (childMI.MemberType==MemberTypeEnum.LinkToParent && (childMI.ParentTypeString!)==ClassName) {
+        //      if (childMI.IsNullable) {
+        //        lineParts.Add($"disconnects {childMI.ClassInfo.ClassName}.{childMI.MemberName} from {mi.ChildClassInfo!.PluralName}");
+        //      } else {
+        //        lineParts.Add($"deletes any {childMI.ClassInfo.ClassName} where {childMI.ClassInfo.ClassName}.{childMI.MemberName} links to this {ClassName}");
+        //      }
+        //    }
+        //  }
+        //} else if (mi.MemberType==MemberTypeEnum.LinkToParent) {
+        //  lineParts.Add($"disconnects {ClassName} from {mi.ParentTypeString} because of {mi.MemberName}");
+        //} else if (mi.NeedsDictionary) {
+        //  lineParts.Add($"removes {ClassName} from {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}");
+        //}
+        if  (mi.MemberType==MemberTypeEnum.LinkToParent) {
           lineParts.Add($"disconnects {ClassName} from {mi.ParentTypeString} because of {mi.MemberName}");
         } else if (mi.NeedsDictionary) {
           lineParts.Add($"removes {ClassName} from {context}.Data.{mi.ClassInfo.PluralName}By{mi.MemberName}");
@@ -2917,7 +2922,6 @@ namespace Storage {
       } else {
         return false;
       }
-
     }
   }
 }

@@ -341,6 +341,7 @@ namespace StorageTest {
         children.Items.Remove(c1Key);
         childrenTestString.Remove(c1Key);
         children.Set(isContinuous: false, isUpdated: false, isDeleted: true, firstIndex: 0, lastIndex: 2);
+        var v = parents.Items[p0Key]==DC.Data.ChildrenList_Parents[p0Key].ToString();
         parents.Items[p0Key] = DC.Data.ChildrenList_Parents[p0Key].ToString();
         coParents.Items[cp0Key] = DC.Data.ChildrenList_CreateOnlyParents[cp0Key].ToString();
         //assertData(); doesn't work, because before closing the DC, the parent has still the released child in Children, but nor in new DC
