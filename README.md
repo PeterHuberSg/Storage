@@ -64,8 +64,13 @@ application to define the data model, generate your classes and use them from yo
 application.
 
 # Project Status
-Coding completed and tested  
-Used in one application, a second application is presently in work.
-Please note that new functionality gets continuously added.
+Coding completed and tested. However, a new and improved version is under development with
+sligthly different Interfaces, which will not be backwards compatible.
+ 
+The current version is in use in 3 applications.
+
+# Installation
+
+StorageClassGenerator: Download Microsoft.CodeAnalysis.CSharp V3.8 or later with Nuget
  
 
