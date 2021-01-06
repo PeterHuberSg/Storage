@@ -1,4 +1,4 @@
-# *Storage is now replaced by https://github.com/PeterHuberSg/Storagelib*
+# *Storage is now replaced by https://github.com/PeterHuberSg/StorageLib*
 
 No further develoment of Storage project
 
