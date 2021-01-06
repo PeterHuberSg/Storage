@@ -1,6 +1,10 @@
-# *Storage is now replaced by https://github.com/PeterHuberSg/StorageLib*
+# Storage is now replaced by https://github.com/PeterHuberSg/StorageLib
 
-No further develoment of Storage project
+**!!! No further develoment of Storage project !!!**
+
+***
+
+
 
 # Introduction
 Storage is a C# only library for lightening fast object oriented data storage in RAM and 
