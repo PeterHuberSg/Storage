@@ -108,7 +108,7 @@ namespace Storage {
           Console.WriteLine("");
         }
 
-        Console.WriteLine($"write {context}.cs");
+        Console.WriteLine($"write {context}.base.cs");
         compiler.WriteContextFile(targetDirectory, context);
         Console.WriteLine("");
       } catch (GeneratorException gex) {

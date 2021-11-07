@@ -100,6 +100,12 @@ namespace Storage {
     /// Character used at the start of a line in a CSV file to mark a deleted item.
     /// </summary>
     public readonly char LineCharDelete;
+
+
+    /// <summary>
+    /// Should stock statistics be calculated ?
+    /// </summary>
+    public readonly bool IsCalcStats;
     #endregion
 
 
@@ -121,6 +127,7 @@ namespace Storage {
     /// <param name="lineCharAdd">Character used at the start of a line in a CSV file to mark adding a new item.</param>
     /// <param name="lineCharUpdate">Character used at the start of a line in a CSV file to mark an updated item.</param>
     /// <param name="lineCharDelete">Character used at the start of a line in a CSV file to mark a deleted item.</param>
+    /// <param name="isCalcStats">Should stock statistics be calculated ?</param>
     public CsvConfig(
       string directoryPath,
       string? backupPath = null,
@@ -132,7 +139,8 @@ namespace Storage {
       Action<Exception>? reportException = null,
       char lineCharAdd = '+',
       char lineCharUpdate = '*',
-      char lineCharDelete = '-') 
+      char lineCharDelete = '-',
+      bool isCalcStats = true) 
     {
       DirectoryPath = directoryPath;
       BackupPath = backupPath;
@@ -152,6 +160,7 @@ namespace Storage {
       LineCharAdd = lineCharAdd;
       LineCharUpdate = lineCharUpdate;
       LineCharDelete = lineCharDelete;
+      IsCalcStats = isCalcStats;
     }
     #endregion
 
