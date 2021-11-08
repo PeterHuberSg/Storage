@@ -1,9 +1,9 @@
 ﻿/**************************************************************************************
 
-Storage.SortedBuckets
-=================
+Storage.SortedBucketCollection
+==============================
 
-SortedBuckets stores BucketItems. For each unique TKey1, buckets, a SortedDictionary for TKey1, stores exactly 1
+SortedBucketCollection stores BucketItems. For each unique TKey1, buckets, a SortedDictionary for TKey1, stores exactly 1
 BucketItem, which can be the head of a linked list, containing other BucketItems with the same TKey1, sorted 
 by TKey2. Within such a linked list, each TKey2 must be unique.
 
@@ -25,21 +25,88 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Storage {
 
+  #region IReadOnlySortedBucketCollection
+  //      -------------------------------
 
   /// <summary>
-  /// Like a SortedList, SortedBuckets stores TValue items which can be retrieved by their TKey1 value. In SortedList, 
-  /// each TKey accesses at most 1 item. In SortedBuckets, each TKey1 accesses a bucket, which can contain 0 to main items 
+  /// Provides readonly access to a BucketCollection, which works like a Dictionary, but each item needs 2 keys.
+  /// </summary>
+  public interface IReadOnlySortedBucketCollection<TKey1, TKey2, TValue>: IReadOnlyCollection<TValue> {
+
+    #region Properties
+    //      ----------
+
+    /// <summary>
+    /// A collection of all TKey1 values stored.
+    /// </summary>
+    ICollection<TKey1> Keys {get;}
+
+
+    /// <summary>
+    /// Number of all TKeys stored
+    /// </summary>
+    public int Key1Count {get;}
+
+
+    /// <summary>
+    /// Returns all items with TKey==key1
+    /// </summary>
+    public IEnumerable<TValue> this[TKey1 key1] {get;}
+
+
+    /// <summary>
+    /// Returns the item stored for key1, key2
+    /// </summary>
+    public TValue? this[TKey1 key1, TKey2 key2] {get;}
+    #endregion
+
+
+    #region Methods
+    //      -------
+
+    /// <summary>
+    /// Does at least 1 item exist in SortedBuckers with item.Key1==key1 ?
+    /// </summary>
+    public bool Contains(TKey1 key1);
+    #endregion
+
+
+    /// <summary>
+    /// Does an item exist in SortedBuckers with item.Key1==key1 and item.Key2==key2 ?
+    /// </summary>
+    public bool Contains(TKey1 key1, TKey2 key2);
+
+
+    /// <summary>
+    /// Does an item with item.Key1==key1 and item.Key2==key2 exist in SortedBuckers ?
+    /// </summary>
+    public bool Contains(TValue item);
+
+
+    /// <summary>
+    /// Returns true if StoredBuckets stores an item with item.Key1==key1 and item Key2==key2
+    /// </summary>
+    public bool TryGetValue(TKey1 key1, TKey2 key2, [MaybeNullWhen(false)] out TValue value);
+  }
+
+  #endregion
+
+
+  #region SortedBucketCollection
+  //      ----------------------
+
+  /// <summary>
+  /// Like a SortedList, SortedBucketCollection stores TValue items which can be retrieved by their TKey1 value. In SortedList, 
+  /// each TKey accesses at most 1 item. In SortedBucketCollection, each TKey1 accesses a bucket, which can contain 0 to main items 
   /// with the same TKey1, but different, unique TKey2. Items are sorted by TKey1, then TKey2. Tkey1 and TKey2 are 
   /// properties within TValue.
   /// </summary>
-  public class SortedBuckets<TKey1, TKey2, TValue>: ICollection<TValue> 
+  public class SortedBucketCollection<TKey1, TKey2, TValue>: ICollection<TValue>, IReadOnlySortedBucketCollection<TKey1, TKey2, TValue>
     where TKey1: notnull, IComparable<TKey1>
     where TKey2: notnull, IComparable<TKey2>
     where TValue: class
   {
 
-    /*
-    */
 
     #region Properties
     //      ----------
@@ -56,7 +123,6 @@ namespace Storage {
     public int Count { get; private set;}
 
 
-
     /// <summary>
     /// Number of all TKeys stored
     /// </summary>
@@ -64,7 +130,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Readonly versions of SortedBuckets don't exist
+    /// Readonly versions of SortedBucketCollection don't exist
     /// </summary>
     public bool IsReadOnly => false;
 
@@ -145,7 +211,7 @@ namespace Storage {
     /// <summary>
     /// The getKeyX() delegates provide access to the TKeyX property in TValue
     /// </summary>
-    public SortedBuckets(Func<TValue, TKey1> getKey1, Func<TValue, TKey2> getKey2) {
+    public SortedBucketCollection(Func<TValue, TKey1> getKey1, Func<TValue, TKey2> getKey2) {
       this.getKey1 = getKey1;
       this.getKey2 = getKey2;
       buckets = new();
@@ -158,7 +224,7 @@ namespace Storage {
     //      -------
 
     /// <summary>
-    /// Adds value to SortedBuckets. It throws an exception if an item is stored already with value.Key1 and value.Key2.
+    /// Adds value to SortedBucketCollection. It throws an exception if an item is stored already with value.Key1 and value.Key2.
     /// </summary>
     public void Add(TValue item) {
       var key1 = getKey1(item);
@@ -166,7 +232,7 @@ namespace Storage {
         var key2 = getKey2(item);
         var foundBucketItemKey2 = getKey2(foundBucketItem.Item);
         var compareResult = key2.CompareTo(foundBucketItemKey2);
-        if (compareResult==0) throw new ArgumentException($"SortedBuckets.Add({item}): Key2 {key2} is used by already stored {foundBucketItem}.");
+        if (compareResult==0) throw new ArgumentException($"SortedBucketCollection.Add({item}): Key2 {key2} is used by already stored {foundBucketItem}.");
 
         if (compareResult<0) {
           //bucket.Key2<foundBucket.Key2
@@ -180,7 +246,7 @@ namespace Storage {
           while (nextBucketItem is not null) {
             var nextBucketItemKey2 = getKey2(nextBucketItem.Item);
             compareResult = key2.CompareTo(nextBucketItemKey2);
-            if (compareResult==0) throw new ArgumentException($"SortedBuckets.Add({item}): Key2 {key2} is used by already stored {nextBucketItem}.");
+            if (compareResult==0) throw new ArgumentException($"SortedBucketCollection.Add({item}): Key2 {key2} is used by already stored {nextBucketItem}.");
 
             if (compareResult<0) {
               //bucket.Key2<nextBucketItem.Key2
@@ -208,7 +274,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Does at least 1 item exist in SortedBuckers with item.Key1==key1
+    /// Does at least 1 item exist in SortedBuckers with item.Key1==key1 ?
     /// </summary>
     public bool Contains(TKey1 key1) {
       return buckets.ContainsKey(key1);
@@ -216,7 +282,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Does an item exist in SortedBuckers with item.Key1==key1 and item.Key2==key2
+    /// Does an item exist in SortedBuckers with item.Key1==key1 and item.Key2==key2 ?
     /// </summary>
     public bool Contains(TKey1 key1, TKey2 key2) {
       return this[key1, key2] is not null;
@@ -224,7 +290,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Does an item with item.Key1==key1 and item.Key2==key2 exist in SortedBuckers 
+    /// Does an item with item.Key1==key1 and item.Key2==key2 exist in SortedBuckers ?
     /// </summary>
     public bool Contains(TValue item) {
       var key1 = getKey1(item);
@@ -243,7 +309,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Enumerates over all items in SortedBuckets, sorted by Key1, Key2
+    /// Enumerates over all items in SortedBucketCollection, sorted by Key1, Key2
     /// </summary>
     public IEnumerator<TValue> GetEnumerator() {
       foreach (var keyValuePairBucketItem in buckets) {
@@ -260,7 +326,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Enumerates over all items in SortedBuckets, sorted by Key1, Key2
+    /// Enumerates over all items in SortedBucketCollection, sorted by Key1, Key2
     /// </summary>
     IEnumerator IEnumerable.GetEnumerator() {
       return GetEnumerator();
@@ -322,7 +388,7 @@ namespace Storage {
 
 
     /// <summary>
-    /// Releases all items from SortedBuckets
+    /// Releases all items from SortedBucketCollection
     /// </summary>
     public void Clear() {
       buckets.Clear();//by removing the start of every linked list, all other items in the linked list become unreachable too
@@ -331,11 +397,12 @@ namespace Storage {
 
 
     /// <summary>
-    /// CopyTo() is not supported by SortedBuckets
+    /// CopyTo() is not supported by SortedBucketCollection
     /// </summary>
     public void CopyTo(TValue[] array, int arrayIndex) {
       throw new NotSupportedException();
     }
     #endregion
   }
+  #endregion
 }

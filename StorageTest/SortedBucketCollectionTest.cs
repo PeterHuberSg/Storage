@@ -8,7 +8,7 @@ namespace StorageTest {
 
 
   [TestClass]
-  public class SortedBucketsTest {
+  public class SortedBucketCollectionTest {
 
 
     public record TestRecord(DateTime Key1Date, int Key2, string Data) {
@@ -19,42 +19,42 @@ namespace StorageTest {
 
 
     [TestMethod]
-    public void TestSortedBuckets() {
-      var sortedBuckets = new SortedBuckets<DateTime, int, TestRecord>(tr => tr.Key1Date, tr => tr.Key2);
+    public void TestSortedBucketCollection() {
+      var sortedBucketCollection = new SortedBucketCollection<DateTime, int, TestRecord>(tr => tr.Key1Date, tr => tr.Key2);
       var expectedKeys = new SortedDictionary<DateTime, List<int>>();
 
       var today = DateTime.Now.Date;
-      add(sortedBuckets, expectedKeys, today, 1);
-      add(sortedBuckets, expectedKeys, today, 3);
-      add(sortedBuckets, expectedKeys, today, 2);
-      add(sortedBuckets, expectedKeys, today, 4);
-      add(sortedBuckets, expectedKeys, today, 0);
+      add(sortedBucketCollection, expectedKeys, today, 1);
+      add(sortedBucketCollection, expectedKeys, today, 3);
+      add(sortedBucketCollection, expectedKeys, today, 2);
+      add(sortedBucketCollection, expectedKeys, today, 4);
+      add(sortedBucketCollection, expectedKeys, today, 0);
 
       var tomorrow = today.AddDays(1);
-      add(sortedBuckets, expectedKeys, tomorrow, 1);
-      add(sortedBuckets, expectedKeys, tomorrow, 0);
+      add(sortedBucketCollection, expectedKeys, tomorrow, 1);
+      add(sortedBucketCollection, expectedKeys, tomorrow, 0);
 
-      remove(sortedBuckets, expectedKeys, today, 2);
-      remove(sortedBuckets, expectedKeys, today, 0);
-      remove(sortedBuckets, expectedKeys, today, 4);
-      remove(sortedBuckets, expectedKeys, today, 1);
-      remove(sortedBuckets, expectedKeys, today, 3);
+      remove(sortedBucketCollection, expectedKeys, today, 2);
+      remove(sortedBucketCollection, expectedKeys, today, 0);
+      remove(sortedBucketCollection, expectedKeys, today, 4);
+      remove(sortedBucketCollection, expectedKeys, today, 1);
+      remove(sortedBucketCollection, expectedKeys, today, 3);
 
-      add(sortedBuckets, expectedKeys, today, 1);
-      add(sortedBuckets, expectedKeys, today, 3);
-      add(sortedBuckets, expectedKeys, today, 2);
+      add(sortedBucketCollection, expectedKeys, today, 1);
+      add(sortedBucketCollection, expectedKeys, today, 3);
+      add(sortedBucketCollection, expectedKeys, today, 2);
 
-      clear(sortedBuckets, expectedKeys);
+      clear(sortedBucketCollection, expectedKeys);
     }
 
 
     private static void add(
-      SortedBuckets<DateTime, int, TestRecord> sortedBuckets,
+      SortedBucketCollection<DateTime, int, TestRecord> sortedBucketCollection,
       SortedDictionary<DateTime, List<int>> expectedKeys,
       DateTime key1,
       int key2) 
     {
-      sortedBuckets.Add(new TestRecord(key1, key2, key1.ToString("dd.MM.yyyy") + " " + key2));
+      sortedBucketCollection.Add(new TestRecord(key1, key2, key1.ToString("dd.MM.yyyy") + " " + key2));
 
       if (!expectedKeys.TryGetValue(key1, out var key1Items)) {
         expectedKeys.Add(key1, key1Items = new List<int>());
@@ -64,17 +64,17 @@ namespace StorageTest {
       key1Items.Add(key2);
       key1Items.Sort();
 
-      assert(sortedBuckets, expectedKeys);
+      assert(sortedBucketCollection, expectedKeys);
     }
 
 
     private static void remove(
-      SortedBuckets<DateTime, int, TestRecord> sortedBuckets,
+      SortedBucketCollection<DateTime, int, TestRecord> sortedBucketCollection,
       SortedDictionary<DateTime, List<int>> expectedKeys,
       DateTime key1,
       int key2) 
     {
-      sortedBuckets.Remove(sortedBuckets[key1, key2]!);
+      sortedBucketCollection.Remove(sortedBucketCollection[key1, key2]!);
 
       var key1Items = expectedKeys[key1];
       key1Items.Remove(key2);
@@ -82,41 +82,41 @@ namespace StorageTest {
         expectedKeys.Remove(key1);
       }
 
-      assert(sortedBuckets, expectedKeys);
+      assert(sortedBucketCollection, expectedKeys);
     }
 
 
     private static void clear(
-      SortedBuckets<DateTime, int, TestRecord> sortedBuckets,
+      SortedBucketCollection<DateTime, int, TestRecord> sortedBucketCollection,
       SortedDictionary<DateTime, List<int>> expectedKeys) 
     {
-      sortedBuckets.Clear();
+      sortedBucketCollection.Clear();
       expectedKeys.Clear();
 
-      assert(sortedBuckets, expectedKeys);
+      assert(sortedBucketCollection, expectedKeys);
     }
 
 
-    private static void assert(SortedBuckets<DateTime, int, TestRecord> sortedBuckets, 
+    private static void assert(SortedBucketCollection<DateTime, int, TestRecord> sortedBucketCollection, 
       SortedDictionary<DateTime, List<int>> expectedKeys) 
     {
-      Assert.AreEqual(expectedKeys.Count, sortedBuckets.Key1Count);
+      Assert.AreEqual(expectedKeys.Count, sortedBucketCollection.Key1Count);
       var expectedItemsCount = 0;
       var expectedAllKeys = "";
       foreach (var keyValuePairExpectedKey in expectedKeys) {
         var date = keyValuePairExpectedKey.Key;
-        Assert.IsTrue(sortedBuckets.Contains(date));
+        Assert.IsTrue(sortedBucketCollection.Contains(date));
         var expectedKey2s = "";
         foreach (var key2 in keyValuePairExpectedKey.Value) {
-          Assert.IsTrue(sortedBuckets.Contains(date, key2));
+          Assert.IsTrue(sortedBucketCollection.Contains(date, key2));
           TestRecord testRecord;
-          Assert.IsTrue(sortedBuckets.TryGetValue(date, key2, out testRecord!));
+          Assert.IsTrue(sortedBucketCollection.TryGetValue(date, key2, out testRecord!));
           Assert.AreEqual(date, testRecord.Key1Date);
           Assert.AreEqual(key2, testRecord.Key2);
-          testRecord = sortedBuckets[date, key2]!;
+          testRecord = sortedBucketCollection[date, key2]!;
           Assert.AreEqual(date, testRecord.Key1Date);
           Assert.AreEqual(key2, testRecord.Key2);
-          Assert.IsTrue(sortedBuckets.Contains(testRecord));
+          Assert.IsTrue(sortedBucketCollection.Contains(testRecord));
 
           expectedAllKeys +=  date.ToString("dd.MM.yyyy") + ", " + key2 + "|";
           expectedKey2s += key2 + "|";
@@ -130,10 +130,10 @@ namespace StorageTest {
         Assert.AreEqual(expectedKey2s, actualKey2s);
       }
 
-      Assert.AreEqual(expectedItemsCount, sortedBuckets.Count);
+      Assert.AreEqual(expectedItemsCount, sortedBucketCollection.Count);
 
       var actualAllKeys = "";
-      foreach (var testRecord in sortedBuckets) {
+      foreach (var testRecord in sortedBucketCollection) {
         actualAllKeys +=  testRecord.Key1Date.ToString("dd.MM.yyyy") + ", " + testRecord.Key2 + "|";
       }
       Assert.AreEqual(expectedAllKeys, actualAllKeys);
