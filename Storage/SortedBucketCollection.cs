@@ -144,8 +144,13 @@ namespace Storage {
     private IEnumerable<TValue> getValuesFor(TKey1 key1) {
       if (!buckets.TryGetValue(key1, out var bucketItem)) yield break;
 
+      var versionCopy = version;
       do {
         yield return bucketItem.Item;
+
+        if (versionCopy!=version) {
+          throw new InvalidOperationException();
+        }
         bucketItem = bucketItem.Next;
       } while (bucketItem is not null);
     }
@@ -206,7 +211,8 @@ namespace Storage {
     readonly Func<TValue, TKey1> getKey1;
     readonly Func<TValue, TKey2> getKey2;
     readonly SortedDictionary<TKey1, BucketItem> buckets;
-    
+    int version;
+
 
     /// <summary>
     /// The getKeyX() delegates provide access to the TKeyX property in TValue
@@ -253,6 +259,7 @@ namespace Storage {
               //insert bucket between foundBucketItem and nextBucketItem
               foundBucketItem.Next = new BucketItem(item, nextBucketItem);
               Count++;
+              version++;
               return;
             }
 
@@ -270,6 +277,7 @@ namespace Storage {
         buckets.Add(key1, new BucketItem(item, null));
       }
       Count++;
+      version++;
     }
 
 
@@ -312,14 +320,23 @@ namespace Storage {
     /// Enumerates over all items in SortedBucketCollection, sorted by Key1, Key2
     /// </summary>
     public IEnumerator<TValue> GetEnumerator() {
+      var versionCopy = version;
+
       foreach (var keyValuePairBucketItem in buckets) {
         var bucketItem = keyValuePairBucketItem.Value;
         yield return bucketItem.Item;
+
+        if (versionCopy!=version) {
+          throw new InvalidOperationException();
+        }
 
         while (bucketItem.Next is not null) {
           bucketItem = bucketItem.Next;
           yield return bucketItem.Item;
 
+          if (versionCopy!=version) {
+            throw new InvalidOperationException();
+          }
         }
       }
     }
@@ -352,6 +369,7 @@ namespace Storage {
           buckets[key1] = existingBucketItem.Next;
         }
         Count--;
+        version++;
         return true;
 
       } else if (compareResult<0) {
@@ -374,6 +392,7 @@ namespace Storage {
           //item matching Key1 and Key2 found. Remove it from linked list
           existingBucketItem.Next = nextBucketItem.Next;
           Count--;
+          version++;
           return true;
         }
 
@@ -393,6 +412,7 @@ namespace Storage {
     public void Clear() {
       buckets.Clear();//by removing the start of every linked list, all other items in the linked list become unreachable too
       Count = 0;
+      version++;
     }
 
 
