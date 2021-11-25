@@ -101,7 +101,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new Lookup_Child: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(5,TransactionActivityEnum.New, Key, this));
       }
 

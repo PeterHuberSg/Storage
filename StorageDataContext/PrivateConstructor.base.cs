@@ -84,7 +84,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new PrivateConstructor: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(1,TransactionActivityEnum.New, Key, this));
       }
 

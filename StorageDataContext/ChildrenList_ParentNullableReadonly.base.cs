@@ -94,7 +94,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new ChildrenList_ParentNullableReadonly: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(15,TransactionActivityEnum.New, Key, this));
       }
 

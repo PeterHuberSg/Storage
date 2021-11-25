@@ -116,7 +116,7 @@ namespace StorageDataContext  {
         ParentNullable.AddToCreateOnlyParentChangeableChild_Children(this);
       }
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(33,TransactionActivityEnum.New, Key, this));
       }
 

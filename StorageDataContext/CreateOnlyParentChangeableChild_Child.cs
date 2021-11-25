@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of CreateOnlyParentChangeableChild_Child are updated, but before the HasChanged event gets raised
+    /// Called before any property of CreateOnlyParentChangeableChild_Child is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string updatableText, CreateOnlyParentChangeableChild_Parent parent, CreateOnlyParentChangeableChild_ParentNullable? parentNullable, ref bool isCancelled){
    }

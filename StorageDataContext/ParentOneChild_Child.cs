@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of ParentOneChild_Child are updated, but before the HasChanged event gets raised
+    /// Called before any property of ParentOneChild_Child is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string text, ParentOneChild_Parent parent, ParentOneChild_ParentNullable? parentNullable, ref bool isCancelled){
    }

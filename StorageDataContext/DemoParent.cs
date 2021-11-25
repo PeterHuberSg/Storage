@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of DemoParent are updated, but before the HasChanged event gets raised
+    /// Called before any property of DemoParent is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string demoParentData, ref bool isCancelled){
    }

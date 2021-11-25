@@ -248,7 +248,7 @@ namespace StorageDataContext  {
         OtherMaster.AddToSampleX(this);
       }
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(7,TransactionActivityEnum.New, Key, this));
       }
 

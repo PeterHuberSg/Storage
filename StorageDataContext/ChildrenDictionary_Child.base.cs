@@ -118,7 +118,7 @@ namespace StorageDataContext  {
         ParentWithDictionaryNullable.AddToChildrenDictionary_Children(this);
       }
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(24,TransactionActivityEnum.New, Key, this));
       }
 

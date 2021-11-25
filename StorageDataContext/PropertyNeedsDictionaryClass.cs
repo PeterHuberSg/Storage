@@ -76,7 +76,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of PropertyNeedsDictionaryClass are updated, but before the HasChanged event gets raised
+    /// Called before any property of PropertyNeedsDictionaryClass is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(
       int idInt, 

@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of Lookup_Child are updated, but before the HasChanged event gets raised
+    /// Called before any property of Lookup_Child is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string text, Lookup_Parent lookupParent, Lookup_ParentNullable? lookupParentNullable, ref bool isCancelled){
    }

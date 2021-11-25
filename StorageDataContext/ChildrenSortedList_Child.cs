@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of ChildrenSortedList_Child are updated, but before the HasChanged event gets raised
+    /// Called before any property of ChildrenSortedList_Child is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(
       DateTime dateKey, 

@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of ChildrenList_ParentReadonly are updated, but before the HasChanged event gets raised
+    /// Called before any property of ChildrenList_ParentReadonly is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(string text, ref bool isCancelled){
    }

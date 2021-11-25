@@ -117,7 +117,7 @@ namespace StorageDataContext  {
         ParentWithSortedListNullable.AddToChildrenSortedList_Children(this);
       }
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(27,TransactionActivityEnum.New, Key, this));
       }
 

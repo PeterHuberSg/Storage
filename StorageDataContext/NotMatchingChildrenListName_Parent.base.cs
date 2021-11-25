@@ -92,7 +92,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new NotMatchingChildrenListName_Parent: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(36,TransactionActivityEnum.New, Key, this));
       }
 

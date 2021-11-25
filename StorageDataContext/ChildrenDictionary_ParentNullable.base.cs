@@ -93,7 +93,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new ChildrenDictionary_ParentNullable: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(23,TransactionActivityEnum.New, Key, this));
       }
 

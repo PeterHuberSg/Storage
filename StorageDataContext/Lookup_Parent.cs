@@ -77,7 +77,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of Lookup_Parent are updated, but before the HasChanged event gets raised
+    /// Called before any property of Lookup_Parent is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(DateTime date, decimal someValue, ref bool isCancelled){
    }

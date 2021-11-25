@@ -92,7 +92,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new Lookup_ParentNullable: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(4,TransactionActivityEnum.New, Key, this));
       }
 

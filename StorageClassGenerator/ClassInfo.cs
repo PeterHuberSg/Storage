@@ -815,7 +815,7 @@ namespace Storage {
         }
       }
       sw.WriteLine("      onConstruct();");
-      sw.WriteLine("      if (DC.Data.IsTransaction) {");
+      sw.WriteLine("      if (DC.Data?.IsTransaction??false) {");
       sw.WriteLine($"        DC.Data.AddTransaction(new TransactionItem({StoreKey},"+
                              "TransactionActivityEnum.New, Key, this));");
       sw.WriteLine("      }");

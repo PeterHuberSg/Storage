@@ -83,7 +83,7 @@ namespace StorageDataContext  {
 #endif
       Parent.AddToDemoChildren(this);
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(35,TransactionActivityEnum.New, Key, this));
       }
 

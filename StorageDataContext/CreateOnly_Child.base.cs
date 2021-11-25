@@ -106,7 +106,7 @@ namespace StorageDataContext  {
         CreateOnlyParentNullable.AddToCreateOnly_Children(this);
       }
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(30,TransactionActivityEnum.New, Key, this));
       }
 

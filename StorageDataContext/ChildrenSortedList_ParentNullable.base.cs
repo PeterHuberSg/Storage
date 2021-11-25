@@ -100,7 +100,7 @@ namespace StorageDataContext  {
       DC.Trace?.Invoke($"new ChildrenSortedList_ParentNullable: {ToTraceString()}");
 #endif
       onConstruct();
-      if (DC.Data.IsTransaction) {
+      if (DC.Data?.IsTransaction??false) {
         DC.Data.AddTransaction(new TransactionItem(26,TransactionActivityEnum.New, Key, this));
       }
 

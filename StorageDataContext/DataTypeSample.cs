@@ -76,7 +76,7 @@ namespace StorageDataContext  {
 
 
     /// <summary>
-    /// Called after all properties of DataTypeSample are updated, but before the HasChanged event gets raised
+    /// Called before any property of DataTypeSample is updated and before the HasChanged event gets raised
     /// </summary>
     partial void onUpdating(
       DateTime aDate, 
